@@ -4,8 +4,8 @@
   "description": "testing",
   "main": "index.js",
   "scripts": {
-    "b": "source ./build.sh; build",
-    "bw": "source ./build.sh; build_and_watch"
+    "build": "source ./build.sh; build",
+    "watch": "source ./build.sh; build_and_watch"
   },
   "author": "",
   "license": "ISC",

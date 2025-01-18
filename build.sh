@@ -14,15 +14,11 @@ has_param() {
 # Supported flags:
 #  --watch: Rebuild automatically when changes are detected
 build() {
-  local entry_file_path=$1
-  local parsed_path
-  if [[ $entry_file_path == ./src/* ]]; then
-    parsed_path=$entry_file_path
-  else
-    parsed_path=./src/entry/$entry_file_path.ts
-  fi
+  local file_path=$1
+  local file=$(basename $file_path)
+  local file_noext="${file%.*}"
   local cmd
-  cmd="rollup --config rollup.config.ts --environment file_path:$parsed_path --configPlugin @rollup/plugin-typescript"
+  cmd="rollup --config rollup.config.ts --environment file_path:$file_path,file:$file_noext --configPlugin @rollup/plugin-typescript"
   if has_param '--watch' "$@"; then cmd+=' --watch'; fi
   $cmd
 }

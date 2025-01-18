@@ -6,12 +6,13 @@ import addFileIconSettings from "./rollup-plugin-add-file-icon-settings";
 
 // https://github.com/rollup/rollup/issues/703#issuecomment-224984436 <-- passing args into config file
 const ENTRY_FILE_PATH = process.env.file_path;
+const FILE = process.env.file;
 
 const config = {
   input: ENTRY_FILE_PATH,
 
   output: {
-    dir: "..",
+    file: `build/${FILE}.js`,
     format: "es",
     plugins: [terser()],
   },
