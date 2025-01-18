@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "allowSyntheticDefaultImports": true,
+    "noUnusedLocals": true,
+    "lib": ["ESNext"],
+    "baseUrl": "src",
+    "noUncheckedIndexedAccess": true,
+    "allowUnreachableCode": false,
+    "noImplicitReturns": false,
+    "strictFunctionTypes": true,
+    "noErrorTruncation": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "./*.ts"],
+  "exclude": ["node_modules"]
+}
