@@ -1,0 +1,125 @@
+{
+    "responseHeader": {
+        "responseCode": 0,
+        "responseDesc": "Success"
+    },
+    "result": {
+        "status": {
+            "lastStatusDate": "20250120023554",
+            "airCtrlOn": false,
+            "engine": false,
+            "doorLock": true,
+            "doorOpen": {
+                "frontLeft": 0,
+                "frontRight": 0,
+                "backLeft": 0,
+                "backRight": 0
+            },
+            "trunkOpen": false,
+            "airTempUnit": "C",
+            "airTemp": {
+                "value": "00H",
+                "unit": 0
+            },
+            "defrost": false,
+            "acc": false,
+            "evStatus": {
+                "batteryCharge": true,
+                "batteryStatus": 53,
+                "batteryPlugin": 2,
+                "remainTime2": {
+                    "etc1": {
+                        "value": 36,
+                        "unit": 1
+                    },
+                    "etc2": {
+                        "value": 670,
+                        "unit": 1
+                    },
+                    "etc3": {
+                        "value": 70,
+                        "unit": 1
+                    },
+                    "//": "Note atc is the value in minute of remaining time left to complete charge"
+                    "atc": {
+                        "value": 325,
+                        "unit": 1
+                    }
+                },
+                "drvDistance": [
+                    {
+                        "rangeByFuel": {
+                            "gasModeRange": {
+                                "value": 0.0,
+                                "unit": 1
+                            },
+                            "evModeRange": {
+                                "value": 206.0,
+                                "unit": 1
+                            },
+                            "totalAvailableRange": {
+                                "value": 206.0,
+                                "unit": 1
+                            }
+                        },
+                        "type": 2
+                    }
+                ],
+                "batteryPreconditiong": false,
+                "v2L": false,
+                "batteryPower": {
+                    "batteryFstChrgPower": 0.0,
+                    "batteryStndChrgPower": 2.7,
+                    "batteryDischrgPower": 2.7
+                },
+                "v2LRemainTime": 0,
+                "v2lRemainTime": 0
+            },
+            "hoodOpen": false,
+            "transCond": true,
+            "steerWheelHeat": 0,
+            "dte": {
+                "unit": 1
+            },
+            "tirePressureLamp": {
+                "tirePressureLampAll": 0
+            },
+            "battery": {
+                "batSoc": 83,
+                "sjbDeliveryMode": 1,
+                "batSignalReferenceValue": {}
+            },
+            "remoteIgnition": true,
+            "seatHeaterVentInfo": {},
+            "sleepModeCheck": false,
+            "lampWireStatus": {
+                "headLamp": {
+                    "headLampStatus": false,
+                    "leftLowLamp": false,
+                    "rightLowLamp": false,
+                    "leftHighLamp": false,
+                    "rightHighLamp": false,
+                    "leftBifuncLamp": false,
+                    "rightBifuncLamp": false
+                },
+                "stopLamp": {
+                    "leftLamp": false,
+                    "rightLamp": false
+                },
+                "turnSignalLamp": {
+                    "leftFrontLamp": false,
+                    "rightFrontLamp": false,
+                    "leftRearLamp": false,
+                    "rightRearLamp": false
+                }
+            },
+            "windowOpen": {},
+            "smartKeyBatteryWarning": false,
+            "washerFluidStatus": false,
+            "breakOilStatus": false,
+            "engineRuntime": {
+                "unit": 1
+            }
+        }
+    }
+}

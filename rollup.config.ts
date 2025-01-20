@@ -14,10 +14,14 @@ const config = {
   output: {
     file: `build/${FILE}.js`,
     format: "es",
-    plugins: [terser()],
+    plugins: [terser({
+      output: {
+        comments: false
+      }
+    }), addFileIconSettings()],
   },
   plugins: [
-    typescript(), nodeResolve(), addFileIconSettings(ENTRY_FILE_PATH!)],
+    typescript(), nodeResolve()],
   watch: {
     include: "src/**",
   },

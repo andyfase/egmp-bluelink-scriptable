@@ -1,5 +1,5 @@
 import { Bluelink } from './lib/bluelink'
-import { getBatteryIcon, getBatteryPercentColor } from './lib/util' 
+import { getTintedIconAsync, getBatteryPercentColor, calculateBatteryIcon } from './lib/util' 
 
 // Widget Config
 const RANGE_IN_MILES = false; // true
@@ -66,8 +66,6 @@ export async function createWidget() {
 
     //temp test variables
     const isCharging = true
-    const isConnected = true
-    const isChargingDone = false
     const batteryPercent = 50
     const remainingChargingTime = 1200
     const chargingKw = "2.7"
@@ -83,10 +81,9 @@ export async function createWidget() {
     const batteryPercentStack = batteryInfoStack.addStack();
     batteryPercentStack.addSpacer();
     batteryPercentStack.centerAlignContent();
-    const { batteryIcon, batteryIconColor } = getBatteryIcon(batteryPercent, isConnected, isCharging, isChargingDone);
-    const batterySymbolElement = batteryPercentStack.addImage(batteryIcon.image);
+    const image = await getTintedIconAsync(calculateBatteryIcon(batteryPercent, isCharging));
+    const batterySymbolElement = batteryPercentStack.addImage(image);
     batterySymbolElement.imageSize = new Size(25, 25);
-    batterySymbolElement.tintColor = batteryIconColor;
     batteryPercentStack.addSpacer(8);
   
     const batteryPercentText = batteryPercentStack.addText(`${batteryPercent.toString()}%`);

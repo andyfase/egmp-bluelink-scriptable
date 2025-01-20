@@ -27,6 +27,6 @@ export class Bluelink {
   }
 
   public getCarName(): string {
-    return "Ioniq 5"
+    return "She-Ra"
   }
 }
