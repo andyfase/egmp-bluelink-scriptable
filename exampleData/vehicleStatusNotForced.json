@@ -1,0 +1,432 @@
+{
+    "responseHeader": {
+        "responseCode": 0,
+        "responseDesc": "Success"
+    },
+    "result": {
+        "vehicle": {
+            "vehicleId": "foo",
+            "nickName": "SheRa",
+            "modelCode": "I51SEREME100",
+            "modelName": "IONIQ 5 EV",
+            "modelYear": "2022",
+            "fuelKindCode": "E",
+            "trim": "Preferred Long Range",
+            "engine": "",
+            "exteriorColor": "SAW",
+            "dtcCount": 0,
+            "subscriptionStatus": "A",
+            "subscriptionEndDate": "20250331",
+            "overviewMessage": "",
+            "odometer": 49224.4,
+            "odometerUnit": 1,
+            "defaultVehicle": false,
+            "enrollmentStatus": "4",
+            "genType": "G3",
+            "transmissionType": "0",
+            "photoUrl": "https://mybluelink.ca/vin/2023/09/049821b6fd9e4e4b81f5f791d8fb0519_1695445819406.png",
+            "valetParkingModeOn": 1,
+            "mainBatteryType": 0,
+            "v2lRemainTimeOption": 0,
+            "webManualUrl": "http://webmanual.hyundai.com/STD_GEN5_WIDE/AVNT/CAN/English/index.html",
+            "vin": "foo"
+        },
+        "features": {
+            "seatHeatVent": {
+                "drvSeatHeatOption": 0,
+                "astSeatHeatOption": 0,
+                "rlSeatHeatOption": 0,
+                "rrSeatHeatOption": 0
+            },
+            "hvacTempType": 1,
+            "ims": 0,
+            "targetMinSoc": 50,
+            "strgWhlHeatingOption": 1
+        },
+        "featuresModel": {
+            "features": [
+                {
+                    "category": "Menu",
+                    "features": [
+                        {
+                            "featureName": "Home"
+                        },
+                        {
+                            "featureName": "RemoteServices"
+                        },
+                        {
+                            "featureName": "FindMyCar"
+                        },
+                        {
+                            "featureName": "CallRoadside"
+                        },
+                        {
+                            "featureName": "VehicleHealthStatus"
+                        },
+                        {
+                            "featureName": "DealerLocator"
+                        },
+                        {
+                            "featureName": "NotificationHistory"
+                        },
+                        {
+                            "featureName": "SelectVehicle"
+                        },
+                        {
+                            "featureName": "ChargingStationLocator"
+                        },
+                        {
+                            "featureName": "ValetParkingMode"
+                        },
+                        {
+                            "featureName": "Fdg"
+                        }
+                    ]
+                },
+                {
+                    "category": "Home",
+                    "features": [
+                        {
+                            "featureName": "RemoteServices"
+                        },
+                        {
+                            "featureName": "FindMyCar"
+                        },
+                        {
+                            "featureName": "VehicleHealthStatus"
+                        },
+                        {
+                            "featureName": "UserProfile"
+                        },
+                        {
+                            "featureName": "Calendar"
+                        },
+                        {
+                            "featureName": "AdvancedCharge"
+                        }
+                    ]
+                },
+                {
+                    "category": "RemoteServices",
+                    "features": [
+                        {
+                            "featureName": "Lock",
+                            "features": [
+                                {
+                                    "subFeatureName": "PinRequired",
+                                    "subFeatureValue": "1"
+                                }
+                            ]
+                        },
+                        {
+                            "featureName": "Unlock",
+                            "features": [
+                                {
+                                    "subFeatureName": "PinRequired",
+                                    "subFeatureValue": "1"
+                                }
+                            ]
+                        },
+                        {
+                            "featureName": "HornLights",
+                            "features": [
+                                {
+                                    "subFeatureName": "PinRequired",
+                                    "subFeatureValue": "1"
+                                }
+                            ]
+                        },
+                        {
+                            "featureName": "FlashLights",
+                            "features": [
+                                {
+                                    "subFeatureName": "PinRequired",
+                                    "subFeatureValue": "1"
+                                }
+                            ]
+                        },
+                        {
+                            "featureName": "Climate",
+                            "features": [
+                                {
+                                    "subFeatureName": "Defrost",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "SteerwheelHeat",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "SideMirrorHeat",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "RearWinodwHeat",
+                                    "subFeatureValue": "0"
+                                },
+                                {
+                                    "subFeatureName": "EvSocControl",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "Favorite",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "PinRequired",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "ClimateSetting",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "TemperatureType",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "StrgWhlHeatingOption",
+                                    "subFeatureValue": "1"
+                                }
+                            ]
+                        },
+                        {
+                            "featureName": "Schedule",
+                            "features": [
+                                {
+                                    "subFeatureName": "ChargingSchedule2",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "FatcSetting1",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "ShareClimate",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "Offpeak1",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "PinRequired",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "OffPeakSelectMode",
+                                    "subFeatureValue": "1"
+                                }
+                            ]
+                        },
+                        {
+                            "featureName": "Charge",
+                            "features": [
+                                {
+                                    "subFeatureName": "ChargingStatusControl",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "SocStatus",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "PinRequired",
+                                    "subFeatureValue": "1"
+                                }
+                            ]
+                        },
+                        {
+                            "featureName": "TargetStateOfCharge",
+                            "features": [
+                                {
+                                    "subFeatureName": "CurrentSocAc",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "CurrentSocDc",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "DrivingDistance",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "TargetSocAc",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "TargetSocDc",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "TsocLevelStep",
+                                    "subFeatureValue": "10"
+                                },
+                                {
+                                    "subFeatureName": "TargetMinSoc",
+                                    "subFeatureValue": "50"
+                                }
+                            ]
+                        },
+                        {
+                            "featureName": "VehicleStatus",
+                            "features": [
+                                {
+                                    "subFeatureName": "DoorStatus",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "EngineStatus",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "ClimateStatus",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "RefreshStatus",
+                                    "subFeatureValue": "1"
+                                },
+                                {
+                                    "subFeatureName": "EvSocStatus",
+                                    "subFeatureValue": "1"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "category": "ProvisioningService",
+                    "features": [
+                        {
+                            "featureName": "WeatherInformationService"
+                        },
+                        {
+                            "featureName": "SpeedCameraInformationService"
+                        },
+                        {
+                            "featureName": "CenterBasedRouteGuidance"
+                        }
+                    ]
+                }
+            ]
+        },
+        "status": {
+            "lastStatusDate": "20250121002026",
+            "airCtrlOn": false,
+            "engine": false,
+            "doorLock": true,
+            "doorOpen": {
+                "frontLeft": 0,
+                "frontRight": 0,
+                "backLeft": 0,
+                "backRight": 0
+            },
+            "trunkOpen": false,
+            "airTempUnit": "C",
+            "airTemp": {
+                "value": "00H",
+                "unit": 0
+            },
+            "defrost": false,
+            "acc": false,
+            "evStatus": {
+                "batteryCharge": false,
+                "batteryStatus": 71,
+                "batteryPlugin": 2,
+                "remainTime2": {
+                    "etc1": {
+                        "value": 14,
+                        "unit": 1
+                    },
+                    "etc2": {
+                        "value": 0,
+                        "unit": 1
+                    },
+                    "etc3": {
+                        "value": 0,
+                        "unit": 1
+                    },
+                    "atc": {
+                        "value": 0,
+                        "unit": 1
+                    }
+                },
+                "drvDistance": [
+                    {
+                        "rangeByFuel": {
+                            "gasModeRange": {
+                                "value": 0.0,
+                                "unit": 1
+                            },
+                            "evModeRange": {
+                                "value": 281.0,
+                                "unit": 1
+                            },
+                            "totalAvailableRange": {
+                                "value": 281.0,
+                                "unit": 1
+                            }
+                        },
+                        "type": 2
+                    }
+                ],
+                "batteryPreconditiong": false,
+                "v2L": false,
+                "batteryPower": {
+                    "batteryFstChrgPower": 0.0,
+                    "batteryStndChrgPower": 0.0,
+                    "batteryDischrgPower": 0.0
+                },
+                "v2LRemainTime": 0,
+                "v2lRemainTime": 0
+            },
+            "hoodOpen": false,
+            "transCond": true,
+            "steerWheelHeat": 0,
+            "dte": {
+                "unit": 1
+            },
+            "tirePressureLamp": {
+                "tirePressureLampAll": 0
+            },
+            "battery": {
+                "batSoc": 98,
+                "sjbDeliveryMode": 1,
+                "batSignalReferenceValue": {}
+            },
+            "remoteIgnition": true,
+            "seatHeaterVentInfo": {},
+            "sleepModeCheck": false,
+            "lampWireStatus": {
+                "headLamp": {
+                    "headLampStatus": false,
+                    "leftLowLamp": false,
+                    "rightLowLamp": false,
+                    "leftHighLamp": false,
+                    "rightHighLamp": false,
+                    "leftBifuncLamp": false,
+                    "rightBifuncLamp": false
+                },
+                "stopLamp": {
+                    "leftLamp": false,
+                    "rightLamp": false
+                },
+                "turnSignalLamp": {
+                    "leftFrontLamp": false,
+                    "rightFrontLamp": false,
+                    "leftRearLamp": false,
+                    "rightRearLamp": false
+                }
+            },
+            "windowOpen": {},
+            "smartKeyBatteryWarning": false,
+            "washerFluidStatus": false,
+            "breakOilStatus": false,
+            "engineRuntime": {
+                "unit": 1
+            }
+        }
+    }
+}

@@ -31,11 +31,15 @@ export interface creds {
     Script.setWidget(widget)
     Script.complete()
   } else {
-    const resp = await createApp(creds)
-    // @ts-ignore - undocumented api
-    // App.close() // add this back after dev
-    return resp
-    // Safari.open("https://www.google.com")
+    try {
+      const resp = await createApp(creds)
+      // @ts-ignore - undocumented api
+      App.close() // add this back after dev
+      return resp
+    } catch (error) {
+        logError(error)
+      }
+    }
   }
 })()
 

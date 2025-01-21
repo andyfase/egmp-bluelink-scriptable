@@ -25,9 +25,15 @@ export class BluelinkCanada extends Bluelink {
 
   constructor(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
     super(creds, vin, statusCheckInterval)
+    this.additionalHeaders = {
+      'from': "SPA",
+      'language': "0",
+      'offset': `-${new Date().getTimezoneOffset() / 60}`
+    }
+    this.authHeader = "Accesstoken"
   }
 
-  async init(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
+ static async init(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
     const obj = new BluelinkCanada(creds, vin, statusCheckInterval)
     await obj.superInit(creds, vin, statusCheckInterval)
     return obj
@@ -45,8 +51,9 @@ export class BluelinkCanada extends Bluelink {
       url: API_DOMAIN + "v2/login", 
       data: JSON.stringify({
         loginId: this.creds.username,
-        password: this.creds.password
-      })
+        password: this.creds.password,
+      }),
+      noAuth: true
     })
     if (this.requestResponseValid(resp)) {
       return {
@@ -54,7 +61,7 @@ export class BluelinkCanada extends Bluelink {
         expiry: Math.floor(Date.now()/1000) + resp.result.token.expireIn // we only get a expireIn not a actual date
       }
     }
-    throw Error(`Login Failed: ${JSON.stringify(resp)}`)
+    throw Error(`Login Failed: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`)
   }
   
   protected async setCar(id: string) {
@@ -65,7 +72,7 @@ export class BluelinkCanada extends Bluelink {
       })
     })
     if (! this.requestResponseValid(resp)) {
-      throw Error(`Failed to set car ${id}: ${resp}`)
+      throw Error(`Failed to set car ${id}: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`)
     }
   }
 
@@ -94,18 +101,27 @@ export class BluelinkCanada extends Bluelink {
         modelYear: vehicle.modelYear,
         modelColour: vehicle.exteriorColor,
         modelTrim: vehicle.trim,
-        odometer: vehicle.odometer
+        
       }
     }
-    throw Error(`Failed to retrieve vehicle list: ${resp}`)
+    throw Error(`Failed to retrieve vehicle list: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`)
   }
 
   protected async getCarStatus(id: string, forceUpdate: boolean) : Promise<BluelinkStatus> {
     const api = forceUpdate ? "rltmvhclsts" : "sltvhcl"
     const resp = await this.request({
       url: API_DOMAIN + api, 
-      method: "POST"
+      method: "POST",
+      ...(! forceUpdate) && {
+        data: JSON.stringify({
+          vehicleId: id
+        }),
+        headers: {
+          "Vehicleid": id
+        }
+      }
     })
+
     if (this.requestResponseValid(resp)) {
       return {
         lastStatusCheck: Math.floor(Date.now()/1000),
@@ -115,15 +131,16 @@ export class BluelinkCanada extends Bluelink {
           resp.result.status.evStatus.batteryPower.batteryFstChrgPower : 
           resp.result.status.evStatus.batteryPower.batteryStndChrgPower,
         remainingChargeTimeMins: resp.result.status.evStatus.remainTime2.atc.value,
-        range: resp.result.status.evStatus.drvDistance[0].evModeRange.value,
+        range: resp.result.status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value,
         locked: resp.result.status.doorLock,
         conditioning: resp.result.status.airCtrlOn,
         soc: resp.result.status.evStatus.batteryStatus,
-        twelveSoc: resp.result.status.battery.batSoc
+        twelveSoc: resp.result.status.battery.batSoc,
+        odometer: (! forceUpdate) ? resp.result.vehicle.odometer : this.cache.status.odometer
       }
     }
 
-    throw Error(`Failed to retrieve vehicle status: ${resp}`)
+    throw Error(`Failed to retrieve vehicle status: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`)
   }
   
 }

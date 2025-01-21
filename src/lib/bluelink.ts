@@ -23,7 +23,6 @@ export interface BluelinkCar {
   modelYear: string
   modelTrim: string
   modelColour: string 
-  odometer: number
 }
 
 export interface BluelinkStatus {
@@ -37,6 +36,7 @@ export interface BluelinkStatus {
   conditioning: boolean
   soc: number
   twelveSoc: number
+  odometer: number
 }
 
 export interface Status {
@@ -54,6 +54,15 @@ export interface requestProps {
   url: string
   data?: string
   method?: string
+  noAuth?: boolean
+  headers?: Record<string, string>
+}
+
+export interface debugLastRequest {
+  url: string
+  method: string
+  data?: string
+  headers: Record<string, string>
 }
 
 export class Bluelink {
@@ -65,7 +74,17 @@ export class Bluelink {
   // @ts-ignore - statusCheckInterval is initalized in init
   protected statusCheckInterval: number
 
-  constructor(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {}
+  protected additionalHeaders :Record<string, string>
+  protected authHeader: string
+  protected tokens: BluelinkTokens | undefined
+  protected debugLastRequest: debugLastRequest | undefined
+
+  constructor(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
+    this.additionalHeaders = {}
+    this.authHeader = "Authentication"
+    this.tokens = undefined
+    this.debugLastRequest = undefined
+  }
 
   protected async superInit(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
     this.creds = creds
@@ -76,7 +95,13 @@ export class Bluelink {
       this.cache.token = await this.login()
       this.saveCache()
     }
-    return this
+  }
+
+  public getCachedStatus(): Status {
+    return {
+      car: this.cache.car,
+      status: this.cache.status
+    }
   }
 
   // to-do need to refresh this.cache.car - which includes the odometer readind
@@ -98,18 +123,22 @@ export class Bluelink {
   }
 
   protected async loadCache() : Promise<Cache> {
+    let cache : Cache | undefined = undefined
     if (Keychain.contains(KEYCHAIN_CACHE_KEY)) {
-      this.cache = JSON.parse(Keychain.get(KEYCHAIN_CACHE_KEY))
-    } else {
+      cache = JSON.parse(Keychain.get(KEYCHAIN_CACHE_KEY))
+    } 
+    if (!cache) {
       // initial use - load car and status
-      const token = await this.login()
-      this.cache = {
-        token: token,
-        car: await this.getCar(),
-        status: await this.getCarStatus(this.cache.car.id, false)
+      this.tokens = await this.login()
+      const car = await this.getCar()
+      cache = {
+        token: this.tokens,
+        car: car,
+        status: await this.getCarStatus(car.id, false)
       }
-      this.saveCache()
     }
+    this.cache = cache
+    this.saveCache()
     return this.cache
   }
 
@@ -122,14 +151,31 @@ export class Bluelink {
     const req = new Request(props.url)
     req.method = (props.method) ? props.method : (props.data) ? "POST" : "GET"
     req.headers = {
-      "Authentication": this.cache.token.accessToken,
+      "Accept": "application/json",
       ...(props.data) && {
         "Content-Type": "application/json"
+      },
+      ...(! props.noAuth) && {
+        [this.authHeader]: this.tokens ? this.tokens?.accessToken : this.cache.token.accessToken
+      },
+      ...this.additionalHeaders,
+      ...(props.headers) && {
+        ...props.headers
       }
-    }
+    }    
     if (props.data) { 
       req.body = props.data
     }
+
+    this.debugLastRequest = {
+      url: props.url,
+      method: req.method,
+      headers: req.headers,
+      ...(props.data) && {
+        data: req.body
+      }
+    }
+
     return await req.loadJSON()
   }
 

@@ -1,6 +1,5 @@
 import { creds } from './index'
-import { Bluelink } from './lib/bluelink'
-import { getTintedIconAsync, getBatteryPercentColor, calculateBatteryIcon } from './lib/util' 
+import { getTintedIconAsync, getBatteryPercentColor, calculateBatteryIcon, initRegionalBluelink } from './lib/util' 
 
 // Widget Config
 const RANGE_IN_MILES = false; // true
@@ -12,15 +11,12 @@ const LIGHT_BG_COLOR = "FFFFFF";
 
 
 export async function createWidget(creds: creds) {
-    const bl = new Bluelink({
-        username: "foo",
-        password: "foo",
-        region: "foo"
-    })
+    const bl = await initRegionalBluelink(creds)
+    const status = await bl.getStatus(false)
 
     // Prepare image
     const appIcon = Image.fromData(Data.fromBase64String(bl.getCarImage()))
-    const title = bl.getCarName()
+    const title = status.car.nickName || `${status.car.modelYear} ${status.car.modelName}`
     
     const widget = new ListWidget();
     const mainStack = widget.addStack();
@@ -58,20 +54,20 @@ export async function createWidget(creds: creds) {
     // Range
     const rangeStack = batteryInfoStack.addStack();
     rangeStack.addSpacer();
-    const rangeText = "100km"
+    const rangeText = `${status.status.range}km`
     const rangeElement = rangeStack.addText(rangeText);
     rangeElement.font = Font.mediumSystemFont(20);
     rangeElement.textColor = DARK_MODE ? Color.white() : Color.black();
     rangeElement.rightAlignText();
     batteryInfoStack.addSpacer();
 
-    //temp test variables
-    const isCharging = true
-    const batteryPercent = 50
-    const remainingChargingTime = 1200
-    const chargingKw = "2.7"
-    const odometer = 45000
-    const updatedTime = "20250118165212" + "Z"
+    // set status from BL status response
+    const isCharging = status.status.isCharging
+    const batteryPercent = status.status.soc
+    const remainingChargingTime = status.status.remainingChargeTimeMins
+    const chargingKw = status.status.chargingPower.toString()
+    const odometer = status.status.odometer
+    const updatedTime = status.status.lastRemoteStatusCheck + "Z"
 
     // date conversion
     const df = new DateFormatter()

@@ -1,26 +1,57 @@
 import { creds } from './index'
 import { Bluelink } from './lib/bluelink'
 import { getTable, Div,P, Img} from "scriptable-utils";
-import { loadTintedIcons, getTintedIcon, calculateBatteryIcon } from "lib/util"
+import { loadTintedIcons, getTintedIcon, calculateBatteryIcon, initRegionalBluelink } from "lib/util"
 
 const { present, connect, setState } = getTable<{
+  name: string,
+  odometer: number,
   soc: number,
-  isCharging: boolean
+  isCharging: boolean,
+  remainingChargeTimeMins: number,
   range: number
+  locked: boolean,
+  isConditioning: boolean,
+  chargingPower: number,
+  lastUpdated: string
 }>({
   name: "Testing",
 });
 
 export async function createApp(creds: creds) {
-    const bl = new Bluelink({
-        username: "foo",
-        password: "foo",
-        region: "foo"
-    })
+    const bl = await initRegionalBluelink(creds)
     await loadTintedIcons()
+
+    // not blocking call - render UI with last cache and then update
+    const cachedStatus = bl.getCachedStatus()
+    bl.getStatus(false).then((status) => {
+      setState({
+        name: status.car.nickName || `${status.car.modelName}`,
+        odometer: status.status.odometer,
+        soc: status.status.soc,
+        isCharging: status.status.isCharging,
+        remainingChargeTimeMins: status.status.remainingChargeTimeMins,
+        range: status.status.range,
+        locked: status.status.locked,
+        isConditioning: status.status.conditioning,
+        chargingPower: status.status.chargingPower,
+        lastUpdated: status.status.lastRemoteStatusCheck
+      })
+    })
     
     return present({
-      defaultState: { soc: 75, range: 150, isCharging: false },
+      defaultState: { 
+        name: cachedStatus.car.nickName || `${cachedStatus.car.modelName}`,
+        odometer: cachedStatus.status.odometer,
+        soc: cachedStatus.status.soc,
+        isCharging: cachedStatus.status.isCharging,
+        remainingChargeTimeMins: cachedStatus.status.remainingChargeTimeMins,
+        range: cachedStatus.status.range,
+        locked: cachedStatus.status.locked,
+        isConditioning: cachedStatus.status.conditioning,
+        chargingPower: cachedStatus.status.chargingPower,
+        lastUpdated: cachedStatus.status.lastRemoteStatusCheck
+      },
       render: () => [
             pageTitle(bl),
             batteryStatus(bl),
@@ -32,9 +63,9 @@ export async function createApp(creds: creds) {
 
 }
 
-const pageTitle = connect(({ state: { soc, range } }, bl: Bluelink) => {
+const pageTitle = connect(({ state: { name } }, bl: Bluelink) => {
   return (Div([
-    P(bl.getCarName(), {
+    P(name, {
       font: n => Font.boldSystemFont(n),
       fontSize: 35,
       align: "left"
@@ -50,19 +81,31 @@ const batteryStatus = connect(({ state: { soc, range } }, bl: Bluelink) => {
   ]))
 })
 
-const pageIcons = connect(({ state: { soc, isCharging } }, bl: Bluelink) => {
-
-  const updatedTime = "20250118165212" + "Z"
+const pageIcons = connect(({ state: { soc, isCharging, lastUpdated, remainingChargeTimeMins, chargingPower, isConditioning, locked } }, bl: Bluelink) => {
+  
+  const updatedTime = lastUpdated + "Z"
 
   // date conversion
   const df = new DateFormatter()
   df.dateFormat = "yyyyMMddHHmmssZ"
   const lastSeen = df.date(updatedTime)
+  const batteryIcon = isCharging ? "charging" : "not-charging"
+  let batteryText = "Not Charging"
+  if (isCharging) {
+    const remainingChargeTimeHours = Number((remainingChargeTimeMins / 60)).toString();
+    const remainingChargeTimeMinsRemainder = Number(remainingChargeTimeMins % 60);
+    batteryText = `${chargingPower.toString()} kW  - ${remainingChargeTimeHours}h ${remainingChargeTimeMinsRemainder}m`
+  }
+  const conditioningText = isConditioning ? "Conditioning" : "Not Conditioning"
+  const conditioningIcon = isConditioning ? "conditioning" : "not-conditioning"
+
+  const lockedText = locked ? "Car Locked" : "Car Unlocked"
+  const lockedIcon = locked ? "locked" : "unlocked"
 
   return (Div([
     Div([
-      Img(getTintedIcon("charging"), {align: "center"}),
-      P("Charging at 2.7kw", {align: "left", width: "70%"})
+      Img(getTintedIcon(batteryIcon), {align: "center"}),
+      P(batteryText, {align: "left", width: "70%"})
     ], { onTap() {
       setState({
         soc: 15,
@@ -70,12 +113,12 @@ const pageIcons = connect(({ state: { soc, isCharging } }, bl: Bluelink) => {
       })
     },}),
     Div([
-      Img(getTintedIcon("not-conditioning"), {align: "center"}),
-      P("Not Conditioning", {align: "left", width: "70%"})
+      Img(getTintedIcon(conditioningIcon), {align: "center"}),
+      P(conditioningText, {align: "left", width: "70%"})
     ]),
     Div([
-      Img(getTintedIcon("unlocked"), {align: "center"}),
-      P("Car Unlocked", {align: "left", width: "70%"})
+      Img(getTintedIcon(lockedIcon), {align: "center"}),
+      P(lockedText, {align: "left", width: "70%"})
     ]),
     Div([
       Img(getTintedIcon("status"), {align: "center"}),

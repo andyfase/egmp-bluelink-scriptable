@@ -1,4 +1,6 @@
-
+import { creds } from "index"
+import { Bluelink } from "./bluelink"
+import { BluelinkCanada } from "./bluelink-regions/canada"
 
 interface icon {
   iconName: string,
@@ -42,7 +44,7 @@ const icons : Record<string, icon> = {
     iconName: "fan",
     color: Color.white(),
   },
-  "lock": {
+  "locked": {
     iconName: "lock",
     color: Color.green(),
   },
@@ -55,6 +57,16 @@ const icons : Record<string, icon> = {
     color: Color.white(),
   }
 }
+
+export async function initRegionalBluelink(creds: creds) : Promise<BluelinkCanada | Bluelink> {
+  switch(creds.region) {
+    case "canada":
+      return await BluelinkCanada.init(creds) 
+    default:
+      throw Error(`Region ${creds.region} not supported`)
+  }
+} 
+
 
 export function getBatteryPercentColor(batteryPercent: number) : Color {
   if (batteryPercent >= 75) {
