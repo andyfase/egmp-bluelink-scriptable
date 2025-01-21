@@ -12,8 +12,6 @@ export interface creds {
 
 
 ;(async () => {
-
-  
   let creds : creds | undefined = undefined
   if (Keychain.contains(KEYCHAIN_CREDS_KEY)) {
     creds = JSON.parse(Keychain.get(KEYCHAIN_CREDS_KEY)) as creds
@@ -41,5 +39,5 @@ export interface creds {
       }
     }
   }
-})()
+)()
 
