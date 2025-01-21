@@ -116,9 +116,9 @@ export class BluelinkCanada extends Bluelink {
         data: JSON.stringify({
           vehicleId: id
         }),
-        headers: {
-          "Vehicleid": id
-        }
+      },
+      headers: {
+        "Vehicleid": id
       }
     })
 

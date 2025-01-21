@@ -114,6 +114,10 @@ export async function getTintedIconAsync(name: string) : Promise<Image> {
   return SFSymbol.named("questionmark.app").image
 }
 
+export async function getAngledTintedIconAsync(name: string, color: Color, angle: number) : Promise<Image> {
+  return (await tintSFSymbol(name, SFSymbol.named(name).image, color, angle)).image
+}
+
 
 export function calculateBatteryIcon(
   batteryPercent: number,
@@ -136,7 +140,11 @@ export function calculateBatteryIcon(
 }
 
 
-export async function tintSFSymbol(name: string, image: Image, color: Color) {
+export async function tintSFSymbol(name: string, image: Image, color: Color, rotateDegree?: number) {
+  let rotate = false
+  if (rotateDegree) {
+    rotate = true
+  }
   let html = `
   <img id="image" src="data:image/png;base64,${Data.fromPNG(image).toBase64String()}" />
   <canvas id="canvas"></canvas>
@@ -150,7 +158,18 @@ export async function tintSFSymbol(name: string, image: Image, color: Color) {
     canvas.width = img.width;
     canvas.height = img.height;
     let ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
+    if (${rotate}) {
+      let width = canvas.width
+      let height = canvas.height
+      ctx.save()
+      var rad = ${rotateDegree} * Math.PI / 180;
+      ctx.translate(width / 2, height / 2);
+      ctx.rotate(rad); 
+      ctx.drawImage(img,width / 2 * (-1),height / 2 * (-1),width,height);
+      ctx.restore();
+    } else {
+      ctx.drawImage(img, 0, 0);
+    } 
     let imgData = ctx.getImageData(0, 0, img.width, img.height);
     // ordered in RGBA format
     let data = imgData.data;
@@ -161,6 +180,7 @@ export async function tintSFSymbol(name: string, image: Image, color: Color) {
       data[i] = (color >> (2 - i % 4) * 8) & 0xFF
     }
     ctx.putImageData(imgData, 0, 0);
+
     canvas.toDataURL("image/png").replace(/^data:image\\/png;base64,/, "");
   `;
   
@@ -169,3 +189,28 @@ export async function tintSFSymbol(name: string, image: Image, color: Color) {
   let base64 = await wv.evaluateJavaScript(js);
   return {name: name, image: Image.fromData(Data.fromBase64String(base64))}
 }
+
+// export async function rotateSFSymbol(image: Image, degree: number) {
+//   let html = `
+//   <img id="image" src="data:image/png;base64,${Data.fromPNG(image).toBase64String()}" />
+//   <canvas id="canvas"></canvas>
+//   `;
+  
+//   let js = `
+//     let img = document.getElementById("image");
+//     let canvas = document.getElementById("canvas");
+
+//     canvas.width = img.width;
+//     canvas.height = img.height;
+//     let ctx = canvas.getContext("2d");
+//     ctx.rotate(${degree}*Math.PI/180);
+//     ctx.drawImage(img, 0, 0);
+//     ctx.putImageData(imgData, 0, 0);
+//     canvas.toDataURL("image/png").replace(/^data:image\\/png;base64,/, "");
+//   `;
+  
+//   let wv = new WebView();
+//   await wv.loadHTML(html);
+//   let base64 = await wv.evaluateJavaScript(js);
+//   return (Image.fromData(Data.fromBase64String(base64)))
+// }

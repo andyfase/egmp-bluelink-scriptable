@@ -104,17 +104,49 @@ export class Bluelink {
     }
   }
 
-  // to-do need to refresh this.cache.car - which includes the odometer readind
   public async getStatus(forceUpdate: boolean) : Promise<Status> {
     if (forceUpdate) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, true)
       this.saveCache()
     } else if (this.cache.status.lastStatusCheck + this.statusCheckInterval < Math.floor(Date.now()/1000)) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, false)
+      this.saveCache()
     }
     return {
       car: this.cache.car,
       status: this.cache.status
+    }
+  }
+
+  public async processRequest(type: string, callback: (isComplete: boolean, didSucceed: boolean, data: any | undefined) => void) {
+    let promise : Promise<any> | undefined = undefined
+    let data : any
+    let didSucceed = false
+    switch(type) {
+      case "status":
+        promise = this.getStatus(true)
+        break
+      default:
+        throw Error(`Unsupported request ${type}`)
+    }
+    let hasRequestCompleted = false
+    const timer = Timer.schedule(500, true, async () => {
+      if (!hasRequestCompleted) {
+        callback(false, false, undefined)
+      } else {
+        timer.invalidate()
+        callback(true, didSucceed, data)
+      }
+    })
+
+    try {
+      data = await promise
+      hasRequestCompleted = true
+      didSucceed = true
+    } catch (error) {
+      hasRequestCompleted = true
+      didSucceed = false
+      data = error
     }
   }
 
