@@ -1,3 +1,4 @@
+import { creds } from './index'
 import { Bluelink } from './lib/bluelink'
 import { getTintedIconAsync, getBatteryPercentColor, calculateBatteryIcon } from './lib/util' 
 
@@ -10,7 +11,7 @@ const LIGHT_BG_COLOR = "FFFFFF";
 
 
 
-export async function createWidget() {
+export async function createWidget(creds: creds) {
     const bl = new Bluelink({
         username: "foo",
         password: "foo",

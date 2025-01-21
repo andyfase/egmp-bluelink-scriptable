@@ -1,3 +1,4 @@
+import { creds } from './index'
 import { Bluelink } from './lib/bluelink'
 import { getTable, Div,P, Img} from "scriptable-utils";
 import { loadTintedIcons, getTintedIcon, calculateBatteryIcon } from "lib/util"
@@ -10,7 +11,7 @@ const { present, connect, setState } = getTable<{
   name: "Testing",
 });
 
-export async function createApp() {
+export async function createApp(creds: creds) {
     const bl = new Bluelink({
         username: "foo",
         password: "foo",
