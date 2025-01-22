@@ -1,6 +1,4 @@
-import { creds } from "index"
-import { Bluelink } from "./bluelink"
-import { BluelinkCanada } from "./bluelink-regions/canada"
+
 
 interface icon {
   iconName: string,
@@ -57,16 +55,6 @@ const icons : Record<string, icon> = {
     color: Color.white(),
   }
 }
-
-export async function initRegionalBluelink(creds: creds) : Promise<BluelinkCanada | Bluelink> {
-  switch(creds.region) {
-    case "canada":
-      return await BluelinkCanada.init(creds) 
-    default:
-      throw Error(`Region ${creds.region} not supported`)
-  }
-} 
-
 
 export function getBatteryPercentColor(batteryPercent: number) : Color {
   if (batteryPercent >= 75) {
@@ -190,27 +178,8 @@ export async function tintSFSymbol(name: string, image: Image, color: Color, rot
   return {name: name, image: Image.fromData(Data.fromBase64String(base64))}
 }
 
-// export async function rotateSFSymbol(image: Image, degree: number) {
-//   let html = `
-//   <img id="image" src="data:image/png;base64,${Data.fromPNG(image).toBase64String()}" />
-//   <canvas id="canvas"></canvas>
-//   `;
-  
-//   let js = `
-//     let img = document.getElementById("image");
-//     let canvas = document.getElementById("canvas");
-
-//     canvas.width = img.width;
-//     canvas.height = img.height;
-//     let ctx = canvas.getContext("2d");
-//     ctx.rotate(${degree}*Math.PI/180);
-//     ctx.drawImage(img, 0, 0);
-//     ctx.putImageData(imgData, 0, 0);
-//     canvas.toDataURL("image/png").replace(/^data:image\\/png;base64,/, "");
-//   `;
-  
-//   let wv = new WebView();
-//   await wv.loadHTML(html);
-//   let base64 = await wv.evaluateJavaScript(js);
-//   return (Image.fromData(Data.fromBase64String(base64)))
-// }
+export async function sleep(milliseconds: number) : Promise<void>{
+  return new Promise(resolve => {
+    Timer.schedule(milliseconds, false, () => resolve())
+  })
+}

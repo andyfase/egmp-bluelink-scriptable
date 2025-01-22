@@ -17,9 +17,10 @@
 // }
 
 
-import { Bluelink, BluelinkCreds, BluelinkTokens, BluelinkCar, BluelinkStatus } from "../bluelink"
+import { Bluelink, BluelinkCreds, BluelinkTokens, BluelinkCar, BluelinkStatus } from "./base"
 
 const API_DOMAIN = "https://mybluelink.ca/tods/api/"
+const MAX_COMPLETION_POLLS = 30
 
 export class BluelinkCanada extends Bluelink {
 
@@ -142,5 +143,73 @@ export class BluelinkCanada extends Bluelink {
 
     throw Error(`Failed to retrieve vehicle status: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`)
   }
-  
+
+  protected async getAuthCode(id: string) : Promise<string> {
+    const api = "vrfypin"
+    const resp = await this.request({
+      url: API_DOMAIN + api, 
+      method: "POST",
+      data: JSON.stringify({
+        pin: this.creds.pin
+      })
+    })
+    if (this.requestResponseValid(resp)) {
+      return resp.result.pAuth
+    }
+    throw Error(`Failed to get auth code: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`)
+  }
+
+  protected async pollForCommandCompletion(id: string, authCode: string) : Promise<{ isSuccess: boolean, data: any}> {
+    const api = "rmtsts"
+    let attempts = 0
+    while (attempts <= MAX_COMPLETION_POLLS) {
+      const resp = await this.request({
+        url: API_DOMAIN + api, 
+        method: "POST",
+        headers: {
+          "Vehicleid": id,
+          "Pauth": authCode
+        }
+      })
+      // ignore failures in loop
+      if (this.requestResponseValid(resp) && resp.result.transaction.apiResult === "C") {
+          return {
+            isSuccess: true,
+            data: resp.result.vehicle
+          }
+        }
+      attempts += 1
+      await this.sleep(1000)
+    }
+    return {
+      isSuccess: false,
+      data: undefined
+    }
+  }
+
+  protected async lock(id: string):  Promise<{ isSuccess: boolean, data: any}> {
+    return await this.lockUnlock(id, true)
+  }
+
+  protected async unlock(id: string):  Promise<{ isSuccess: boolean, data: any}> {
+    return await this.lockUnlock(id, false)
+  }
+
+  protected async lockUnlock(id: string, shouldLock: boolean) : Promise<{ isSuccess: boolean, data: any}> {
+    const authCode = await this.getAuthCode(id)
+    const api = shouldLock ? "drlck" : "drulck"
+    const resp = await this.request({
+      url: API_DOMAIN + api, 
+      method: "POST",
+      data: JSON.stringify({
+        pin: this.creds.pin
+      }),
+      headers: {
+        "Vehicleid": id,
+        "Pauth": authCode
+      }
+    })
+    if (this.requestResponseValid(resp)) return await this.pollForCommandCompletion(id, authCode)
+    throw Error(`Failed to send lockUnlock command: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`)
+  }
 }

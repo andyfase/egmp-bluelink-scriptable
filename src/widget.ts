@@ -1,5 +1,6 @@
 import { creds } from './index'
-import { getTintedIconAsync, getBatteryPercentColor, calculateBatteryIcon, initRegionalBluelink } from './lib/util' 
+import { getTintedIconAsync, getBatteryPercentColor, calculateBatteryIcon } from './lib/util' 
+import { initRegionalBluelink } from "./lib/bluelink"
 
 // Widget Config
 const RANGE_IN_MILES = false; // true

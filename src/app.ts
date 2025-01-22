@@ -1,11 +1,16 @@
 import { creds } from './index'
-import { Bluelink, Status } from './lib/bluelink'
-import { getTable, Div,P, Img} from "scriptable-utils";
-import { loadTintedIcons, getTintedIcon, getAngledTintedIconAsync, calculateBatteryIcon, initRegionalBluelink } from "lib/util"
+import { Bluelink, Status } from './lib/bluelink-regions/base'
+import { getTable, Div,P, Img, quickOptions} from "scriptable-utils";
+import { sleep, loadTintedIcons, getTintedIcon, getAngledTintedIconAsync, calculateBatteryIcon } from "lib/util"
+import { initRegionalBluelink } from "./lib/bluelink"
 
 
 interface updatingActions {
   status?: {
+    image: Image,
+    text: string,
+  },
+  lock?: {
     image: Image,
     text: string,
   }
@@ -120,18 +125,41 @@ const pageIcons = connect(({ state: { soc, isCharging, lastUpdated, remainingCha
       P(conditioningText, {align: "left", width: "70%"})
     ]),
     Div([
-      Img(getTintedIcon(lockedIcon), {align: "center"}),
-      P(lockedText, {align: "left", width: "70%"})
-    ]),
+      Img(updatingActions && updatingActions.lock ? updatingActions.lock.image : getTintedIcon(lockedIcon), {align: "center"}),
+      P(updatingActions && updatingActions.lock ? updatingActions.lock.text : lockedText, {align: "left", width: "70%", ...(updatingActions && updatingActions.lock) && { color: Color.yellow() }})
+    ], { onTap() {
+      if (isUpdating) {
+        return
+      }
+      quickOptions(['Lock', 'Unlock', 'Cancel'], {
+        title: 'Confirm lock action',
+        onOptionSelect: opt => {
+          if (opt === "Cancel") return
+          doAsyncUpdate({
+            command: opt === "Lock" ? "lock" : "unlock", 
+            bl: bl, 
+            actions: updatingActions, 
+            actionKey: "lock",
+            updatingText: opt === "Lock" ? "Locking car ..." : "Unlocking car ...", 
+            successText: opt === "Lock" ? "Car locked!" : "Car unlocked!", 
+            failureText: `Failed to ${opt === "Lock" ? "lock" : "unlock"} car!!!`,
+            successCallback: ((data) => {
+              setState({
+                locked: opt === "Lock" ? true : false
+            })
+          })
+          })}})
+    }}),
     Div([
       Img(updatingActions && updatingActions.status ? updatingActions.status.image : getTintedIcon("status"), {align: "center"}),
       P(updatingActions && updatingActions.status ? updatingActions.status.text : `${lastSeen.toLocaleString()}`, {align: "left", width: "70%", ...(updatingActions && updatingActions.status) && { color: Color.yellow() }})
     ], { onTap() {
       if (! isUpdating) {
         doAsyncUpdate({
-          type: "status", 
+          command: "status", 
           bl: bl, 
           actions: updatingActions, 
+          actionKey: "status",
           updatingText: "Updating Status...", 
           successText: "Status Updated!", 
           failureText: "Status Failed to Update!!!",
@@ -168,9 +196,11 @@ function updateStatus(status: Status) {
 }
 
 interface doAsyncUpdateProps {
-  type: string,
+  command: string,
+  payload?: any,
   bl: Bluelink,
   actions: updatingActions | undefined,
+  actionKey: string,
   updatingText: string,
   successText: string,
   failureText: string,
@@ -179,14 +209,13 @@ interface doAsyncUpdateProps {
 async function doAsyncUpdate(props: doAsyncUpdateProps) {
   isUpdating = true
 
-  // replace this timer for a case statement based on the type of action being done
-  props.bl.processRequest(props.type, async (isComplete, didSucceed, data) => {
+  props.bl.processRequest(props.command, props.payload || undefined, async (isComplete, didSucceed, data) => {
     // deal with completion - set icon to checkmark to show success / fail
     if (isComplete) { 
       // show success / fail
       setState({
         updatingActions: {
-          [props.type]: { 
+          [props.actionKey]: { 
             image: didSucceed ? await getAngledTintedIconAsync("checkmark.arrow.trianglehead.counterclockwise", Color.green(), 0) :
             await getAngledTintedIconAsync("exclamationmark.arrow.trianglehead.2.clockwise.rotate.90", Color.red(), 0),
             text: didSucceed ? props.successText : props.failureText
@@ -198,11 +227,10 @@ async function doAsyncUpdate(props: doAsyncUpdateProps) {
         props.successCallback(data)
       }
 
-      // set timer for reseting icon state
-      Timer.schedule(2000, false, () => {
+      sleep(2000).then(() => { // reset result state after 2 seconds
         setState({
           updatingActions: {
-            [props.type]: undefined
+            [props.actionKey]: undefined
           }
         })
       })
@@ -221,7 +249,7 @@ async function doAsyncUpdate(props: doAsyncUpdateProps) {
       }
       setState({
         updatingActions: {
-          [props.type]: {
+          [props.actionKey]: {
             image: await getAngledTintedIconAsync("arrow.trianglehead.clockwise", Color.yellow(), updatingIconAngle),
             text: props.updatingText
           }
