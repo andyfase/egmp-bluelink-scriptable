@@ -1,31 +1,25 @@
+import { createWidget } from 'widget'
+import { createApp } from 'app'
+import { BluelinkCreds } from 'lib/bluelink-regions/base'
 
-import { createWidget } from "widget"
-import { createApp } from "app"
-
-const KEYCHAIN_CREDS_KEY = "bluelink-creds"
-
-export interface creds {
-  username: string,
-  password: string,
-  region: string
-}
-
+const KEYCHAIN_CREDS_KEY = 'bluelink-creds'
 
 ;(async () => {
-  let creds : creds | undefined = undefined
+  let creds: BluelinkCreds | undefined = undefined
   if (Keychain.contains(KEYCHAIN_CREDS_KEY)) {
-    creds = JSON.parse(Keychain.get(KEYCHAIN_CREDS_KEY)) as creds
-  } 
+    creds = JSON.parse(Keychain.get(KEYCHAIN_CREDS_KEY)) as BluelinkCreds
+  }
 
   // Remove when have implemented form for user to enter in creds in main app
   creds = {
-    username: "",
-    password: "",
-    region: "canada"
+    username: '',
+    password: '',
+    region: 'canada',
+    pin: '',
   }
 
   if (config.runsInWidget) {
-    let widget = await createWidget(creds)
+    const widget = await createWidget(creds)
     Script.setWidget(widget)
     Script.complete()
   } else {
@@ -35,9 +29,7 @@ export interface creds {
       App.close() // add this back after dev
       return resp
     } catch (error) {
-        logError(error)
-      }
+      logError(error)
     }
   }
-)()
-
+})()

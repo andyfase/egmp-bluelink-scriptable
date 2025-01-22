@@ -1,3 +1,2 @@
-import { storybook } from "scriptable-utils";
-
-(async () => await storybook())();
+import { storybook } from 'scriptable-utils'
+;(async () => await storybook())()
