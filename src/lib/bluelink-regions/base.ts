@@ -1,4 +1,3 @@
-
 import { ioniq5 } from "resources/images"
 
 const KEYCHAIN_CACHE_KEY = "bluelink-cache"
@@ -34,7 +33,7 @@ export interface BluelinkStatus {
   remainingChargeTimeMins: number 
   range: number
   locked: boolean
-  conditioning: boolean
+  climate: boolean
   soc: number
   twelveSoc: number
   odometer: number
@@ -51,7 +50,7 @@ export interface Cache {
   status: BluelinkStatus 
 }
 
-export interface requestProps {
+export interface RequestProps {
   url: string
   data?: string
   method?: string
@@ -59,11 +58,25 @@ export interface requestProps {
   headers?: Record<string, string>
 }
 
-export interface debugLastRequest {
+export interface DebugLastRequest {
   url: string
   method: string
   data?: string
   headers: Record<string, string>
+}
+
+export interface TempConversion {
+    F: number[]
+    C: number[]
+    H: string[]
+}
+
+export interface ClimateRequest {
+  enable: boolean,
+  defrost: boolean,
+  steering: boolean
+  temp: number,
+  durationMinutes: number,
 }
 
 export class Bluelink {
@@ -77,14 +90,16 @@ export class Bluelink {
 
   protected additionalHeaders :Record<string, string>
   protected authHeader: string
+  protected tempLookup: TempConversion | undefined
   protected tokens: BluelinkTokens | undefined
-  protected debugLastRequest: debugLastRequest | undefined
+  protected debugLastRequest: DebugLastRequest | undefined
 
   constructor(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
     this.additionalHeaders = {}
     this.authHeader = "Authentication"
     this.tokens = undefined
     this.debugLastRequest = undefined
+    this.tempLookup = undefined
   }
 
   protected async superInit(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
@@ -132,6 +147,19 @@ export class Bluelink {
         break
       case "unlock":
         promise = this.unlock(this.cache.car.id)
+        break
+      case "startCharge":
+        promise = this.startCharge(this.cache.car.id)
+        break
+      case "stopCharge":
+        promise = this.stopCharge(this.cache.car.id)
+        break
+      case "climate":
+        if (! input) {
+          throw Error("Must provide valid input for climate request!")
+        }
+        const inputClimate = input as ClimateRequest
+        promise = (inputClimate.enable) ? this.climateOn(this.cache.car.id, input) : this.climateOff(this.cache.car.id)
         break
       default:
         throw Error(`Unsupported request ${type}`)
@@ -183,10 +211,10 @@ export class Bluelink {
 
   protected tokenValid(): boolean {
     // invalid if within 30 seconds of expiry
-    return this.cache.token.expiry - 30 <= Math.floor(Date.now()/1000)
+    return (this.cache.token.expiry - 30) > Math.floor(Date.now()/1000)
   }
 
-  protected async request(props: requestProps) : Promise<any> {
+  protected async request(props: RequestProps) : Promise<any> {
     const req = new Request(props.url)
     req.method = (props.method) ? props.method : (props.data) ? "POST" : "GET"
     req.headers = {
@@ -214,14 +242,24 @@ export class Bluelink {
         data: req.body
       }
     }
-
-    return await req.loadJSON()
+    // logError(`Sending request to ${props.url}`)
+    try {
+      return await req.loadJSON()
+    } catch (error) {
+      logError(`Failed to send request to ${props.url}, error ${error}`)
+    }
+    
   }
 
   public getCarImage() : string {
     return ioniq5
   }
 
+  protected async sleep(milliseconds: number) : Promise<void>{
+    return new Promise(resolve => {
+      Timer.schedule(milliseconds, false, () => resolve())
+    })
+  }
 
   protected async login() : Promise<BluelinkTokens> {
     // implemented in country specific sub-class
@@ -248,11 +286,23 @@ export class Bluelink {
     throw Error("Not Implemented")
   }
 
+  protected async startCharge(id: string):  Promise<{ isSuccess: boolean, data: any}> {
+    // implemented in country specific sub-class
+    throw Error("Not Implemented")
+  }
 
+  protected async stopCharge(id: string):  Promise<{ isSuccess: boolean, data: any}> {
+    // implemented in country specific sub-class
+    throw Error("Not Implemented")
+  }
 
-  protected async sleep(milliseconds: number) : Promise<void>{
-    return new Promise(resolve => {
-      Timer.schedule(milliseconds, false, () => resolve())
-    })
+  protected async climateOn(id: string, config: ClimateRequest) : Promise<{ isSuccess: boolean, data: any}> {
+    // implemented in country specific sub-class
+    throw Error("Not Implemented")
+  }
+
+  protected async climateOff(id: string) : Promise<{ isSuccess: boolean, data: any}> {
+    // implemented in country specific sub-class
+    throw Error("Not Implemented")
   }
 }

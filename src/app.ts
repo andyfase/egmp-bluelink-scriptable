@@ -1,5 +1,5 @@
 import { creds } from './index'
-import { Bluelink, Status } from './lib/bluelink-regions/base'
+import { Bluelink, Status, ClimateRequest } from './lib/bluelink-regions/base'
 import { getTable, Div,P, Img, quickOptions} from "scriptable-utils";
 import { sleep, loadTintedIcons, getTintedIcon, getAngledTintedIconAsync, calculateBatteryIcon } from "lib/util"
 import { initRegionalBluelink } from "./lib/bluelink"
@@ -11,6 +11,14 @@ interface updatingActions {
     text: string,
   },
   lock?: {
+    image: Image,
+    text: string,
+  },
+  climate?: {
+    image: Image,
+    text: string,
+  },
+  charge?: {
     image: Image,
     text: string,
   }
@@ -27,7 +35,7 @@ const { present, connect, setState } = getTable<{
   remainingChargeTimeMins: number,
   range: number
   locked: boolean,
-  isConditioning: boolean,
+  isClimateOn: boolean,
   chargingPower: number,
   lastUpdated: string,
   updatingActions: updatingActions | undefined
@@ -42,7 +50,7 @@ export async function createApp(creds: creds) {
 
     // not blocking call - render UI with last cache and then update
     const cachedStatus = bl.getCachedStatus()
-    bl.getStatus(false).then((status) => {
+    bl.getStatus(false).then(async (status) => {
       updateStatus(status)
     })
     
@@ -55,7 +63,7 @@ export async function createApp(creds: creds) {
         remainingChargeTimeMins: cachedStatus.status.remainingChargeTimeMins,
         range: cachedStatus.status.range,
         locked: cachedStatus.status.locked,
-        isConditioning: cachedStatus.status.conditioning,
+        isClimateOn: cachedStatus.status.climate,
         chargingPower: cachedStatus.status.chargingPower,
         lastUpdated: cachedStatus.status.lastRemoteStatusCheck,
         updatingActions: undefined
@@ -67,7 +75,7 @@ export async function createApp(creds: creds) {
             pageIcons(bl)
           ]
       }
-    );
+    )
 
 }
 
@@ -89,7 +97,7 @@ const batteryStatus = connect(({ state: { soc, range } }, bl: Bluelink) => {
   ]))
 })
 
-const pageIcons = connect(({ state: { soc, isCharging, lastUpdated, remainingChargeTimeMins, chargingPower, isConditioning, locked, updatingActions } }, bl: Bluelink) => {
+const pageIcons = connect(({ state: { isCharging, lastUpdated, remainingChargeTimeMins, chargingPower, isClimateOn, locked, updatingActions } }, bl: Bluelink) => {
   
   const updatedTime = lastUpdated + "Z"
 
@@ -104,26 +112,72 @@ const pageIcons = connect(({ state: { soc, isCharging, lastUpdated, remainingCha
     const remainingChargeTimeMinsRemainder = Number(remainingChargeTimeMins % 60);
     batteryText = `${chargingPower.toString()} kW  - ${remainingChargeTimeHours}h ${remainingChargeTimeMinsRemainder}m`
   }
-  const conditioningText = isConditioning ? "Conditioning" : "Not Conditioning"
-  const conditioningIcon = isConditioning ? "conditioning" : "not-conditioning"
+  const conditioningText = isClimateOn ? "Climate On" : "Climate Off"
+  const conditioningIcon = isClimateOn ? "climate-on" : "climate-off"
 
   const lockedText = locked ? "Car Locked" : "Car Unlocked"
   const lockedIcon = locked ? "locked" : "unlocked"
 
   return (Div([
     Div([
-      Img(getTintedIcon(batteryIcon), {align: "center"}),
-      P(batteryText, {align: "left", width: "70%"})
+      Img(updatingActions && updatingActions.charge ? updatingActions.charge.image : getTintedIcon(batteryIcon), {align: "center"}),
+      P(updatingActions && updatingActions.charge ? updatingActions.charge.text : batteryText, {align: "left", width: "70%", ...(updatingActions && updatingActions.charge) && { color: Color.yellow() }})
     ], { onTap() {
-      setState({
-        soc: 15,
-        range: 100
-      })
-    },}),
+      if (isUpdating) {
+        return
+      }
+      quickOptions(['Charge', 'Stop Charging', 'Cancel'], {
+        title: 'Confirm charge action',
+        onOptionSelect: opt => {
+          if (opt === "Cancel") return
+          doAsyncUpdate({
+            command: opt === "Charge" ? "startCharge" : "stopCharge", 
+            bl: bl, 
+            actions: updatingActions, 
+            actionKey: "charge",
+            updatingText: opt === "Charge" ? "Starting charging ..." : "Stoping charging ...", 
+            successText: opt === "Charge" ? "Car charging started!" : "Car charging stopped!", 
+            failureText: `Failed to ${opt === "Charge" ? "start charging" : "stop charging"} car!!!`,
+            successCallback: ((data) => {
+              setState({
+                isCharging: opt === "Charge" ? true : false
+            })
+          })
+          })}})
+    }}),
     Div([
-      Img(getTintedIcon(conditioningIcon), {align: "center"}),
-      P(conditioningText, {align: "left", width: "70%"})
-    ]),
+      Img(updatingActions && updatingActions.climate ? updatingActions.climate.image : getTintedIcon(conditioningIcon), {align: "center"}),
+      P(updatingActions && updatingActions.climate ? updatingActions.climate.text :conditioningText, {align: "left", width: "70%", ...(updatingActions && updatingActions.climate) && { color: Color.yellow() }})
+    ], { onTap() {
+      if (isUpdating) {
+        return
+      }
+      quickOptions(['Warm', 'Cool', 'Off', 'Cancel'], {
+        title: 'Confirm climate action',
+        onOptionSelect: opt => {
+          if (opt === "Cancel") return
+          doAsyncUpdate({
+            command: "climate", 
+            bl: bl, 
+            payload: {
+              enable: (opt !== 'Off') ? true : false,
+              defrost: (opt === 'Warm') ? true : false,
+              steering: (opt === 'Warm') ? true : false,
+              temp: (opt === 'Warm') ? 21.5 : 19,
+              durationMinutes: 15
+            } as ClimateRequest,
+            actions: updatingActions, 
+            actionKey: "climate",
+            updatingText: opt === "Warm" ? "Starting pre-heat ..." : "Starting cool ...", 
+            successText: opt === "Warm" ? "Climate heating!" : "Climate cooling!", 
+            failureText: `Failed to start climate!!!`,
+            successCallback: ((data) => {
+              setState({
+                isClimateOn: (opt !== 'Off') ? true : false
+            })
+          })
+          })}})
+    }}),
     Div([
       Img(updatingActions && updatingActions.lock ? updatingActions.lock.image : getTintedIcon(lockedIcon), {align: "center"}),
       P(updatingActions && updatingActions.lock ? updatingActions.lock.text : lockedText, {align: "left", width: "70%", ...(updatingActions && updatingActions.lock) && { color: Color.yellow() }})
@@ -189,9 +243,9 @@ function updateStatus(status: Status) {
     remainingChargeTimeMins: status.status.remainingChargeTimeMins,
     range: status.status.range,
     locked: status.status.locked,
-    isConditioning: status.status.conditioning,
+    isClimateOn: status.status.climate,
     chargingPower: status.status.chargingPower,
-    lastUpdated: status.status.lastRemoteStatusCheck,
+    lastUpdated: status.status.lastRemoteStatusCheck
   })
 }
 

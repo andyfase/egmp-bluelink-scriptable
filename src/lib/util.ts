@@ -34,11 +34,11 @@ const icons : Record<string, icon> = {
     iconName: "bolt",
     color: Color.white(),
   },
-  "conditioning": {
+  "climate-on": {
     iconName: "fan",
     color: Color.green(),
   },
-  "not-conditioning": {
+  "climate-off": {
     iconName: "fan",
     color: Color.white(),
   },
