@@ -29,6 +29,7 @@ export interface BluelinkStatus {
   lastStatusCheck: number
   lastRemoteStatusCheck: string
   isCharging: boolean
+  isPluggedIn: boolean
   chargingPower: number
   remainingChargeTimeMins: number
   range: number

@@ -16,7 +16,7 @@ const getScriptableSettingsCommentLines = (iconColor: string, iconGlyph: string)
 const addFileIconSettings = (): Plugin => ({
   name: 'rollup-plugin-scriptable-icon-settings',
   renderChunk: (code) => {
-    const commentLines = getScriptableSettingsCommentLines('red', 'gear')
+    const commentLines = getScriptableSettingsCommentLines('deep-gray', 'car')
     return [commentLines, code].join('\n')
   },
 })

@@ -1,6 +1,14 @@
 import { Bluelink, BluelinkCreds, Status, ClimateRequest } from './lib/bluelink-regions/base'
-import { getTable, Div, P, Img, quickOptions } from 'scriptable-utils'
-import { sleep, loadTintedIcons, getTintedIcon, getAngledTintedIconAsync, calculateBatteryIcon } from 'lib/util'
+import { getTable, Div, P, Img, quickOptions, DivChild } from 'scriptable-utils'
+import {
+  sleep,
+  loadTintedIcons,
+  getTintedIcon,
+  getAngledTintedIconAsync,
+  calculateBatteryIcon,
+  getChargingIcon,
+  dateStringOptions,
+} from 'lib/util'
 import { initRegionalBluelink } from './lib/bluelink'
 
 interface updatingActions {
@@ -30,6 +38,7 @@ const { present, connect, setState } = getTable<{
   odometer: number
   soc: number
   isCharging: boolean
+  isPluggedIn: boolean
   remainingChargeTimeMins: number
   range: number
   locked: boolean
@@ -57,6 +66,7 @@ export async function createApp(creds: BluelinkCreds) {
       odometer: cachedStatus.status.odometer,
       soc: cachedStatus.status.soc,
       isCharging: cachedStatus.status.isCharging,
+      isPluggedIn: cachedStatus.status.isPluggedIn,
       remainingChargeTimeMins: cachedStatus.status.remainingChargeTimeMins,
       range: cachedStatus.status.range,
       locked: cachedStatus.status.locked,
@@ -79,14 +89,24 @@ const pageTitle = connect(({ state: { name } }) => {
   ])
 })
 
-const batteryStatus = connect(({ state: { soc, range } }) => {
-  return Div([
-    Img(getTintedIcon(calculateBatteryIcon(soc, false)), {
+const batteryStatus = connect(({ state: { soc, range, isCharging, isPluggedIn } }) => {
+  const chargingIcon = getChargingIcon(isCharging, isPluggedIn)
+  const icons: DivChild[] = []
+  icons.push(
+    Img(getTintedIcon(calculateBatteryIcon(soc)), {
       align: 'left',
       width: '10%',
     }),
-    P(`${soc.toString()}% (~ ${range} km)`, { align: 'left' }),
-  ])
+  )
+  if (chargingIcon) {
+    icons.push(
+      Img(getTintedIcon(chargingIcon), {
+        align: 'left',
+        width: '10%',
+      }),
+    )
+  }
+  return Div(icons.concat([P(`${soc.toString()}% (~ ${range} km)`, { align: 'left' })]))
 })
 
 const pageIcons = connect(
@@ -105,9 +125,9 @@ const pageIcons = connect(
     const batteryIcon = isCharging ? 'charging' : 'not-charging'
     let batteryText = 'Not Charging'
     if (isCharging) {
-      const remainingChargeTimeHours = Number(remainingChargeTimeMins / 60).toString()
+      const remainingChargeTimeHours = Math.floor(Number(remainingChargeTimeMins / 60)).toString()
       const remainingChargeTimeMinsRemainder = Number(remainingChargeTimeMins % 60)
-      batteryText = `${chargingPower.toString()} kW  - ${remainingChargeTimeHours}h ${remainingChargeTimeMinsRemainder}m`
+      batteryText = `${chargingPower.toString()} kW - ${remainingChargeTimeHours}h ${remainingChargeTimeMinsRemainder}m to finish`
     }
     const conditioningText = isClimateOn ? 'Climate On' : 'Climate Off'
     const conditioningIcon = isClimateOn ? 'climate-on' : 'climate-off'
@@ -248,11 +268,16 @@ const pageIcons = connect(
           Img(updatingActions && updatingActions.status ? updatingActions.status.image : getTintedIcon('status'), {
             align: 'center',
           }),
-          P(updatingActions && updatingActions.status ? updatingActions.status.text : `${lastSeen.toLocaleString()}`, {
-            align: 'left',
-            width: '70%',
-            ...(updatingActions && updatingActions.status && { color: Color.yellow() }),
-          }),
+          P(
+            updatingActions && updatingActions.status
+              ? updatingActions.status.text
+              : `${lastSeen.toLocaleString(undefined, dateStringOptions)}`,
+            {
+              align: 'left',
+              width: '70%',
+              ...(updatingActions && updatingActions.status && { color: Color.yellow() }),
+            },
+          ),
         ],
         {
           onTap() {
@@ -290,6 +315,7 @@ function updateStatus(status: Status) {
     odometer: status.status.odometer,
     soc: status.status.soc,
     isCharging: status.status.isCharging,
+    isPluggedIn: status.status.isPluggedIn,
     remainingChargeTimeMins: status.status.remainingChargeTimeMins,
     range: status.status.range,
     locked: status.status.locked,

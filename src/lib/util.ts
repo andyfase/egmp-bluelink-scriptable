@@ -28,6 +28,10 @@ const icons: Record<string, icon> = {
     iconName: 'bolt.fill',
     color: Color.green(),
   },
+  plugged: {
+    iconName: 'powerplug.portrait',
+    color: Color.white(),
+  },
   'not-charging': {
     iconName: 'bolt',
     color: Color.white(),
@@ -53,6 +57,17 @@ const icons: Record<string, icon> = {
     color: Color.white(),
   },
 }
+
+export const dateStringOptions = {
+  weekday: 'short',
+  year: undefined,
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  second: undefined,
+  timeZoneName: undefined,
+} as Intl.DateTimeFormatOptions
 
 export function getBatteryPercentColor(batteryPercent: number): Color {
   if (batteryPercent >= 75) {
@@ -109,10 +124,11 @@ export async function getAngledTintedIconAsync(name: string, color: Color, angle
   return (await tintSFSymbol(name, SFSymbol.named(name).image, color, angle)).image
 }
 
-export function calculateBatteryIcon(batteryPercent: number, isCharging: boolean): string {
-  if (isCharging) {
-    return 'charging'
-  }
+export function getChargingIcon(isCharging: boolean, isPluggedIn: boolean): string | undefined {
+  return isCharging ? 'charging' : isPluggedIn ? 'plugged' : undefined
+}
+
+export function calculateBatteryIcon(batteryPercent: number): string {
   let percentRounded = 0
   if (batteryPercent > 90) {
     percentRounded = 100

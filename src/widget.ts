@@ -1,4 +1,10 @@
-import { getTintedIconAsync, getBatteryPercentColor, calculateBatteryIcon } from './lib/util'
+import {
+  getTintedIconAsync,
+  getBatteryPercentColor,
+  calculateBatteryIcon,
+  getChargingIcon,
+  dateStringOptions,
+} from './lib/util'
 import { initRegionalBluelink } from './lib/bluelink'
 import { BluelinkCreds } from './lib/bluelink-regions/base'
 
@@ -30,12 +36,12 @@ export async function createWidget(creds: BluelinkCreds) {
   const titleElement = titleStack.addText(title)
   titleElement.textColor = DARK_MODE ? Color.white() : Color.black()
   titleElement.textOpacity = 0.7
-  titleElement.font = Font.mediumSystemFont(18)
+  titleElement.font = Font.mediumSystemFont(25)
   titleStack.addSpacer()
   const appIconElement = titleStack.addImage(appIcon)
   appIconElement.imageSize = new Size(30, 30)
   appIconElement.cornerRadius = 4
-  mainStack.addSpacer()
+  // mainStack.addSpacer()
 
   // Center Stack
   const contentStack = mainStack.addStack()
@@ -56,10 +62,11 @@ export async function createWidget(creds: BluelinkCreds) {
   rangeElement.font = Font.mediumSystemFont(20)
   rangeElement.textColor = DARK_MODE ? Color.white() : Color.black()
   rangeElement.rightAlignText()
-  batteryInfoStack.addSpacer()
+  // batteryInfoStack.addSpacer()
 
   // set status from BL status response
   const isCharging = status.status.isCharging
+  const isPluggedIn = status.status.isPluggedIn
   const batteryPercent = status.status.soc
   const remainingChargingTime = status.status.remainingChargeTimeMins
   const chargingKw = status.status.chargingPower.toString()
@@ -75,19 +82,25 @@ export async function createWidget(creds: BluelinkCreds) {
   const batteryPercentStack = batteryInfoStack.addStack()
   batteryPercentStack.addSpacer()
   batteryPercentStack.centerAlignContent()
-  const image = await getTintedIconAsync(calculateBatteryIcon(batteryPercent, isCharging))
+  const image = await getTintedIconAsync(calculateBatteryIcon(batteryPercent))
   const batterySymbolElement = batteryPercentStack.addImage(image)
-  batterySymbolElement.imageSize = new Size(25, 25)
+  batterySymbolElement.imageSize = new Size(40, 40)
+  const chargingIcon = getChargingIcon(isCharging, isPluggedIn)
+  if (chargingIcon) {
+    const chargingElement = batteryPercentStack.addImage(await getTintedIconAsync(chargingIcon))
+    chargingElement.imageSize = new Size(25, 25)
+  }
+
   batteryPercentStack.addSpacer(8)
 
   const batteryPercentText = batteryPercentStack.addText(`${batteryPercent.toString()}%`)
   batteryPercentText.textColor = getBatteryPercentColor(50)
-  batteryPercentText.font = Font.boldSystemFont(20)
+  batteryPercentText.font = Font.mediumSystemFont(20)
 
   if (isCharging) {
     const batteryChargingTimeStack = batteryInfoStack.addStack()
     batteryChargingTimeStack.addSpacer()
-    const remainingChargeTimeHours = Number(remainingChargingTime / 60).toString()
+    const remainingChargeTimeHours = Math.floor(Number(remainingChargingTime / 60)).toString()
     const remainingChargeTimeMinsRemainder = Number(remainingChargingTime % 60)
     const chargingTimeElement = batteryChargingTimeStack.addText(
       `${chargingKw} kW  - ${remainingChargeTimeHours}h ${remainingChargeTimeMinsRemainder}m`,
@@ -103,7 +116,9 @@ export async function createWidget(creds: BluelinkCreds) {
   const footerStack = mainStack.addStack()
 
   // Add odometer
-  const odometerText = RANGE_IN_MILES ? `${Number(odometer / 1.6).toString()} mi` : `${Number(odometer).toString()} km`
+  const odometerText = RANGE_IN_MILES
+    ? `${Math.floor(Number(odometer / 1.6)).toString()} mi`
+    : `${Math.floor(Number(odometer)).toString()} km`
   const odometerElement = footerStack.addText(odometerText)
   odometerElement.font = Font.mediumSystemFont(10)
   odometerElement.textColor = DARK_MODE ? Color.white() : Color.black()
@@ -113,7 +128,9 @@ export async function createWidget(creds: BluelinkCreds) {
   footerStack.addSpacer()
 
   // Add last seen indicator
-  const lastSeenElement = footerStack.addText(lastSeen.toLocaleString() || 'last update unknown')
+  const lastSeenElement = footerStack.addText(
+    'Last Updated: ' + lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown',
+  )
   lastSeenElement.font = Font.mediumSystemFont(10)
   lastSeenElement.textOpacity = 0.5
   lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()

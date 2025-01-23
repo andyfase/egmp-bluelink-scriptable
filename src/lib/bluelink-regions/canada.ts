@@ -154,6 +154,7 @@ export class BluelinkCanada extends Bluelink {
         lastStatusCheck: Math.floor(Date.now() / 1000),
         lastRemoteStatusCheck: resp.result.status.lastStatusDate,
         isCharging: resp.result.status.evStatus.batteryCharge,
+        isPluggedIn: resp.result.status.evStatus.batteryPlugin > 0 ? true : false,
         chargingPower:
           resp.result.status.evStatus.batteryPower.batteryFstChrgPower > 0
             ? resp.result.status.evStatus.batteryPower.batteryFstChrgPower
