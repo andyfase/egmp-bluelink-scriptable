@@ -2,6 +2,7 @@ import { ioniq5 } from 'resources/images'
 
 const KEYCHAIN_CACHE_KEY = 'bluelink-cache'
 const DEFAULT_STATUS_CHECK_INTERVAL = 3600
+const DEFAULT_CHARGING_FORCED_STATUS_CHECK_INTERVAL = 7200
 
 export interface BluelinkCreds {
   username: string
@@ -27,6 +28,7 @@ export interface BluelinkCar {
 
 export interface BluelinkStatus {
   lastStatusCheck: number
+  lastForcedStatusCheck?: number
   lastRemoteStatusCheck: string
   isCharging: boolean
   isPluggedIn: boolean
@@ -87,6 +89,7 @@ export class Bluelink {
   protected cache: Cache
   protected vin: string | undefined
   protected statusCheckInterval: number
+  protected chargingForcedUpdateCheckInterval: number
 
   protected additionalHeaders: Record<string, string>
   protected authHeader: string
@@ -97,6 +100,7 @@ export class Bluelink {
   constructor(creds: BluelinkCreds, vin?: string) {
     this.vin = vin
     this.statusCheckInterval = DEFAULT_STATUS_CHECK_INTERVAL
+    this.chargingForcedUpdateCheckInterval = DEFAULT_CHARGING_FORCED_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {}
     this.authHeader = 'Authentication'
     this.tokens = undefined
@@ -108,6 +112,7 @@ export class Bluelink {
     this.creds = creds
     this.vin = vin
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
+
     this.cache = await this.loadCache()
     if (!this.tokenValid()) {
       this.cache.token = await this.login()
@@ -123,7 +128,15 @@ export class Bluelink {
   }
 
   public async getStatus(forceUpdate: boolean): Promise<Status> {
-    if (forceUpdate) {
+    // do a forced update if charging and last update was more lastForcedStatusCheck ago
+    // or if forceUpdate is true
+    if (
+      forceUpdate ||
+      (this.cache.status.isCharging &&
+        (!this.cache.status.lastForcedStatusCheck ||
+          this.cache.status.lastForcedStatusCheck + this.chargingForcedUpdateCheckInterval <
+            Math.floor(Date.now() / 1000)))
+    ) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, true)
       this.saveCache()
     } else if (this.cache.status.lastStatusCheck + this.statusCheckInterval < Math.floor(Date.now() / 1000)) {
@@ -249,7 +262,6 @@ export class Bluelink {
         data: req.body,
       }),
     }
-    // logError(`Sending request to ${props.url}`)
     try {
       return await req.loadJSON()
     } catch (error) {
