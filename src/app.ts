@@ -55,9 +55,9 @@ export async function createApp(creds: BluelinkCreds) {
   const bl = await initRegionalBluelink(creds)
   await loadTintedIcons()
 
-  // not blocking call - render UI with last cache and then update
+  // not blocking call - render UI with last cache and then update from a non forced remote call (i.e. to server but not to car)
   const cachedStatus = bl.getCachedStatus()
-  bl.getStatus(false).then(async (status) => {
+  bl.getStatus(false, true).then(async (status) => {
     updateStatus(status)
   })
 

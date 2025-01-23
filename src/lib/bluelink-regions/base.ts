@@ -127,11 +127,14 @@ export class Bluelink {
     }
   }
 
-  public async getStatus(forceUpdate: boolean): Promise<Status> {
+  public async getStatus(forceUpdate: boolean, noCache: boolean): Promise<Status> {
     if (forceUpdate) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, true)
       this.saveCache()
-    } else if (this.cache.status.lastStatusCheck + this.statusCheckInterval < Math.floor(Date.now() / 1000)) {
+    } else if (
+      noCache ||
+      this.cache.status.lastStatusCheck + this.statusCheckInterval < Math.floor(Date.now() / 1000)
+    ) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, false)
       this.saveCache()
     }
@@ -151,7 +154,7 @@ export class Bluelink {
     let didSucceed = false
     switch (type) {
       case 'status':
-        promise = this.getStatus(true)
+        promise = this.getStatus(true, true)
         break
       case 'lock':
         promise = this.lock(this.cache.car.id)

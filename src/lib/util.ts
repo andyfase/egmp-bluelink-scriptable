@@ -64,13 +64,10 @@ const icons: Record<string, icon> = {
 
 export const dateStringOptions = {
   weekday: 'short',
-  year: undefined,
   month: 'short',
   day: 'numeric',
   hour: 'numeric',
   minute: 'numeric',
-  second: undefined,
-  timeZoneName: undefined,
 } as Intl.DateTimeFormatOptions
 
 export function getChargeCompletionString(dateFrom: Date, minutes: number): string {
