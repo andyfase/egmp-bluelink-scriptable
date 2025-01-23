@@ -4,6 +4,7 @@ import {
   calculateBatteryIcon,
   getChargingIcon,
   dateStringOptions,
+  getChargeCompletionString,
 } from './lib/util'
 import { initRegionalBluelink } from './lib/bluelink'
 import { BluelinkCreds } from './lib/bluelink-regions/base'
@@ -46,7 +47,7 @@ export async function createWidget(creds: BluelinkCreds) {
   // Center Stack
   const contentStack = mainStack.addStack()
   const carImageElement = contentStack.addImage(appIcon)
-  carImageElement.imageSize = new Size(150, 90)
+  carImageElement.imageSize = new Size(130, 90)
   contentStack.addSpacer()
 
   // Battery Info
@@ -91,20 +92,29 @@ export async function createWidget(creds: BluelinkCreds) {
     chargingElement.imageSize = new Size(25, 25)
   }
 
-  batteryPercentStack.addSpacer(8)
+  batteryPercentStack.addSpacer(5)
 
   const batteryPercentText = batteryPercentStack.addText(`${batteryPercent.toString()}%`)
   batteryPercentText.textColor = getBatteryPercentColor(50)
   batteryPercentText.font = Font.mediumSystemFont(20)
 
   if (isCharging) {
+    const chargeComplete = getChargeCompletionString(lastSeen, remainingChargingTime)
     const batteryChargingTimeStack = batteryInfoStack.addStack()
     batteryChargingTimeStack.addSpacer()
-    const remainingChargeTimeHours = Math.floor(Number(remainingChargingTime / 60)).toString()
-    const remainingChargeTimeMinsRemainder = Number(remainingChargingTime % 60)
-    const chargingTimeElement = batteryChargingTimeStack.addText(
-      `${chargingKw} kW  - ${remainingChargeTimeHours}h ${remainingChargeTimeMinsRemainder}m`,
-    )
+
+    const chargingSpeedElement = batteryChargingTimeStack.addText(`${chargingKw} kW`)
+    chargingSpeedElement.font = Font.mediumSystemFont(14)
+    chargingSpeedElement.textOpacity = 0.9
+    chargingSpeedElement.textColor = DARK_MODE ? Color.white() : Color.black()
+    chargingSpeedElement.rightAlignText()
+    batteryChargingTimeStack.addSpacer(3)
+
+    const chargingTimeIconElement = batteryChargingTimeStack.addImage(await getTintedIconAsync('charging-complete'))
+    chargingTimeIconElement.imageSize = new Size(15, 15)
+    batteryChargingTimeStack.addSpacer(3)
+
+    const chargingTimeElement = batteryChargingTimeStack.addText(`${chargeComplete}`)
     chargingTimeElement.font = Font.mediumSystemFont(14)
     chargingTimeElement.textOpacity = 0.9
     chargingTimeElement.textColor = DARK_MODE ? Color.white() : Color.black()

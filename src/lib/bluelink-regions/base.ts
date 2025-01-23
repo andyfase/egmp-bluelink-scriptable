@@ -128,15 +128,7 @@ export class Bluelink {
   }
 
   public async getStatus(forceUpdate: boolean): Promise<Status> {
-    // do a forced update if charging and last update was more lastForcedStatusCheck ago
-    // or if forceUpdate is true
-    if (
-      forceUpdate ||
-      (this.cache.status.isCharging &&
-        (!this.cache.status.lastForcedStatusCheck ||
-          this.cache.status.lastForcedStatusCheck + this.chargingForcedUpdateCheckInterval <
-            Math.floor(Date.now() / 1000)))
-    ) {
+    if (forceUpdate) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, true)
       this.saveCache()
     } else if (this.cache.status.lastStatusCheck + this.statusCheckInterval < Math.floor(Date.now() / 1000)) {
@@ -152,10 +144,10 @@ export class Bluelink {
   public async processRequest(
     type: string,
     input: any,
-    callback: (isComplete: boolean, didSucceed: boolean, data: any | undefined) => void,
+    callback: (isComplete: boolean, didSucceed: boolean, input: any | undefined) => void,
   ) {
     let promise: Promise<any> | undefined = undefined
-    let data: any
+    let data: any | undefined = undefined
     let didSucceed = false
     switch (type) {
       case 'status':
@@ -197,11 +189,19 @@ export class Bluelink {
     try {
       data = await promise
       hasRequestCompleted = true
-      didSucceed = true
+      if (type === 'status') {
+        didSucceed = true
+        data = data as Status
+      } else {
+        data = data as { isSuccess: boolean; data: BluelinkStatus }
+        didSucceed = data.isSuccess
+        data = data.data
+      }
     } catch (error) {
+      const e = error as Error
       hasRequestCompleted = true
       didSucceed = false
-      data = error
+      data = e
     }
   }
 
@@ -234,7 +234,7 @@ export class Bluelink {
     return this.cache.token.expiry - 30 > Math.floor(Date.now() / 1000)
   }
 
-  protected async request(props: RequestProps): Promise<any> {
+  protected async request(props: RequestProps): Promise<{ resp: { [key: string]: any }; json: any }> {
     const req = new Request(props.url)
     req.method = props.method ? props.method : props.data ? 'POST' : 'GET'
     req.headers = {
@@ -263,9 +263,10 @@ export class Bluelink {
       }),
     }
     try {
-      return await req.loadJSON()
+      const json = await req.loadJSON()
+      return { resp: req.response, json: json }
     } catch (error) {
-      logError(`Failed to send request to ${props.url}, error ${error}`)
+      throw Error(`Failed to send request to ${props.url}, error ${error}`)
     }
   }
 
@@ -294,32 +295,35 @@ export class Bluelink {
     throw Error('Not Implemented')
   }
 
-  protected async lock(_id: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async lock(_id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')
   }
 
-  protected async unlock(_id: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async unlock(_id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')
   }
 
-  protected async startCharge(_id: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async startCharge(_id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')
   }
 
-  protected async stopCharge(_id: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async stopCharge(_id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')
   }
 
-  protected async climateOn(_id: string, _config: ClimateRequest): Promise<{ isSuccess: boolean; data: any }> {
+  protected async climateOn(
+    _id: string,
+    _config: ClimateRequest,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')
   }
 
-  protected async climateOff(_id: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async climateOff(_id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')
   }

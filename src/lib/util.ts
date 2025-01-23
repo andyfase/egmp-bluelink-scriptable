@@ -28,6 +28,10 @@ const icons: Record<string, icon> = {
     iconName: 'bolt.fill',
     color: Color.green(),
   },
+  'charging-complete': {
+    iconName: 'clock',
+    color: Color.white(),
+  },
   plugged: {
     iconName: 'powerplug.portrait',
     color: Color.white(),
@@ -68,6 +72,23 @@ export const dateStringOptions = {
   second: undefined,
   timeZoneName: undefined,
 } as Intl.DateTimeFormatOptions
+
+export function getChargeCompletionString(dateFrom: Date, minutes: number): string {
+  // daeFrom passed by references - hence clone it
+  const date = new Date(dateFrom.getTime())
+  date.setMinutes(date.getMinutes() + minutes)
+  if (new Date().getDate() !== date.getDate()) {
+    return date.toLocaleString(undefined, {
+      weekday: 'short',
+      hour: 'numeric',
+      minute: 'numeric',
+    })
+  }
+  return date.toLocaleString(undefined, {
+    hour: 'numeric',
+    minute: 'numeric',
+  })
+}
 
 export function getBatteryPercentColor(batteryPercent: number): Color {
   if (batteryPercent >= 75) {

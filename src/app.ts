@@ -8,6 +8,7 @@ import {
   calculateBatteryIcon,
   getChargingIcon,
   dateStringOptions,
+  getChargeCompletionString,
 } from 'lib/util'
 import { initRegionalBluelink } from './lib/bluelink'
 
@@ -123,12 +124,19 @@ const pageIcons = connect(
     df.dateFormat = 'yyyyMMddHHmmssZ'
     const lastSeen = df.date(updatedTime)
     const batteryIcon = isCharging ? 'charging' : 'not-charging'
-    let batteryText = 'Not Charging'
-    if (isCharging) {
-      const remainingChargeTimeHours = Math.floor(Number(remainingChargeTimeMins / 60)).toString()
-      const remainingChargeTimeMinsRemainder = Number(remainingChargeTimeMins % 60)
-      batteryText = `${chargingPower.toString()} kW - ${remainingChargeTimeHours}h ${remainingChargeTimeMinsRemainder}m to finish`
+    const batteryText = 'Not Charging'
+
+    const chargingRow: DivChild[] = []
+    if (updatingActions && updatingActions.charge) {
+      chargingRow.push(P(updatingActions.charge.text, { align: 'left', width: '70%', color: Color.yellow() }))
+    } else if (isCharging) {
+      chargingRow.push(P(`${chargingPower.toString()} kW`, { align: 'left', width: '20%' }))
+      chargingRow.push(Img(getTintedIcon('charging-complete'), { align: 'left', width: '10%' }))
+      chargingRow.push(P(`Wed ${getChargeCompletionString(lastSeen, remainingChargeTimeMins)}`, { align: 'left' }))
+    } else {
+      chargingRow.push(P(batteryText, { align: 'left', width: '70%' }))
     }
+
     const conditioningText = isClimateOn ? 'Climate On' : 'Climate Off'
     const conditioningIcon = isClimateOn ? 'climate-on' : 'climate-off'
 
@@ -138,14 +146,13 @@ const pageIcons = connect(
     return Div([
       Div(
         [
-          Img(updatingActions && updatingActions.charge ? updatingActions.charge.image : getTintedIcon(batteryIcon), {
-            align: 'center',
-          }),
-          P(updatingActions && updatingActions.charge ? updatingActions.charge.text : batteryText, {
-            align: 'left',
-            width: '70%',
-            ...(updatingActions && updatingActions.charge && { color: Color.yellow() }),
-          }),
+          ...[
+            Img(updatingActions && updatingActions.charge ? updatingActions.charge.image : getTintedIcon(batteryIcon), {
+              align: 'center',
+              width: '30%',
+            }),
+          ],
+          ...chargingRow,
         ],
         {
           onTap() {
@@ -359,6 +366,8 @@ async function doAsyncUpdate(props: doAsyncUpdateProps) {
       })
       isUpdating = false
       if (didSucceed && props.successCallback) {
+        // assumption is bluelink class cache already updated with latest status - hence update our own view from cache
+        updateStatus(props.bl.getCachedStatus())
         props.successCallback(data)
       }
 

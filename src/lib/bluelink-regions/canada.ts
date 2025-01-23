@@ -18,7 +18,7 @@
 import { Bluelink, BluelinkCreds, BluelinkTokens, BluelinkCar, BluelinkStatus, ClimateRequest } from './base'
 
 const API_DOMAIN = 'https://mybluelink.ca/tods/api/'
-const MAX_COMPLETION_POLLS = 30
+const MAX_COMPLETION_POLLS = 20
 
 export class BluelinkCanada extends Bluelink {
   constructor(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
@@ -81,13 +81,13 @@ export class BluelinkCanada extends Bluelink {
       }),
       noAuth: true,
     })
-    if (this.requestResponseValid(resp)) {
+    if (this.requestResponseValid(resp.json)) {
       return {
-        accessToken: resp.result.token.accessToken,
-        expiry: Math.floor(Date.now() / 1000) + resp.result.token.expireIn, // we only get a expireIn not a actual date
+        accessToken: resp.json.result.token.accessToken,
+        expiry: Math.floor(Date.now() / 1000) + resp.json.result.token.expireIn, // we only get a expireIn not a actual date
       }
     }
-    throw Error(`Login Failed: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`)
+    throw Error(`Login Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`)
   }
 
   protected async setCar(id: string) {
@@ -97,8 +97,10 @@ export class BluelinkCanada extends Bluelink {
         vehicleId: id,
       }),
     })
-    if (!this.requestResponseValid(resp)) {
-      throw Error(`Failed to set car ${id}: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`)
+    if (!this.requestResponseValid(resp.json)) {
+      throw Error(
+        `Failed to set car ${id}: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`,
+      )
     }
   }
 
@@ -107,10 +109,10 @@ export class BluelinkCanada extends Bluelink {
       url: API_DOMAIN + 'vhcllst',
       method: 'POST',
     })
-    if (this.requestResponseValid(resp) && resp.result.vehicles.length > 0) {
-      let vehicle = resp.result.vehicles[0]
+    if (this.requestResponseValid(resp.json) && resp.json.result.vehicles.length > 0) {
+      let vehicle = resp.json.result.vehicles[0]
       if (this.vin) {
-        for (const v of resp.result.vehicles) {
+        for (const v of resp.json.result.vehicles) {
           if (v.vin === this.vin) {
             vehicle = v
             break
@@ -130,8 +132,31 @@ export class BluelinkCanada extends Bluelink {
       }
     }
     throw Error(
-      `Failed to retrieve vehicle list: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`,
+      `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`,
     )
+  }
+
+  protected returnCarStatus(status: any, forceUpdate: boolean, odometer?: number): BluelinkStatus {
+    return {
+      lastStatusCheck: Math.floor(Date.now() / 1000),
+      ...(forceUpdate && {
+        lastForcedStatusCheck: Math.floor(Date.now() / 1000),
+      }),
+      lastRemoteStatusCheck: status.lastStatusDate,
+      isCharging: status.evStatus.batteryCharge,
+      isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
+      chargingPower:
+        status.evStatus.batteryPower.batteryFstChrgPower > 0
+          ? status.evStatus.batteryPower.batteryFstChrgPower
+          : status.evStatus.batteryPower.batteryStndChrgPower,
+      remainingChargeTimeMins: status.evStatus.remainTime2.atc.value,
+      range: status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value,
+      locked: status.doorLock,
+      climate: status.airCtrlOn,
+      soc: status.evStatus.batteryStatus,
+      twelveSoc: status.battery.batSoc,
+      odometer: odometer ? odometer : this.cache.status.odometer,
+    }
   }
 
   protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
@@ -149,31 +174,14 @@ export class BluelinkCanada extends Bluelink {
       },
     })
 
-    if (this.requestResponseValid(resp)) {
-      return {
-        lastStatusCheck: Math.floor(Date.now() / 1000),
-        ...(forceUpdate && {
-          lastForcedStatusCheck: Math.floor(Date.now() / 1000),
-        }),
-        lastRemoteStatusCheck: resp.result.status.lastStatusDate,
-        isCharging: resp.result.status.evStatus.batteryCharge,
-        isPluggedIn: resp.result.status.evStatus.batteryPlugin > 0 ? true : false,
-        chargingPower:
-          resp.result.status.evStatus.batteryPower.batteryFstChrgPower > 0
-            ? resp.result.status.evStatus.batteryPower.batteryFstChrgPower
-            : resp.result.status.evStatus.batteryPower.batteryStndChrgPower,
-        remainingChargeTimeMins: resp.result.status.evStatus.remainTime2.atc.value,
-        range: resp.result.status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value,
-        locked: resp.result.status.doorLock,
-        climate: resp.result.status.airCtrlOn,
-        soc: resp.result.status.evStatus.batteryStatus,
-        twelveSoc: resp.result.status.battery.batSoc,
-        odometer: !forceUpdate ? resp.result.vehicle.odometer : this.cache.status.odometer,
-      }
+    if (this.requestResponseValid(resp.json)) {
+      return forceUpdate
+        ? this.returnCarStatus(resp.json.result.status, forceUpdate, resp.json.result.status.odometer)
+        : this.returnCarStatus(resp.json.result.status, forceUpdate)
     }
 
     throw Error(
-      `Failed to retrieve vehicle status: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`,
+      `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`,
     )
   }
 
@@ -186,13 +194,19 @@ export class BluelinkCanada extends Bluelink {
         pin: this.creds.pin,
       }),
     })
-    if (this.requestResponseValid(resp)) {
-      return resp.result.pAuth
+    if (this.requestResponseValid(resp.json)) {
+      return resp.json.result.pAuth
     }
-    throw Error(`Failed to get auth code: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`)
+    throw Error(
+      `Failed to get auth code: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`,
+    )
   }
 
-  protected async pollForCommandCompletion(id: string, authCode: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async pollForCommandCompletion(
+    id: string,
+    authCode: string,
+    transactionId: string,
+  ): Promise<{ isSuccess: boolean; data: any }> {
     const api = 'rmtsts'
     let attempts = 0
     while (attempts <= MAX_COMPLETION_POLLS) {
@@ -202,17 +216,29 @@ export class BluelinkCanada extends Bluelink {
         headers: {
           Vehicleid: id,
           Pauth: authCode,
+          TransactionId: transactionId,
         },
       })
-      // ignore failures in loop
-      if (this.requestResponseValid(resp) && resp.result.transaction.apiResult === 'C') {
+
+      if (!this.requestResponseValid(resp.json)) {
+        throw Error(
+          `Failed to poll for command completion: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`,
+        )
+      }
+
+      if (resp.json.result.transaction.apiResult === 'C') {
+        // update saved cache status
+        if (resp.json.result.vehicle) {
+          this.cache.status = this.returnCarStatus(resp.json.result.vehicle, true)
+          this.saveCache()
+        }
         return {
           isSuccess: true,
-          data: resp.result.vehicle,
+          data: this.cache.status,
         }
       }
       attempts += 1
-      await this.sleep(1000)
+      await this.sleep(2000)
     }
     return {
       isSuccess: false,
@@ -220,15 +246,15 @@ export class BluelinkCanada extends Bluelink {
     }
   }
 
-  protected async lock(id: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async lock(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     return await this.lockUnlock(id, true)
   }
 
-  protected async unlock(id: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async unlock(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     return await this.lockUnlock(id, false)
   }
 
-  protected async lockUnlock(id: string, shouldLock: boolean): Promise<{ isSuccess: boolean; data: any }> {
+  protected async lockUnlock(id: string, shouldLock: boolean): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const authCode = await this.getAuthCode()
     const api = shouldLock ? 'drlck' : 'drulck'
     const resp = await this.request({
@@ -242,21 +268,27 @@ export class BluelinkCanada extends Bluelink {
         Pauth: authCode,
       },
     })
-    if (this.requestResponseValid(resp)) return await this.pollForCommandCompletion(id, authCode)
+    if (this.requestResponseValid(resp.json)) {
+      const transactionId = resp.resp.headers.transactionId
+      return await this.pollForCommandCompletion(id, authCode, transactionId)
+    }
     throw Error(
-      `Failed to send lockUnlock command: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`,
+      `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`,
     )
   }
 
-  protected async startCharge(id: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async startCharge(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     return await this.chargeStopCharge(id, true)
   }
 
-  protected async stopCharge(id: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async stopCharge(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     return await this.chargeStopCharge(id, false)
   }
 
-  protected async chargeStopCharge(id: string, shouldCharge: boolean): Promise<{ isSuccess: boolean; data: any }> {
+  protected async chargeStopCharge(
+    id: string,
+    shouldCharge: boolean,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const authCode = await this.getAuthCode()
     const api = shouldCharge ? 'evc/rcstrt' : 'evc/rcstp'
     const resp = await this.request({
@@ -270,13 +302,16 @@ export class BluelinkCanada extends Bluelink {
         Pauth: authCode,
       },
     })
-    if (this.requestResponseValid(resp)) return await this.pollForCommandCompletion(id, authCode)
+    if (this.requestResponseValid(resp.json)) {
+      const transactionId = resp.resp.headers.transactionId
+      return await this.pollForCommandCompletion(id, authCode, transactionId)
+    }
     throw Error(
-      `Failed to send charge command: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`,
+      `Failed to send charge command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`,
     )
   }
 
-  protected async climateOn(id: string, config: ClimateRequest): Promise<{ isSuccess: boolean; data: any }> {
+  protected async climateOn(id: string, config: ClimateRequest): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     if (!this.tempLookup) {
       throw Error(`Mis-Configured sub-class - no temp lookup defined`)
     }
@@ -310,13 +345,16 @@ export class BluelinkCanada extends Bluelink {
         Pauth: authCode,
       },
     })
-    if (this.requestResponseValid(resp)) return await this.pollForCommandCompletion(id, authCode)
+    if (this.requestResponseValid(resp.json)) {
+      const transactionId = resp.resp.headers.transactionId
+      return await this.pollForCommandCompletion(id, authCode, transactionId)
+    }
     throw Error(
-      `Failed to send climateOff command: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`,
+      `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`,
     )
   }
 
-  protected async climateOff(id: string): Promise<{ isSuccess: boolean; data: any }> {
+  protected async climateOff(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const authCode = await this.getAuthCode()
     const api = 'evc/rfoff'
     const resp = await this.request({
@@ -330,9 +368,12 @@ export class BluelinkCanada extends Bluelink {
         Pauth: authCode,
       },
     })
-    if (this.requestResponseValid(resp)) return await this.pollForCommandCompletion(id, authCode)
+    if (this.requestResponseValid(resp.json)) {
+      const transactionId = resp.resp.headers.transactionId
+      return await this.pollForCommandCompletion(id, authCode, transactionId)
+    }
     throw Error(
-      `Failed to send climateOff command: ${JSON.stringify(resp)} request ${JSON.stringify(this.debugLastRequest)}`,
+      `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`,
     )
   }
 }
