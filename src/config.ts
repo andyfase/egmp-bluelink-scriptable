@@ -1,4 +1,4 @@
-import { form } from 'scriptable-utils'
+import { form } from './lib/scriptable-utils'
 
 const KEYCHAIN_BLUELINK_CONFIG_KEY = 'bluelink-config'
 

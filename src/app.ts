@@ -1,6 +1,6 @@
 import { Config } from 'config'
 import { Bluelink, Status, ClimateRequest } from './lib/bluelink-regions/base'
-import { getTable, Div, P, Img, quickOptions, DivChild, Spacer } from 'scriptable-utils'
+import { getTable, Div, P, Img, quickOptions, DivChild, Spacer } from 'lib/scriptable-utils'
 import { loadConfigScreen } from 'config'
 import {
   sleep,
