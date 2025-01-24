@@ -1,7 +1,6 @@
 import { ExcludeFalsy } from '../common'
 import { Persisted } from '../io/persisted'
 import RepeatingTimer from '../RepeatingTimer'
-import { getIconPreloadHelpers } from '../sfSymbols'
 import { Stream } from '../streams'
 import { AnyObj, NoParamFn } from '../types/utilTypes'
 import {
@@ -189,9 +188,6 @@ export class Table<State, Props, $Data extends AnyObj | undefined> {
         }),
       () => this.syncedPersistedState?.cache$.unregisterUpdateCallback(this.callbackID),
     )
-
-    const { preloadIcons, haltIconPreload } = getIconPreloadHelpers(() => this.isActive && this.renderTable())
-    this.callbackRegister.set('iconPreloading', preloadIcons, haltIconPreload)
   }
 
   isTableActive() {
