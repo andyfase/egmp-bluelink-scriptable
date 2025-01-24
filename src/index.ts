@@ -1,11 +1,14 @@
 import { createWidget } from 'widget'
 import { createApp } from 'app'
+import { processSiriRequest } from 'siri'
 import { getConfig, loadConfigScreen, configExists } from 'config'
 ;(async () => {
   if (config.runsInWidget && configExists()) {
     const widget = await createWidget(getConfig())
     Script.setWidget(widget)
     Script.complete()
+  } else if (config.runsWithSiri && configExists()) {
+    return await processSiriRequest(getConfig(), args.shortcutParameter)
   } else {
     try {
       const resp = configExists() ? await createApp(getConfig()) : await loadConfigScreen()

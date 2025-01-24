@@ -1,4 +1,4 @@
-import { ioniq5 } from 'resources/images'
+import { carImageMap } from 'resources/images'
 import { Config } from '../../config'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 const DEFAULT_STATUS_CHECK_INTERVAL = 3600
@@ -271,7 +271,11 @@ export class Bluelink {
   }
 
   public getCarImage(): string {
-    return ioniq5
+    for (const [name, image] of Object.entries(carImageMap)) {
+      if (this.cache.car.modelName.toLocaleLowerCase().includes(name)) return image
+    }
+    // default
+    return carImageMap['default']!
   }
 
   protected async sleep(milliseconds: number): Promise<void> {
