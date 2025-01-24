@@ -2,11 +2,11 @@ import { Bluelink } from './bluelink-regions/base'
 import { Config } from 'config'
 import { BluelinkCanada } from './bluelink-regions/canada'
 
-export async function initRegionalBluelink(creds: Config): Promise<BluelinkCanada | Bluelink> {
-  switch (creds.region) {
+export async function initRegionalBluelink(config: Config): Promise<BluelinkCanada | Bluelink> {
+  switch (config.auth.region) {
     case 'canada':
-      return await BluelinkCanada.init(creds)
+      return await BluelinkCanada.init(config)
     default:
-      throw Error(`Region ${creds.region} not supported`)
+      throw Error(`Region ${config.auth.region} not supported`)
   }
 }

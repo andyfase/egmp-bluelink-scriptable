@@ -5,8 +5,8 @@ const API_DOMAIN = 'https://mybluelink.ca/tods/api/'
 const MAX_COMPLETION_POLLS = 20
 
 export class BluelinkCanada extends Bluelink {
-  constructor(creds: Config, vin?: string, statusCheckInterval?: number) {
-    super(creds, vin)
+  constructor(config: Config, vin?: string, statusCheckInterval?: number) {
+    super(config, vin)
     this.statusCheckInterval = statusCheckInterval || 600
     this.additionalHeaders = {
       from: 'SPA',
@@ -43,9 +43,9 @@ export class BluelinkCanada extends Bluelink {
     }
   }
 
-  static async init(creds: Config, vin?: string, statusCheckInterval?: number) {
-    const obj = new BluelinkCanada(creds, vin, statusCheckInterval)
-    await obj.superInit(creds, vin)
+  static async init(config: Config, vin?: string, statusCheckInterval?: number) {
+    const obj = new BluelinkCanada(config, vin, statusCheckInterval)
+    await obj.superInit(config, vin)
     return obj
   }
 
@@ -60,8 +60,8 @@ export class BluelinkCanada extends Bluelink {
     const resp = await this.request({
       url: API_DOMAIN + 'v2/login',
       data: JSON.stringify({
-        loginId: this.creds.username,
-        password: this.creds.password,
+        loginId: this.config.auth.username,
+        password: this.config.auth.password,
       }),
       noAuth: true,
     })
@@ -139,7 +139,7 @@ export class BluelinkCanada extends Bluelink {
       climate: status.airCtrlOn,
       soc: status.evStatus.batteryStatus,
       twelveSoc: status.battery.batSoc,
-      odometer: odometer ? odometer : this.cache.status.odometer,
+      odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
     }
   }
 
@@ -161,7 +161,7 @@ export class BluelinkCanada extends Bluelink {
     if (this.requestResponseValid(resp.json)) {
       return forceUpdate
         ? this.returnCarStatus(resp.json.result.status, forceUpdate, resp.json.result.status.odometer)
-        : this.returnCarStatus(resp.json.result.status, forceUpdate)
+        : this.returnCarStatus(resp.json.result.status, forceUpdate, resp.json.result.vehicle.odometer)
     }
 
     throw Error(
@@ -175,7 +175,7 @@ export class BluelinkCanada extends Bluelink {
       url: API_DOMAIN + api,
       method: 'POST',
       data: JSON.stringify({
-        pin: this.creds.pin,
+        pin: this.config.auth.pin,
       }),
     })
     if (this.requestResponseValid(resp.json)) {
@@ -245,7 +245,7 @@ export class BluelinkCanada extends Bluelink {
       url: API_DOMAIN + api,
       method: 'POST',
       data: JSON.stringify({
-        pin: this.creds.pin,
+        pin: this.config.auth.pin,
       }),
       headers: {
         Vehicleid: id,
@@ -279,7 +279,7 @@ export class BluelinkCanada extends Bluelink {
       url: API_DOMAIN + api,
       method: 'POST',
       data: JSON.stringify({
-        pin: this.creds.pin,
+        pin: this.config.auth.pin,
       }),
       headers: {
         Vehicleid: id,
@@ -311,7 +311,7 @@ export class BluelinkCanada extends Bluelink {
       url: API_DOMAIN + api,
       method: 'POST',
       data: JSON.stringify({
-        pin: this.creds.pin,
+        pin: this.config.auth.pin,
         hvacInfo: {
           airCtrl: 1,
           defrost: config.defrost,
@@ -345,7 +345,7 @@ export class BluelinkCanada extends Bluelink {
       url: API_DOMAIN + api,
       method: 'POST',
       data: JSON.stringify({
-        pin: this.creds.pin,
+        pin: this.config.auth.pin,
       }),
       headers: {
         Vehicleid: id,

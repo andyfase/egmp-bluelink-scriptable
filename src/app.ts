@@ -1,7 +1,7 @@
 import { Config } from 'config'
 import { Bluelink, Status, ClimateRequest } from './lib/bluelink-regions/base'
-import { getTable, Div, P, Img, quickOptions, DivChild, Spacer } from 'lib/scriptable-utils'
-import { loadConfigScreen } from 'config'
+import { getTable, Div, P, Img, quickOptions, DivChild, Spacer, destructiveConfirm } from 'lib/scriptable-utils'
+import { loadConfigScreen, deleteConfig } from 'config'
 import {
   sleep,
   loadTintedIcons,
@@ -53,8 +53,8 @@ const { present, connect, setState } = getTable<{
   name: 'Testing',
 })
 
-export async function createApp(creds: Config) {
-  const bl = await initRegionalBluelink(creds)
+export async function createApp(config: Config) {
+  const bl = await initRegionalBluelink(config)
   await loadTintedIcons()
 
   // not blocking call - render UI with last cache and then update from a non forced remote call (i.e. to server but not to car)
@@ -78,7 +78,14 @@ export async function createApp(creds: Config) {
       lastUpdated: cachedStatus.status.lastRemoteStatusCheck,
       updatingActions: undefined,
     },
-    render: () => [pageTitle(), batteryStatus(), pageImage(bl), pageIcons(bl), Spacer({ rowHeight: 260 }), settings()],
+    render: () => [
+      pageTitle(),
+      batteryStatus(),
+      pageImage(bl),
+      pageIcons(bl),
+      Spacer({ rowHeight: 260 }),
+      settings(bl),
+    ],
   })
 }
 
@@ -92,7 +99,7 @@ const pageTitle = connect(({ state: { name } }) => {
   ])
 })
 
-const settings = () => {
+const settings = (bl: Bluelink) => {
   return Div(
     [
       P('Settings', {
@@ -106,6 +113,17 @@ const settings = () => {
     {
       onTap: () => {
         loadConfigScreen()
+      },
+      onTripleTap() {
+        destructiveConfirm('Confirm Setting Reset - ALL settings/data will be removed', {
+          confirmButtonTitle: 'Delete all Settings/Data',
+          onConfirm: () => {
+            bl.deleteCache()
+            deleteConfig()
+            // @ts-ignore - undocumented api
+            App.close()
+          },
+        })
       },
     },
   )

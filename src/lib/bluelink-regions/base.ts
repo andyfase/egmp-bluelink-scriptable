@@ -1,6 +1,6 @@
 import { ioniq5 } from 'resources/images'
 import { Config } from '../../config'
-const KEYCHAIN_CACHE_KEY = 'bluelink-cache'
+const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 const DEFAULT_STATUS_CHECK_INTERVAL = 3600
 const DEFAULT_CHARGING_FORCED_STATUS_CHECK_INTERVAL = 7200
 
@@ -76,8 +76,8 @@ export interface ClimateRequest {
 }
 
 export class Bluelink {
-  // @ts-ignore - creds is initalized in init
-  protected creds: BluelinkCreds
+  // @ts-ignore - config is initalized in init
+  protected config: Config
   // @ts-ignore - cache is initalized in init
   protected cache: Cache
   protected vin: string | undefined
@@ -90,7 +90,7 @@ export class Bluelink {
   protected tokens: BluelinkTokens | undefined
   protected debugLastRequest: DebugLastRequest | undefined
 
-  constructor(creds: Config, vin?: string) {
+  constructor(config: Config, vin?: string) {
     this.vin = vin
     this.statusCheckInterval = DEFAULT_STATUS_CHECK_INTERVAL
     this.chargingForcedUpdateCheckInterval = DEFAULT_CHARGING_FORCED_STATUS_CHECK_INTERVAL
@@ -101,8 +101,8 @@ export class Bluelink {
     this.tempLookup = undefined
   }
 
-  protected async superInit(creds: Config, vin?: string, statusCheckInterval?: number) {
-    this.creds = creds
+  protected async superInit(config: Config, vin?: string, statusCheckInterval?: number) {
+    this.config = config
     this.vin = vin
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
 
@@ -199,6 +199,10 @@ export class Bluelink {
       didSucceed = false
       data = e
     }
+  }
+
+  public deleteCache() {
+    Keychain.remove(KEYCHAIN_CACHE_KEY)
   }
 
   protected saveCache() {

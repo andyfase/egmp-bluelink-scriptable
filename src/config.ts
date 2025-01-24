@@ -1,8 +1,19 @@
 import { form } from './lib/scriptable-utils'
 
-const KEYCHAIN_BLUELINK_CONFIG_KEY = 'bluelink-config'
+const KEYCHAIN_BLUELINK_CONFIG_KEY = 'egmp-bluelink-config'
+
+export interface Auth {
+  username: string
+  password: string
+  pin: string
+  region: string
+}
 
 export interface Config {
+  auth: Auth
+}
+
+export interface FlattenedConfig {
   username: string
   password: string
   pin: string
@@ -15,8 +26,20 @@ export function configExists(): boolean {
   return Keychain.contains(KEYCHAIN_BLUELINK_CONFIG_KEY)
 }
 
+export function deleteConfig() {
+  Keychain.remove(KEYCHAIN_BLUELINK_CONFIG_KEY)
+}
+
 export function setConfig(config: Config) {
   Keychain.set(KEYCHAIN_BLUELINK_CONFIG_KEY, JSON.stringify(config))
+}
+
+export function getFlattenedConfig(): FlattenedConfig {
+  const config = getConfig()
+  return {
+    ...config.auth,
+    ...config,
+  } as FlattenedConfig
 }
 
 export function getConfig(): Config {
@@ -26,25 +49,29 @@ export function getConfig(): Config {
   }
   if (!config) {
     config = {
-      username: '',
-      password: '',
-      pin: '',
-      region: '',
+      auth: {
+        username: '',
+        password: '',
+        pin: '',
+        region: '',
+      },
     }
   }
   return config
 }
 
 export async function loadConfigScreen() {
-  return await form<Config>({
+  return await form<FlattenedConfig>({
     title: 'Bluelink Configuration settings',
-    subtitle: 'Settings are securely saved within IOS keychain and never exposed beyond your device',
+    subtitle: 'Saved within IOS keychain and never exposed beyond your device(s)',
     onSubmit: ({ username, password, region, pin }) => {
       setConfig({
-        username: username,
-        password: password,
-        region: region,
-        pin: pin,
+        auth: {
+          username: username,
+          password: password,
+          region: region,
+          pin: pin,
+        },
       } as Config)
     },
     isFormValid: ({ username, password, region, pin }) => {
@@ -75,5 +102,5 @@ export async function loadConfigScreen() {
         isRequired: true,
       },
     },
-  })(getConfig())
+  })(getFlattenedConfig())
 }

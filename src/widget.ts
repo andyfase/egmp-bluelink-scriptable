@@ -17,7 +17,7 @@ const DARK_MODE = true // Device.isUsingDarkAppearance(); // or set manually to 
 const DARK_BG_COLOR = '000000'
 const LIGHT_BG_COLOR = 'FFFFFF'
 
-const KEYCHAIN_WIDGET_REFRESH_KEY = 'bluelink-widget-refresh'
+const KEYCHAIN_WIDGET_REFRESH_KEY = 'egmp-bluelink-widget'
 const DEFAULT_STATUS_CHECK_INTERVAL_DAY = 3600
 const DEFAULT_STATUS_CHECK_INTERVAL_NIGHT = 10800
 const DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL = 7200
@@ -61,29 +61,33 @@ async function refreshDataForWidget(bl: Bluelink): Promise<Status> {
   // 2. If NOT charing perform a normal (non car polling) refresh based on time of day (localtime) using DEFAULT_STATUS_CHECK_INTERVAL_DAY or DEFAULT_STATUS_CHECK_INTERVAL_NIGHT
   // 3. Otherwise accept whatever was from the getCachedStatus call
 
-  if (
-    status.status.isCharging ||
-    (status.status.isPluggedIn && cache.lastForceRefresh + DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL < currentTimestamp)
-  ) {
-    status = await bl.getStatus(false, true)
-    bl.getStatus(true, true) // no await deliberatly
-    cache.lastForceRefresh = currentTimestamp
-    cache.normalRefreshRequired = true
-  } else if (
-    cache.normalRefreshRequired ||
-    cache.lastNormalRefresh + DEFAULT_STATUS_CHECK_INTERVAL < currentTimestamp
-  ) {
-    status = await bl.getStatus(false, true)
-    cache.lastNormalRefresh = currentTimestamp
-    cache.normalRefreshRequired = false
+  try {
+    if (
+      status.status.isCharging ||
+      (status.status.isPluggedIn && cache.lastForceRefresh + DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL < currentTimestamp)
+    ) {
+      status = await bl.getStatus(false, true)
+      bl.getStatus(true, true) // no await deliberatly
+      cache.lastForceRefresh = currentTimestamp
+      cache.normalRefreshRequired = true
+    } else if (
+      cache.normalRefreshRequired ||
+      cache.lastNormalRefresh + DEFAULT_STATUS_CHECK_INTERVAL < currentTimestamp
+    ) {
+      status = await bl.getStatus(false, true)
+      cache.lastNormalRefresh = currentTimestamp
+      cache.normalRefreshRequired = false
+    }
+  } catch (_error) {
+    // ignore error and just displayed last cached values in widget - we have no guarentee of network connection
   }
 
   Keychain.set(KEYCHAIN_WIDGET_REFRESH_KEY, JSON.stringify(cache))
   return status
 }
 
-export async function createWidget(creds: Config) {
-  const bl = await initRegionalBluelink(creds)
+export async function createWidget(config: Config) {
+  const bl = await initRegionalBluelink(config)
   const status = await refreshDataForWidget(bl)
 
   // Prepare image
