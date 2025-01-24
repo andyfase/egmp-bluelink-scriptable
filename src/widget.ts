@@ -7,7 +7,8 @@ import {
   getChargeCompletionString,
 } from './lib/util'
 import { initRegionalBluelink } from './lib/bluelink'
-import { BluelinkCreds, Bluelink, Status } from './lib/bluelink-regions/base'
+import { Bluelink, Status } from './lib/bluelink-regions/base'
+import { Config } from 'config'
 
 // Widget Config
 const RANGE_IN_MILES = false // true
@@ -30,7 +31,7 @@ interface WidgetRefreshCache {
   normalRefreshRequired: boolean
 }
 
-async function refreshDataForWidget(bl: Bluelink): Promise<{ status: Status; debug: string }> {
+async function refreshDataForWidget(bl: Bluelink): Promise<Status> {
   let cache: WidgetRefreshCache | undefined = undefined
   const currentTimestamp = Math.floor(Date.now() / 1000)
   const currentHour = new Date().getHours()
@@ -53,7 +54,6 @@ async function refreshDataForWidget(bl: Bluelink): Promise<{ status: Status; deb
   let status = bl.getCachedStatus()
   cache.lastCacheRefresh = currentTimestamp
 
-  let debugMessage = 'cache'
   // LOGIC for refresh within widget
   // 1. If charging OR charger plugged in do a forceRefresh (poll car) every DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL period
   //    Note we do not block for the response of this call - we just init it, get the normal API status,
@@ -65,7 +65,6 @@ async function refreshDataForWidget(bl: Bluelink): Promise<{ status: Status; deb
     status.status.isCharging ||
     (status.status.isPluggedIn && cache.lastForceRefresh + DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL < currentTimestamp)
   ) {
-    debugMessage = 'force'
     status = await bl.getStatus(false, true)
     bl.getStatus(true, true) // no await deliberatly
     cache.lastForceRefresh = currentTimestamp
@@ -74,24 +73,22 @@ async function refreshDataForWidget(bl: Bluelink): Promise<{ status: Status; deb
     cache.normalRefreshRequired ||
     cache.lastNormalRefresh + DEFAULT_STATUS_CHECK_INTERVAL < currentTimestamp
   ) {
-    debugMessage = 'normal'
     status = await bl.getStatus(false, true)
     cache.lastNormalRefresh = currentTimestamp
     cache.normalRefreshRequired = false
   }
 
   Keychain.set(KEYCHAIN_WIDGET_REFRESH_KEY, JSON.stringify(cache))
-  return { status: status, debug: debugMessage }
+  return status
 }
 
-export async function createWidget(creds: BluelinkCreds) {
+export async function createWidget(creds: Config) {
   const bl = await initRegionalBluelink(creds)
-  const refresh = await refreshDataForWidget(bl)
-  const status = refresh.status
+  const status = await refreshDataForWidget(bl)
 
   // Prepare image
   const appIcon = Image.fromData(Data.fromBase64String(bl.getCarImage()))
-  const title = status.car.nickName + ` ${refresh.debug}` || `${status.car.modelYear} ${status.car.modelName}`
+  const title = status.car.nickName || `${status.car.modelYear} ${status.car.modelName}`
 
   const widget = new ListWidget()
   const mainStack = widget.addStack()

@@ -1,27 +1,11 @@
-// Turn Off Conditioning https://mybluelink.ca/tods/api/evc/rfoff
-// payload {"pin":"XXXX"}
-
-// status of last command https://mybluelink.ca/tods/api/rmtsts
-// resp
-
-// "result": {
-//         "transaction": {
-//             "apiCode": "RMT-E0302",
-//             "apiStartDate": "20250120234803",
-//             "apiEndDate": "20250120234803",
-//             "apiResult": "P", // "C" for complete "P" for processing
-//             "apiStatusCode": "null"
-//         }
-//     }
-// }
-
-import { Bluelink, BluelinkCreds, BluelinkTokens, BluelinkCar, BluelinkStatus, ClimateRequest } from './base'
+import { Bluelink, BluelinkTokens, BluelinkCar, BluelinkStatus, ClimateRequest } from './base'
+import { Config } from '../../config'
 
 const API_DOMAIN = 'https://mybluelink.ca/tods/api/'
 const MAX_COMPLETION_POLLS = 20
 
 export class BluelinkCanada extends Bluelink {
-  constructor(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
+  constructor(creds: Config, vin?: string, statusCheckInterval?: number) {
     super(creds, vin)
     this.statusCheckInterval = statusCheckInterval || 600
     this.additionalHeaders = {
@@ -59,7 +43,7 @@ export class BluelinkCanada extends Bluelink {
     }
   }
 
-  static async init(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
+  static async init(creds: Config, vin?: string, statusCheckInterval?: number) {
     const obj = new BluelinkCanada(creds, vin, statusCheckInterval)
     await obj.superInit(creds, vin)
     return obj

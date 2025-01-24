@@ -1,15 +1,8 @@
 import { ioniq5 } from 'resources/images'
-
+import { Config } from '../../config'
 const KEYCHAIN_CACHE_KEY = 'bluelink-cache'
 const DEFAULT_STATUS_CHECK_INTERVAL = 3600
 const DEFAULT_CHARGING_FORCED_STATUS_CHECK_INTERVAL = 7200
-
-export interface BluelinkCreds {
-  username: string
-  password: string
-  region: string
-  pin: string
-}
 
 export interface BluelinkTokens {
   accessToken: string
@@ -97,7 +90,7 @@ export class Bluelink {
   protected tokens: BluelinkTokens | undefined
   protected debugLastRequest: DebugLastRequest | undefined
 
-  constructor(creds: BluelinkCreds, vin?: string) {
+  constructor(creds: Config, vin?: string) {
     this.vin = vin
     this.statusCheckInterval = DEFAULT_STATUS_CHECK_INTERVAL
     this.chargingForcedUpdateCheckInterval = DEFAULT_CHARGING_FORCED_STATUS_CHECK_INTERVAL
@@ -108,7 +101,7 @@ export class Bluelink {
     this.tempLookup = undefined
   }
 
-  protected async superInit(creds: BluelinkCreds, vin?: string, statusCheckInterval?: number) {
+  protected async superInit(creds: Config, vin?: string, statusCheckInterval?: number) {
     this.creds = creds
     this.vin = vin
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL

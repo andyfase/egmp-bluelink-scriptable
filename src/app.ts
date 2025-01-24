@@ -1,5 +1,7 @@
-import { Bluelink, BluelinkCreds, Status, ClimateRequest } from './lib/bluelink-regions/base'
-import { getTable, Div, P, Img, quickOptions, DivChild } from 'scriptable-utils'
+import { Config } from 'config'
+import { Bluelink, Status, ClimateRequest } from './lib/bluelink-regions/base'
+import { getTable, Div, P, Img, quickOptions, DivChild, Spacer } from 'scriptable-utils'
+import { loadConfigScreen } from 'config'
 import {
   sleep,
   loadTintedIcons,
@@ -51,7 +53,7 @@ const { present, connect, setState } = getTable<{
   name: 'Testing',
 })
 
-export async function createApp(creds: BluelinkCreds) {
+export async function createApp(creds: Config) {
   const bl = await initRegionalBluelink(creds)
   await loadTintedIcons()
 
@@ -76,7 +78,7 @@ export async function createApp(creds: BluelinkCreds) {
       lastUpdated: cachedStatus.status.lastRemoteStatusCheck,
       updatingActions: undefined,
     },
-    render: () => [pageTitle(), batteryStatus(), pageImage(bl), pageIcons(bl)],
+    render: () => [pageTitle(), batteryStatus(), pageImage(bl), pageIcons(bl), Spacer({ rowHeight: 260 }), settings()],
   })
 }
 
@@ -89,6 +91,25 @@ const pageTitle = connect(({ state: { name } }) => {
     }),
   ])
 })
+
+const settings = () => {
+  return Div(
+    [
+      P('Settings', {
+        font: (n) => Font.boldSystemFont(n),
+        fontSize: 20,
+        align: 'right',
+        width: '90%',
+      }),
+      Img(getTintedIcon('settings'), { align: 'right' }),
+    ],
+    {
+      onTap: () => {
+        loadConfigScreen()
+      },
+    },
+  )
+}
 
 const batteryStatus = connect(({ state: { soc, range, isCharging, isPluggedIn } }) => {
   const chargingIcon = getChargingIcon(isCharging, isPluggedIn)

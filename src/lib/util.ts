@@ -60,6 +60,10 @@ const icons: Record<string, icon> = {
     iconName: 'clock.arrow.trianglehead.2.counterclockwise.rotate.90',
     color: Color.white(),
   },
+  settings: {
+    iconName: 'gear',
+    color: Color.white(),
+  },
 }
 
 export const dateStringOptions = {
