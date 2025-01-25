@@ -18,7 +18,7 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: Hyundai / Kia E-GMP Bluelink Scriptable app for IOS
+title: Bluelink Scriptable
 email: andrewfase@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
   A scriptable app for IOS that allows you to control your Hyundai / Kia E-GMP car using the Bluelink API.
@@ -30,10 +30,11 @@ url: https://bluelink.andyfase.com  # the base hostname and protocol for your si
 #baseurl: "/docs"      # place folder name if the site is served in a subfolder
 
 # Build settings
-theme: jekyll-theme-cayman
+theme: just-the-docs
 # remote_theme: pages-themes/cayman@v0.2.0
 plugins:
   - jekyll-feed
+  - jekyll-default-layout
   # - jekyll-remote-theme
 
 # Exclude from processing.
