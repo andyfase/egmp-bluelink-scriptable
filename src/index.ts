@@ -8,7 +8,8 @@ import { getConfig, loadConfigScreen, configExists } from 'config'
     Script.setWidget(widget)
     Script.complete()
   } else if (config.runsWithSiri && configExists()) {
-    return await processSiriRequest(getConfig(), args.shortcutParameter)
+    Script.setShortcutOutput(await processSiriRequest(getConfig(), args.shortcutParameter))
+    Script.complete()
   } else {
     try {
       const resp = configExists() ? await createApp(getConfig()) : await loadConfigScreen()

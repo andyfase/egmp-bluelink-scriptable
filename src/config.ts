@@ -125,12 +125,12 @@ export async function loadConfigScreen() {
         allowCustom: false,
         isRequired: true,
       },
-      climateTempCold: {
+      climateTempWarm: {
         type: 'numberValue',
         label: 'Climate temp when pre-heating',
         isRequired: true,
       },
-      climateTempWarm: {
+      climateTempCold: {
         type: 'numberValue',
         label: 'Climate temp when pre-cooling',
         isRequired: true,

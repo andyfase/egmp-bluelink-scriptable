@@ -5,6 +5,7 @@ import {
   getChargingIcon,
   dateStringOptions,
   getChargeCompletionString,
+  sleep,
 } from './lib/util'
 import { initRegionalBluelink } from './lib/bluelink'
 import { Bluelink, Status } from './lib/bluelink-regions/base'
@@ -68,6 +69,7 @@ async function refreshDataForWidget(bl: Bluelink): Promise<Status> {
     ) {
       status = await bl.getStatus(false, true)
       bl.getStatus(true, true) // no await deliberatly
+      sleep(500) // wait for API request to be actually sent in background
       cache.lastForceRefresh = currentTimestamp
       cache.normalRefreshRequired = true
     } else if (

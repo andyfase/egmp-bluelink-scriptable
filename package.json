@@ -8,7 +8,7 @@
     "prebuild": "npm run lint",
     "lint": "npm run prettier && eslint \"*.ts\" \"src/**/*.ts\" --fix",
     "watch": "source ./build.sh; build_and_watch",
-    "prettier": "prettier --write \"*.ts\" \"src/**/*.ts\""
+    "prettier": "prettier --log-level warn --write \"*.ts\" \"src/**/*.ts\""
   },
   "author": "",
   "license": "ISC",

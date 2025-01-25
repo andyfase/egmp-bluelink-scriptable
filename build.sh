@@ -15,8 +15,13 @@ has_param() {
 #  --watch: Rebuild automatically when changes are detected
 build() {
   local file_path=$1
+  local name_override=$2
   local file=$(basename $file_path)
-  local file_noext="${file%.*}"
+  if [[ -z $name_override ]]; then
+    local file_noext="${file%.*}"
+  else
+    local file_noext=$name_override
+  fi
   local cmd
   cmd="rollup --config rollup.config.ts --environment file_path:$file_path,file:$file_noext --configPlugin @rollup/plugin-typescript"
   if has_param '--watch' "$@"; then cmd+=' --watch'; fi
