@@ -182,7 +182,7 @@ const pageIcons = connect(
     } else if (isCharging) {
       chargingRow.push(P(`${chargingPower.toString()} kW`, { align: 'left', width: '20%' }))
       chargingRow.push(Img(getTintedIcon('charging-complete'), { align: 'left', width: '10%' }))
-      chargingRow.push(P(`Wed ${getChargeCompletionString(lastSeen, remainingChargeTimeMins)}`, { align: 'left' }))
+      chargingRow.push(P(`${getChargeCompletionString(lastSeen, remainingChargeTimeMins)}`, { align: 'left' }))
     } else {
       chargingRow.push(P(batteryText, { align: 'left', width: '70%' }))
     }
