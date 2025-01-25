@@ -64,6 +64,10 @@ const icons: Record<string, icon> = {
     iconName: 'gear',
     color: Color.white(),
   },
+  'twelve-volt': {
+    iconName: 'minus.plus.batteryblock',
+    color: Color.white(),
+  },
 }
 
 export const dateStringOptions = {

@@ -1,6 +1,6 @@
 import { Config } from 'config'
 import { initRegionalBluelink } from 'lib/bluelink'
-import { Bluelink } from 'lib/bluelink-regions/base'
+import { Bluelink, ClimateRequest } from 'lib/bluelink-regions/base'
 import { getChargeCompletionString, sleep } from 'lib/util'
 
 export async function processSiriRequest(config: Config, shortcutParameter: any) {
@@ -60,7 +60,104 @@ async function getRemoteStatus(bl: Bluelink): Promise<string> {
   // wait 500ms just to ensure we sent the command
   bl.getStatus(true, true)
   await sleep(500)
-  return "I've issues a remote status request. Ask me for the normal status again in 30 seconds and I will have your answer."
+  return "I've issued a remote status request. Ask me for the normal status again in 30 seconds and I will have your answer."
+}
+
+async function warm(bl: Bluelink): Promise<string> {
+  const status = bl.getCachedStatus()
+  return await blRequest(
+    bl,
+    'climate',
+    `I've issued a request to pre-warm ${status.car.nickName || `your ${status.car.modelName}`}`,
+    {
+      enable: true,
+      defrost: true,
+      steering: true,
+      temp: bl.getConfig().climateTempWarm,
+      durationMinutes: 15,
+    } as ClimateRequest,
+  )
+}
+
+async function cool(bl: Bluelink): Promise<string> {
+  const status = bl.getCachedStatus()
+  return await blRequest(
+    bl,
+    'climate',
+    `I've issued a request to pre-cool ${status.car.nickName || `your ${status.car.modelName}`}`,
+    {
+      enable: true,
+      defrost: false,
+      steering: false,
+      temp: bl.getConfig().climateTempCold,
+      durationMinutes: 15,
+    } as ClimateRequest,
+  )
+}
+
+async function climateOff(bl: Bluelink): Promise<string> {
+  const status = bl.getCachedStatus()
+  return await blRequest(
+    bl,
+    'climate',
+    `I've issued a request to turn off the conditioning on ${status.car.nickName || `your ${status.car.modelName}`}`,
+    {
+      enable: false,
+      defrost: false,
+      steering: false,
+      temp: bl.getConfig().climateTempCold,
+      durationMinutes: 15,
+    } as ClimateRequest,
+  )
+}
+
+async function lock(bl: Bluelink): Promise<string> {
+  const status = bl.getCachedStatus()
+  return await blRequest(
+    bl,
+    'lock',
+    `I've issued a request to lock ${status.car.nickName || `your ${status.car.modelName}`}`,
+  )
+}
+
+async function unlock(bl: Bluelink): Promise<string> {
+  const status = bl.getCachedStatus()
+  return await blRequest(
+    bl,
+    'unlock',
+    `I've issued a request to lock ${status.car.nickName || `your ${status.car.modelName}`}`,
+  )
+}
+
+async function startCharge(bl: Bluelink): Promise<string> {
+  const status = bl.getCachedStatus()
+  return await blRequest(
+    bl,
+    'startCharge',
+    `I've issued a request to start charging ${status.car.nickName || `your ${status.car.modelName}`}`,
+  )
+}
+
+async function stopCharge(bl: Bluelink): Promise<string> {
+  const status = bl.getCachedStatus()
+  return await blRequest(
+    bl,
+    'stopCharge',
+    `I've issued a request to stop charging ${status.car.nickName || `your ${status.car.modelName}`}`,
+  )
+}
+
+async function blRequest(bl: Bluelink, type: string, message: string, payload?: any): Promise<string> {
+  let gotFirstCallback = false
+  let counter = 1
+  bl.processRequest(type, payload, async (_isComplete, _didSucceed, _data) => {
+    gotFirstCallback = true
+  })
+  while (!gotFirstCallback && counter < 10) {
+    await sleep(500)
+    counter += 1
+  }
+  return message
 }
 
 interface commandDetection {
@@ -76,5 +173,33 @@ const commandMap: commandDetection[] = [
   {
     words: ['status'],
     function: getStatus,
+  },
+  {
+    words: ['warm'],
+    function: warm,
+  },
+  {
+    words: ['cool'],
+    function: cool,
+  },
+  {
+    words: ['climate', 'off'],
+    function: climateOff,
+  },
+  {
+    words: ['lock'],
+    function: lock,
+  },
+  {
+    words: ['unlock'],
+    function: unlock,
+  },
+  {
+    words: ['start', 'charging'],
+    function: startCharge,
+  },
+  {
+    words: ['stop', 'charging'],
+    function: stopCharge,
   },
 ]

@@ -48,6 +48,7 @@ const { present, connect, setState } = getTable<{
   isClimateOn: boolean
   chargingPower: number
   lastUpdated: string
+  twelveSoc: number
   updatingActions: updatingActions | undefined
 }>({
   name: 'Testing',
@@ -77,13 +78,14 @@ export async function createApp(config: Config) {
       chargingPower: cachedStatus.status.chargingPower,
       lastUpdated: cachedStatus.status.lastRemoteStatusCheck,
       updatingActions: undefined,
+      twelveSoc: cachedStatus.status.twelveSoc,
     },
     render: () => [
       pageTitle(),
       batteryStatus(),
       pageImage(bl),
       pageIcons(bl),
-      Spacer({ rowHeight: 260 }),
+      Spacer({ rowHeight: 200 }),
       settings(bl),
     ],
   })
@@ -152,7 +154,16 @@ const batteryStatus = connect(({ state: { soc, range, isCharging, isPluggedIn } 
 const pageIcons = connect(
   (
     {
-      state: { isCharging, lastUpdated, remainingChargeTimeMins, chargingPower, isClimateOn, locked, updatingActions },
+      state: {
+        isCharging,
+        lastUpdated,
+        remainingChargeTimeMins,
+        chargingPower,
+        isClimateOn,
+        locked,
+        updatingActions,
+        twelveSoc,
+      },
     },
     bl: Bluelink,
   ) => {
@@ -251,7 +262,7 @@ const pageIcons = connect(
                     enable: opt !== 'Off' ? true : false,
                     defrost: opt === 'Warm' ? true : false,
                     steering: opt === 'Warm' ? true : false,
-                    temp: opt === 'Warm' ? 21.5 : 19,
+                    temp: opt === 'Warm' ? bl.getConfig().climateTempWarm : bl.getConfig().climateTempCold,
                     durationMinutes: 15,
                   } as ClimateRequest,
                   actions: updatingActions,
@@ -350,6 +361,10 @@ const pageIcons = connect(
           },
         },
       ),
+      Div([
+        Img(getTintedIcon('twelve-volt'), { align: 'center' }),
+        P(`12v battery at ${twelveSoc}%`, { align: 'left', width: '70%' }),
+      ]),
     ])
   },
 )

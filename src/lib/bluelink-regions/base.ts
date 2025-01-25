@@ -201,6 +201,10 @@ export class Bluelink {
     }
   }
 
+  public getConfig() {
+    return this.config
+  }
+
   public deleteCache() {
     Keychain.remove(KEYCHAIN_CACHE_KEY)
   }
