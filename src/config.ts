@@ -92,6 +92,8 @@ export async function loadConfigScreen() {
       }
       if (tempType === 'C' && (climateTempCold < 17 || climateTempWarm > 27)) return false
       if (tempType === 'F' && (climateTempCold < 62 || climateTempWarm > 82)) return false
+      if (climateTempCold.toString().includes('.') && climateTempCold % 1 !== 0.5) return false
+      if (climateTempWarm.toString().includes('.') && climateTempWarm % 1 !== 0.5) return false
       return true
     },
     submitButtonText: 'Save',
@@ -127,12 +129,12 @@ export async function loadConfigScreen() {
       },
       climateTempWarm: {
         type: 'numberValue',
-        label: 'Climate temp when pre-heating',
+        label: 'Climate temp when pre-heating (whole number or .5)',
         isRequired: true,
       },
       climateTempCold: {
         type: 'numberValue',
-        label: 'Climate temp when pre-cooling',
+        label: 'Climate temp when pre-cooling (whole number or .5)',
         isRequired: true,
       },
     },
