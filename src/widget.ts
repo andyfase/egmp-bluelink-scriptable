@@ -21,14 +21,12 @@ const LIGHT_BG_COLOR = 'FFFFFF'
 const KEYCHAIN_WIDGET_REFRESH_KEY = 'egmp-bluelink-widget'
 const DEFAULT_STATUS_CHECK_INTERVAL_DAY = 3600
 const DEFAULT_STATUS_CHECK_INTERVAL_NIGHT = 10800
-const DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL = 7200
+const DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL_DAY = 7200
+const DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL_NIGHT = 14400
 const NIGHT_HOUR_START = 23
 const NIGHT_HOUR_STOP = 7
 
 interface WidgetRefreshCache {
-  lastCacheRefresh: number
-  lastNormalRefresh: number
-  lastForceRefresh: number
   normalRefreshRequired: boolean
 }
 
@@ -36,24 +34,28 @@ async function refreshDataForWidget(bl: Bluelink): Promise<Status> {
   let cache: WidgetRefreshCache | undefined = undefined
   const currentTimestamp = Math.floor(Date.now() / 1000)
   const currentHour = new Date().getHours()
-  const DEFAULT_STATUS_CHECK_INTERVAL =
-    currentHour < NIGHT_HOUR_START && currentHour > NIGHT_HOUR_STOP
-      ? DEFAULT_STATUS_CHECK_INTERVAL_DAY
-      : DEFAULT_STATUS_CHECK_INTERVAL_NIGHT
+
+  let DEFAULT_STATUS_CHECK_INTERVAL = DEFAULT_STATUS_CHECK_INTERVAL_NIGHT
+  let DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL = DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL_NIGHT
+  if (currentHour < NIGHT_HOUR_START && currentHour > NIGHT_HOUR_STOP) {
+    DEFAULT_STATUS_CHECK_INTERVAL = DEFAULT_STATUS_CHECK_INTERVAL_DAY
+    DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL = DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL_DAY
+  }
 
   if (Keychain.contains(KEYCHAIN_WIDGET_REFRESH_KEY)) {
     cache = JSON.parse(Keychain.get(KEYCHAIN_WIDGET_REFRESH_KEY))
   }
   if (!cache) {
     cache = {
-      lastCacheRefresh: 0,
-      lastNormalRefresh: 0,
-      lastForceRefresh: 0,
       normalRefreshRequired: false,
     }
   }
   let status = bl.getCachedStatus()
-  cache.lastCacheRefresh = currentTimestamp
+
+  const lastRemoteCheckString = status.status.lastRemoteStatusCheck + 'Z'
+  const df = new DateFormatter()
+  df.dateFormat = 'yyyyMMddHHmmssZ'
+  const lastRemoteCheck = Math.floor(df.date(lastRemoteCheckString).getTime() / 1000)
 
   // LOGIC for refresh within widget
   // 1. If charging OR charger plugged in do a forceRefresh (poll car) every DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL period
@@ -64,20 +66,18 @@ async function refreshDataForWidget(bl: Bluelink): Promise<Status> {
 
   try {
     if (
-      status.status.isCharging ||
-      (status.status.isPluggedIn && cache.lastForceRefresh + DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL < currentTimestamp)
+      (status.status.isCharging || status.status.isPluggedIn) &&
+      lastRemoteCheck + DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL < currentTimestamp
     ) {
       status = await bl.getStatus(false, true)
       bl.getStatus(true, true) // no await deliberatly
       sleep(500) // wait for API request to be actually sent in background
-      cache.lastForceRefresh = currentTimestamp
       cache.normalRefreshRequired = true
     } else if (
       cache.normalRefreshRequired ||
-      cache.lastNormalRefresh + DEFAULT_STATUS_CHECK_INTERVAL < currentTimestamp
+      status.status.lastStatusCheck + DEFAULT_STATUS_CHECK_INTERVAL < currentTimestamp
     ) {
       status = await bl.getStatus(false, true)
-      cache.lastNormalRefresh = currentTimestamp
       cache.normalRefreshRequired = false
     }
   } catch (_error) {
