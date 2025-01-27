@@ -1,5 +1,4 @@
 import { safeArrLookup } from './common'
-import { notifyNow } from './notifications'
 import {
   AnyObj,
   Identity,
@@ -123,7 +122,6 @@ const getPerformanceMeasurers = ({
         2,
       ),
     )
-    notifyNow(`Marker "${name}"`, `Threshold (ms): ${threshold}, actual: ${duration}`)
   }
   return { start, stop }
 }

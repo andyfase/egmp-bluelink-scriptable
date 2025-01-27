@@ -1,5 +1,4 @@
 import { getConfig, ScreenHeightMeasurements } from './configRegister'
-import { notifyNow } from './notifications'
 
 /** Using `Device.isInPortrait`, and similar predicates, is very inconsistent.
  * The main symptom of this is that when the device is flat on a surface, all
@@ -15,7 +14,6 @@ export const getMaxScreenHeight = (mode: ScreenHeightMeasurements.Mode) => {
   const device = Device.model()
   const deviceSettings = getConfig('SCREEN_HEIGHT_MEASUREMENTS')[device]
   if (!deviceSettings) {
-    notifyNow(`No screen height settings for ${device}`)
     return Device.screenSize().height
   }
   return deviceSettings[mode][getDeviceOrientation()]
