@@ -2,6 +2,7 @@ import { Config } from 'config'
 import { Bluelink, Status, ClimateRequest } from './lib/bluelink-regions/base'
 import { getTable, Div, P, Img, quickOptions, DivChild, Spacer, destructiveConfirm } from 'lib/scriptable-utils'
 import { loadConfigScreen, deleteConfig } from 'config'
+import { deleteWidgetCache } from 'widget'
 import {
   sleep,
   loadTintedIcons,
@@ -47,7 +48,7 @@ const { present, connect, setState } = getTable<{
   locked: boolean
   isClimateOn: boolean
   chargingPower: number
-  lastUpdated: string
+  lastUpdated: number
   twelveSoc: number
   updatingActions: updatingActions | undefined
 }>({
@@ -122,6 +123,7 @@ const settings = (bl: Bluelink) => {
           onConfirm: () => {
             bl.deleteCache()
             deleteConfig()
+            deleteWidgetCache()
             // @ts-ignore - undocumented api
             App.close()
           },
@@ -167,12 +169,7 @@ const pageIcons = connect(
     },
     bl: Bluelink,
   ) => {
-    const updatedTime = lastUpdated + 'Z'
-
-    // date conversion
-    const df = new DateFormatter()
-    df.dateFormat = 'yyyyMMddHHmmssZ'
-    const lastSeen = df.date(updatedTime)
+    const lastSeen = new Date(lastUpdated)
     const batteryIcon = isCharging ? 'charging' : 'not-charging'
     const batteryText = 'Not Charging'
 

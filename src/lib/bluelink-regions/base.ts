@@ -1,8 +1,7 @@
 import { carImageMap } from 'resources/images'
 import { Config } from '../../config'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
-const DEFAULT_STATUS_CHECK_INTERVAL = 3600
-const DEFAULT_CHARGING_FORCED_STATUS_CHECK_INTERVAL = 7200
+export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
 
 export interface BluelinkTokens {
   accessToken: string
@@ -21,8 +20,7 @@ export interface BluelinkCar {
 
 export interface BluelinkStatus {
   lastStatusCheck: number
-  lastForcedStatusCheck?: number
-  lastRemoteStatusCheck: string
+  lastRemoteStatusCheck: number
   isCharging: boolean
   isPluggedIn: boolean
   chargingPower: number
@@ -82,7 +80,6 @@ export class Bluelink {
   protected cache: Cache
   protected vin: string | undefined
   protected statusCheckInterval: number
-  protected chargingForcedUpdateCheckInterval: number
 
   protected additionalHeaders: Record<string, string>
   protected authHeader: string
@@ -93,7 +90,6 @@ export class Bluelink {
   constructor(config: Config, vin?: string) {
     this.vin = vin
     this.statusCheckInterval = DEFAULT_STATUS_CHECK_INTERVAL
-    this.chargingForcedUpdateCheckInterval = DEFAULT_CHARGING_FORCED_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {}
     this.authHeader = 'Authentication'
     this.tokens = undefined
@@ -124,10 +120,7 @@ export class Bluelink {
     if (forceUpdate) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, true)
       this.saveCache()
-    } else if (
-      noCache ||
-      this.cache.status.lastStatusCheck + this.statusCheckInterval < Math.floor(Date.now() / 1000)
-    ) {
+    } else if (noCache || this.cache.status.lastStatusCheck + this.statusCheckInterval < Date.now()) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, false)
       this.saveCache()
     }

@@ -1,4 +1,11 @@
-import { Bluelink, BluelinkTokens, BluelinkCar, BluelinkStatus, ClimateRequest } from './base'
+import {
+  Bluelink,
+  BluelinkTokens,
+  BluelinkCar,
+  BluelinkStatus,
+  ClimateRequest,
+  DEFAULT_STATUS_CHECK_INTERVAL,
+} from './base'
 import { Config } from '../../config'
 
 const API_DOMAIN = 'https://mybluelink.ca/tods/api/'
@@ -7,7 +14,7 @@ const MAX_COMPLETION_POLLS = 20
 export class BluelinkCanada extends Bluelink {
   constructor(config: Config, vin?: string, statusCheckInterval?: number) {
     super(config, vin)
-    this.statusCheckInterval = statusCheckInterval || 600
+    this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
       from: 'SPA',
       language: '0',
@@ -121,18 +128,21 @@ export class BluelinkCanada extends Bluelink {
   }
 
   protected returnCarStatus(status: any, forceUpdate: boolean, odometer?: number): BluelinkStatus {
+    const lastRemoteCheckString = status.lastStatusDate + 'Z'
+    const df = new DateFormatter()
+    df.dateFormat = 'yyyyMMddHHmmssZ'
+    const lastRemoteCheck = df.date(lastRemoteCheckString)
+
     return {
-      lastStatusCheck: Math.floor(Date.now() / 1000),
-      ...(forceUpdate && {
-        lastForcedStatusCheck: Math.floor(Date.now() / 1000),
-      }),
-      lastRemoteStatusCheck: status.lastStatusDate,
+      lastStatusCheck: Date.now(),
+      lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
       isCharging: status.evStatus.batteryCharge,
       isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
-      chargingPower:
-        status.evStatus.batteryPower.batteryFstChrgPower > 0
+      chargingPower: status.evStatus.batteryCharge // only check for charging power if actually charging
+        ? status.evStatus.batteryPower.batteryFstChrgPower > 0
           ? status.evStatus.batteryPower.batteryFstChrgPower
-          : status.evStatus.batteryPower.batteryStndChrgPower,
+          : status.evStatus.batteryPower.batteryStndChrgPower
+        : 0,
       remainingChargeTimeMins: status.evStatus.remainTime2.atc.value,
       // sometimes range back as zero? if so ignore and use cache
       range:

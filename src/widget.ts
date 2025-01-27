@@ -25,15 +25,15 @@ const KEYCHAIN_WIDGET_REFRESH_KEY = 'egmp-bluelink-widget'
 const NIGHT_HOUR_START = 23
 const NIGHT_HOUR_STOP = 7
 
-// Day Intervals - day lasts for 16 days
-const DEFAULT_STATUS_CHECK_INTERVAL_DAY = 3600
-const DEFAULT_REMOTE_REFRESH_INTERVAL_DAY = 3600 * 4 // max 4 remote refreshes per day
-const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_DAY = 3600 * 2 // max 8 remote refreshes per day
+// Day Intervals - day lasts for 16 days - in milliseconds
+const DEFAULT_STATUS_CHECK_INTERVAL_DAY = 3600 * 1000
+const DEFAULT_REMOTE_REFRESH_INTERVAL_DAY = 3600 * 4 * 1000 // max 4 remote refreshes per day
+const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_DAY = 3600 * 2 * 1000 // max 8 remote refreshes per day
 
-// Night Intervals - night lasts for 8 hours
-const DEFAULT_STATUS_CHECK_INTERVAL_NIGHT = 3600 * 2
-const DEFAULT_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 6 // max 1 remote refresh per night
-const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 4 // max 2 remote refreshes per night
+// Night Intervals - night lasts for 8 hours - in milliseconds
+const DEFAULT_STATUS_CHECK_INTERVAL_NIGHT = 3600 * 2 * 1000
+const DEFAULT_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 6 * 1000 // max 1 remote refresh per night
+const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 4 * 1000 // max 2 remote refreshes per night
 
 const WIDGET_LOG_FILE = 'egmp-bluelink-widget-log'
 
@@ -50,10 +50,14 @@ interface WidgetRefresh {
   status: Status
 }
 
+export function deleteWidgetCache() {
+  Keychain.remove(KEYCHAIN_WIDGET_REFRESH_KEY)
+}
+
 async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<WidgetRefresh> {
   const logger = PersistedLog(WIDGET_LOG_FILE)
   let cache: WidgetRefreshCache | undefined = undefined
-  const currentTimestamp = Math.floor(Date.now() / 1000)
+  const currentTimestamp = Date.now()
   const currentHour = new Date().getHours()
 
   // Set status periods based on day/night
@@ -80,10 +84,8 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
   // Get last remote check from cached API and convert
   // then compare to cache.lastRemoteRefresh and use whatever value is greater
   // we have both as we may have requested a remote refresh and that request is still pending
-  const lastRemoteCheckString = status.status.lastRemoteStatusCheck + 'Z'
-  const df = new DateFormatter()
-  df.dateFormat = 'yyyyMMddHHmmssZ'
-  let lastRemoteCheck = Math.floor(df.date(lastRemoteCheckString).getTime() / 1000)
+
+  let lastRemoteCheck = status.status.lastRemoteStatusCheck
   lastRemoteCheck = lastRemoteCheck > cache.lastRemoteRefresh ? lastRemoteCheck : cache.lastRemoteRefresh
 
   // LOGIC for refresh within widget
@@ -103,9 +105,7 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
     lastRemoteCheck +
     (status.status.isCharging ? DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL : DEFAULT_REMOTE_REFRESH_INTERVAL)
   const nextAPIRefreshTime = status.status.lastStatusCheck + DEFAULT_STATUS_CHECK_INTERVAL
-  let nextRefresh = new Date(
-    (nextAPIRefreshTime < nextRemoteRefreshTime ? nextAPIRefreshTime : nextRemoteRefreshTime) * 1000,
-  )
+  let nextRefresh = new Date(nextAPIRefreshTime < nextRemoteRefreshTime ? nextAPIRefreshTime : nextRemoteRefreshTime)
 
   try {
     if (
@@ -198,12 +198,7 @@ export async function createWidget(config: Config) {
   const remainingChargingTime = status.status.remainingChargeTimeMins
   const chargingKw = status.status.chargingPower.toString()
   const odometer = status.status.odometer
-  const updatedTime = status.status.lastRemoteStatusCheck + 'Z'
-
-  // date conversion
-  const df = new DateFormatter()
-  df.dateFormat = 'yyyyMMddHHmmssZ'
-  const lastSeen = df.date(updatedTime)
+  const lastSeen = new Date(status.status.lastRemoteStatusCheck)
 
   // Battery Percent Value
   const batteryPercentStack = batteryInfoStack.addStack()
