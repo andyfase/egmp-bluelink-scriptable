@@ -12,7 +12,7 @@ A [scriptable app](https://scriptable.app/) for IOS that allows you to control y
 
 <table border="0">
 <tr>
-<td width="50%" class="aTable"><img src="./images/widget_charging.png" width="400" /></td>
+<td width="55%" class="aTable"><img src="./images/widget_charging.png" width="400" /></td>
 <td>
 
 <p>

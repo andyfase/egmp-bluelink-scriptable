@@ -22,8 +22,13 @@ The app also supports the use of Siri Shortcuts, allowing you to ask siri to ***
 The app queries the Bluelink API to retireve information on the SOC (State of Charge), charging status, charging completion date/time, lock/unlock, climate and finally the 12v battery charge percentage.
 {: .fs-5 .fw-200 }
 
-The widget reguarly queries the bluelink API to retrieve the lastest data on the server, however this is typically cached data as the car only updates the bluelinks servers on a in-frequent basis. Within the app clicking on the status icon will cause a "remote refresh" which actually queries the car. This will give back the most upto date information from the car.
+The widget reguarly queries the bluelink API to retrieve the lastest data on the server, however this is typically cached data as the car only updates the bluelinks servers on very in-frequent basis. 
 {: .fs-5 .fw-200 }
+
+The app also supports performing "remote refreshes" which actually queries the car and gets the most upto date information from the car. Within the app clicking the status icon will cause a remote refresh, the widget can also perform remote refreshes on a schedule - this feature needs to be opted into within the settings screen.
+{: .fs-5 .fw-200 }
+
+> IMPORTANT NOTE: Too many remote refresh commands will drain the 12v battery in the car, which in a worst case situation will cause the car to not be able to start. The widget has been configured to be very careful on the number of remote refresh commands sent, however buyer beware - hence the opt-in - I take no liabiity for any 12v failures based on the abuse of this feature.
 
 **Start Charge / Stop Charge**
 {: .fs-5 .fw-200 }
