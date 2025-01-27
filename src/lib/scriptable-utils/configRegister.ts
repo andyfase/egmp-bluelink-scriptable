@@ -72,7 +72,7 @@ let config: OptionalConfig & Partial<RequiredConfig> = {
     },
   },
   FULLSCREEN_OPTS_MAX_ON_SCREEN: 7,
-  SCRIPTABLE_STORE_PATH: '/var/mobile/Library/Mobile Documents/iCloud~dk~simonbs~Scriptable/Documents/store',
+  SCRIPTABLE_STORE_PATH: '/var/mobile/Library/Mobile Documents/iCloud~dk~simonbs~Scriptable/Documents',
   PERSISTED_LOG_FILENAME: 'persistedLog',
   PERSISTED_LOG_MAX_LINES: 1000,
   ICON_TINTING_CACHED_ICON_PATH: 'img/sfsymbols',

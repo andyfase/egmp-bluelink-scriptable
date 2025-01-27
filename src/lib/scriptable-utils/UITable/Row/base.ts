@@ -11,7 +11,7 @@ const warnError = async (error: unknown, context: string) => {
   prompt.message = String(error)
   prompt.addAction('OK')
   const stacktrace = isObject(error) && 'stack' in error ? error.stack : undefined
-  PersistedLog.log({
+  PersistedLog().log({
     type: 'Error',
     context,
     error: JSON.stringify(error),

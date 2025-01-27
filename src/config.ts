@@ -14,6 +14,7 @@ export interface Config {
   tempType: 'C' | 'F'
   climateTempWarm: number
   climateTempCold: number
+  debugLogging: boolean
 }
 
 export interface FlattenedConfig {
@@ -24,6 +25,7 @@ export interface FlattenedConfig {
   tempType: 'C' | 'F'
   climateTempWarm: number
   climateTempCold: number
+  debugLogging: boolean
 }
 
 const SUPPORTED_REGIONS = ['canada']
@@ -64,6 +66,7 @@ export function getConfig(): Config {
       tempType: 'C',
       climateTempCold: 19,
       climateTempWarm: 21.5,
+      debugLogging: false,
     }
   }
   return config
@@ -73,7 +76,7 @@ export async function loadConfigScreen() {
   return await form<FlattenedConfig>({
     title: 'Bluelink Configuration settings',
     subtitle: 'Saved within IOS keychain and never exposed beyond your device(s)',
-    onSubmit: ({ username, password, region, pin, tempType, climateTempWarm, climateTempCold }) => {
+    onSubmit: ({ username, password, region, pin, tempType, climateTempWarm, climateTempCold, debugLogging }) => {
       setConfig({
         auth: {
           username: username,
@@ -84,6 +87,7 @@ export async function loadConfigScreen() {
         tempType: tempType,
         climateTempCold: climateTempCold,
         climateTempWarm: climateTempWarm,
+        debugLogging: debugLogging,
       } as Config)
     },
     isFormValid: ({ username, password, region, pin, tempType, climateTempCold, climateTempWarm }) => {
@@ -136,6 +140,11 @@ export async function loadConfigScreen() {
         type: 'numberValue',
         label: 'Climate temp when pre-cooling (whole number or .5)',
         isRequired: true,
+      },
+      debugLogging: {
+        type: 'checkbox',
+        label: 'Enable debug logging',
+        isRequired: false,
       },
     },
   })(getFlattenedConfig())

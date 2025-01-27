@@ -23,5 +23,5 @@ export const fetchDebug = <R>({
 }: FetchDebugOpts<R>) => {
   if (!enabled) return
   if (isVerbose && !includeVerbose) return
-  return logToPersistedLog ? PersistedLog.log(message) : tidyLog(message)
+  return logToPersistedLog ? PersistedLog().log(message) : tidyLog(message)
 }

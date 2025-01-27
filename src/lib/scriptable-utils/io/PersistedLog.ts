@@ -10,15 +10,15 @@ const trimLogLength = (log: string) => {
   return lines.slice(lines.length - MAX_LOG_LINES).join('\n')
 }
 
-const getIO = () =>
+const getIO = (filename: string) =>
   persisted({
-    filename: getConfig('PERSISTED_LOG_FILENAME'),
+    filename: filename,
     defaultData: '',
   })
 
-const log = async (val: any, { ignoreLineLimit = false } = {}) => {
+const log = async (val: any, { ignoreLineLimit = false } = {}, filename: string) => {
   const stringEntry = isString(val) ? val : JSON.stringify(val, null, 2)
-  const io = getIO()
+  const io = getIO(filename)
   const currData = await io.getData()
   const NOW = new Date()
   const timestamp = `${formatDate(NOW, 'YYYYMMDD')}, ${formatDate(NOW, 'HHMM')}`
@@ -30,7 +30,11 @@ const log = async (val: any, { ignoreLineLimit = false } = {}) => {
   })
 }
 
-export default {
-  clear: () => getIO().reset(),
-  log,
+export default (filename: string = getConfig('PERSISTED_LOG_FILENAME')) => {
+  return {
+    log: (val: any) => log(val, {}, filename),
+    get: () => getIO(filename).getData(),
+    clear: () => getIO(filename).reset(),
+    filename: filename,
+  }
 }

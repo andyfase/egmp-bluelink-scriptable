@@ -30,7 +30,7 @@ const presetHandlers = {
    * Logs the request to PersistedLog and mirrors the previous bool value.
    */
   logRequest: makeRouter((request, didPrevSucceed) => {
-    PersistedLog.log({ request, isAllowed: didPrevSucceed })
+    PersistedLog().log('{ request, isAllowed: didPrevSucceed }')
     return didPrevSucceed
   }),
 

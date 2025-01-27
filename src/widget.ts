@@ -10,6 +10,7 @@ import {
 import { initRegionalBluelink } from './lib/bluelink'
 import { Bluelink, Status } from './lib/bluelink-regions/base'
 import { Config } from 'config'
+import PersistedLog from './lib/scriptable-utils/io/PersistedLog'
 
 // Widget Config
 const RANGE_IN_MILES = false // true
@@ -26,11 +27,14 @@ const DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL_NIGHT = 14400
 const NIGHT_HOUR_START = 23
 const NIGHT_HOUR_STOP = 7
 
+const WIDGET_LOG_FILE = 'egmp-bluelink-widget-log'
+
 interface WidgetRefreshCache {
   normalRefreshRequired: boolean
 }
 
-async function refreshDataForWidget(bl: Bluelink): Promise<Status> {
+async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Status> {
+  const logger = PersistedLog(WIDGET_LOG_FILE)
   let cache: WidgetRefreshCache | undefined = undefined
   const currentTimestamp = Math.floor(Date.now() / 1000)
   const currentHour = new Date().getHours()
@@ -69,6 +73,7 @@ async function refreshDataForWidget(bl: Bluelink): Promise<Status> {
       (status.status.isCharging || status.status.isPluggedIn) &&
       lastRemoteCheck + DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL < currentTimestamp
     ) {
+      if (config.debugLogging) await logger.log('Doing Force Refresh')
       status = await bl.getStatus(false, true)
       bl.getStatus(true, true) // no await deliberatly
       sleep(500) // wait for API request to be actually sent in background
@@ -77,8 +82,11 @@ async function refreshDataForWidget(bl: Bluelink): Promise<Status> {
       cache.normalRefreshRequired ||
       status.status.lastStatusCheck + DEFAULT_STATUS_CHECK_INTERVAL < currentTimestamp
     ) {
+      if (config.debugLogging) await logger.log('Doing API Refresh')
       status = await bl.getStatus(false, true)
       cache.normalRefreshRequired = false
+    } else {
+      if (config.debugLogging) await logger.log('Using Cached Status')
     }
   } catch (_error) {
     // ignore error and just displayed last cached values in widget - we have no guarentee of network connection
@@ -90,7 +98,7 @@ async function refreshDataForWidget(bl: Bluelink): Promise<Status> {
 
 export async function createWidget(config: Config) {
   const bl = await initRegionalBluelink(config)
-  const status = await refreshDataForWidget(bl)
+  const status = await refreshDataForWidget(bl, config)
 
   // Prepare image
   const appIcon = Image.fromData(Data.fromBase64String(bl.getCarImage()))
