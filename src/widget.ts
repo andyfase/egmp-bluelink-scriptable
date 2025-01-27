@@ -38,16 +38,19 @@ const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 4 // max 2 remote 
 const WIDGET_LOG_FILE = 'egmp-bluelink-widget-log'
 
 interface WidgetRefreshCache {
-  normalRefreshRequired: boolean
   lastRemoteRefresh: number
 }
 
 const DEFAULT_WIDGET_CACHE = {
-  normalRefreshRequired: false,
   lastRemoteRefresh: 0,
+} as WidgetRefreshCache
+
+interface WidgetRefresh {
+  nextRefresh: Date
+  status: Status
 }
 
-async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Status> {
+async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<WidgetRefresh> {
   const logger = PersistedLog(WIDGET_LOG_FILE)
   let cache: WidgetRefreshCache | undefined = undefined
   const currentTimestamp = Math.floor(Date.now() / 1000)
@@ -87,11 +90,7 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Statu
   // 1.Force refresh if user opted in via config AND last remote check is older than:
   //   - DEFAULT_REMOTE_REFRESH_INTERVAL if NOT charging
   //   - DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL if charging
-  // 2. Normal refresh if:
-  //   - normalRefreshRequired is set OR
-  //   - last status check is older than DEFAULT_STATUS_CHECK_INTERVAL
-  // 3. Use cached status if none of the above conditions are met
-  //
+  // 2. Normal refresh if not #1
   // The time intervals vary based on day/night - with day being more frequent
   const chargingAndOverRemoteRefreshInterval =
     status.status.isCharging && lastRemoteCheck + DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL < currentTimestamp
@@ -99,7 +98,14 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Statu
   const notChargingAndOverRemoteRefreshInterval =
     !status.status.isCharging && lastRemoteCheck + DEFAULT_REMOTE_REFRESH_INTERVAL < currentTimestamp
 
-  const overNormalRefreshInterval = status.status.lastStatusCheck + DEFAULT_STATUS_CHECK_INTERVAL < currentTimestamp
+  // define next refresh date. Should be the lowest value between API refresh and remote refresh
+  const nextRemoteRefreshTime =
+    lastRemoteCheck +
+    (status.status.isCharging ? DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL : DEFAULT_REMOTE_REFRESH_INTERVAL)
+  const nextAPIRefreshTime = status.status.lastStatusCheck + DEFAULT_STATUS_CHECK_INTERVAL
+  let nextRefresh = new Date(
+    (nextAPIRefreshTime < nextRemoteRefreshTime ? nextAPIRefreshTime : nextRemoteRefreshTime) * 1000,
+  )
 
   try {
     if (
@@ -110,13 +116,10 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Statu
       bl.getStatus(true, true) // no await deliberatly
       sleep(500) // wait for API request to be actually sent in background
       cache.lastRemoteRefresh = currentTimestamp
-      cache.normalRefreshRequired = true
-    } else if (cache.normalRefreshRequired || overNormalRefreshInterval) {
+      nextRefresh = new Date(Date.now() + 5 * 60 * 1000) // over-ride next refresh to allow API refresh to occur 5 minutes after this.
+    } else {
       if (config.debugLogging) await logger.log('Doing API Refresh')
       status = await bl.getStatus(false, true)
-      cache.normalRefreshRequired = false
-    } else {
-      if (config.debugLogging) await logger.log('Using Cached Status')
     }
   } catch (_error) {
     // ignore any API errors and just displayed last cached values in widget
@@ -124,18 +127,30 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Statu
   }
 
   Keychain.set(KEYCHAIN_WIDGET_REFRESH_KEY, JSON.stringify(cache))
-  return status
+  if (config.debugLogging)
+    await logger.log(
+      `Current time: ${new Date().toLocaleString()}. Setting next refresh to ${nextRefresh.toLocaleString()}`,
+    )
+
+  return {
+    nextRefresh: nextRefresh,
+    status: status,
+  }
 }
 
 export async function createWidget(config: Config) {
   const bl = await initRegionalBluelink(config)
-  const status = await refreshDataForWidget(bl, config)
+  const refresh = await refreshDataForWidget(bl, config)
+  const status = refresh.status
 
   // Prepare image
   const appIcon = Image.fromData(Data.fromBase64String(bl.getCarImage()))
   const title = status.car.nickName || `${status.car.modelYear} ${status.car.modelName}`
 
+  // define widget and set date for when the next refresh should not occur before.
   const widget = new ListWidget()
+  widget.refreshAfterDate = refresh.nextRefresh
+
   const mainStack = widget.addStack()
   mainStack.layoutVertically()
 

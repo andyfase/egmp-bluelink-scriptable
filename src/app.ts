@@ -221,10 +221,14 @@ const pageIcons = connect(
                   updatingText: opt === 'Charge' ? 'Starting charging ...' : 'Stoping charging ...',
                   successText: opt === 'Charge' ? 'Car charging started!' : 'Car charging stopped!',
                   failureText: `Failed to ${opt === 'Charge' ? 'start charging' : 'stop charging'} car!!!`,
-                  successCallback: () => {
-                    setState({
-                      isCharging: opt === 'Charge' ? true : false,
-                    })
+                  successCallback: (data) => {
+                    updateStatus({
+                      ...bl.getCachedStatus(),
+                      status: {
+                        ...data,
+                        isCharging: opt === 'Charge' ? true : false,
+                      },
+                    } as Status)
                   },
                 })
               },
@@ -276,10 +280,14 @@ const pageIcons = connect(
                   successText:
                     opt === 'Warm' ? 'Climate heating!' : opt === 'Cool' ? 'Climate cooling!' : 'Climate stopped!',
                   failureText: `Failed to ${opt === 'Off' ? 'Stop' : 'Start'} climate!!!`,
-                  successCallback: () => {
-                    setState({
-                      isClimateOn: opt !== 'Off' ? true : false,
-                    })
+                  successCallback: (data) => {
+                    updateStatus({
+                      ...bl.getCachedStatus(),
+                      status: {
+                        ...data,
+                        isClimateOn: opt !== 'Off' ? true : false,
+                      },
+                    } as Status)
                   },
                 })
               },
@@ -315,10 +323,14 @@ const pageIcons = connect(
                   updatingText: opt === 'Lock' ? 'Locking car ...' : 'Unlocking car ...',
                   successText: opt === 'Lock' ? 'Car locked!' : 'Car unlocked!',
                   failureText: `Failed to ${opt === 'Lock' ? 'lock' : 'unlock'} car!!!`,
-                  successCallback: () => {
-                    setState({
-                      locked: opt === 'Lock' ? true : false,
-                    })
+                  successCallback: (data) => {
+                    updateStatus({
+                      ...bl.getCachedStatus(),
+                      status: {
+                        ...data,
+                        locked: opt === 'Lock' ? true : false,
+                      },
+                    } as Status)
                   },
                 })
               },
@@ -354,7 +366,9 @@ const pageIcons = connect(
                 successText: 'Status Updated!',
                 failureText: 'Status Failed to Update!!!',
                 successCallback: (data) => {
-                  updateStatus(data as Status)
+                  updateStatus({
+                    ...data,
+                  } as Status)
                 },
               })
             }
@@ -426,8 +440,6 @@ async function doAsyncUpdate(props: doAsyncUpdateProps) {
       })
       isUpdating = false
       if (didSucceed && props.successCallback) {
-        // assumption is bluelink class cache already updated with latest status - hence update our own view from cache
-        updateStatus(props.bl.getCachedStatus())
         props.successCallback(data)
       }
 
