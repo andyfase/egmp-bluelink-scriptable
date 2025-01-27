@@ -1,4 +1,4 @@
-import { form } from './lib/scriptable-utils'
+import { form, confirm } from './lib/scriptable-utils'
 
 const KEYCHAIN_BLUELINK_CONFIG_KEY = 'egmp-bluelink-config'
 
@@ -14,6 +14,7 @@ export interface Config {
   tempType: 'C' | 'F'
   climateTempWarm: number
   climateTempCold: number
+  allowWidgetRemoteRefresh: boolean
   debugLogging: boolean
 }
 
@@ -25,10 +26,36 @@ export interface FlattenedConfig {
   tempType: 'C' | 'F'
   climateTempWarm: number
   climateTempCold: number
+  allowWidgetRemoteRefresh: boolean
   debugLogging: boolean
 }
 
 const SUPPORTED_REGIONS = ['canada']
+
+const DEFAULT_TEMPS = {
+  C: {
+    cold: 19,
+    warm: 21.5,
+  },
+  F: {
+    cold: 66,
+    warm: 71,
+  },
+}
+
+const DEFAULT_CONFIG = {
+  auth: {
+    username: '',
+    password: '',
+    pin: '',
+    region: '',
+  },
+  tempType: 'C',
+  climateTempCold: DEFAULT_TEMPS.C.cold,
+  climateTempWarm: DEFAULT_TEMPS.C.warm,
+  debugLogging: false,
+  allowWidgetRemoteRefresh: false,
+} as Config
 
 export function configExists(): boolean {
   return Keychain.contains(KEYCHAIN_BLUELINK_CONFIG_KEY)
@@ -45,6 +72,7 @@ export function setConfig(config: Config) {
 export function getFlattenedConfig(): FlattenedConfig {
   const config = getConfig()
   return {
+    ...DEFAULT_CONFIG,
     ...config.auth,
     ...config,
   } as FlattenedConfig
@@ -56,18 +84,7 @@ export function getConfig(): Config {
     config = JSON.parse(Keychain.get(KEYCHAIN_BLUELINK_CONFIG_KEY))
   }
   if (!config) {
-    config = {
-      auth: {
-        username: '',
-        password: '',
-        pin: '',
-        region: '',
-      },
-      tempType: 'C',
-      climateTempCold: 19,
-      climateTempWarm: 21.5,
-      debugLogging: false,
-    }
+    config = DEFAULT_CONFIG
   }
   return config
 }
@@ -76,7 +93,17 @@ export async function loadConfigScreen() {
   return await form<FlattenedConfig>({
     title: 'Bluelink Configuration settings',
     subtitle: 'Saved within IOS keychain and never exposed beyond your device(s)',
-    onSubmit: ({ username, password, region, pin, tempType, climateTempWarm, climateTempCold, debugLogging }) => {
+    onSubmit: ({
+      username,
+      password,
+      region,
+      pin,
+      tempType,
+      climateTempWarm,
+      climateTempCold,
+      debugLogging,
+      allowWidgetRemoteRefresh,
+    }) => {
       setConfig({
         auth: {
           username: username,
@@ -87,8 +114,27 @@ export async function loadConfigScreen() {
         tempType: tempType,
         climateTempCold: climateTempCold,
         climateTempWarm: climateTempWarm,
+        allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
         debugLogging: debugLogging,
       } as Config)
+    },
+    onStateChange: (state, previousState): Partial<FlattenedConfig> => {
+      if (state.tempType !== previousState.tempType) {
+        if (state.tempType === 'C') {
+          state.climateTempCold = DEFAULT_TEMPS.C.cold
+          state.climateTempWarm = DEFAULT_TEMPS.C.warm
+        } else {
+          state.climateTempCold = DEFAULT_TEMPS.F.cold
+          state.climateTempWarm = DEFAULT_TEMPS.F.warm
+        }
+      }
+      if (state.allowWidgetRemoteRefresh && !previousState.allowWidgetRemoteRefresh) {
+        confirm('Enabling background remote refresh may impact your 12v battery ', {
+          confirmButtonTitle: 'I understand',
+          includeCancel: false,
+        })
+      }
+      return state
     },
     isFormValid: ({ username, password, region, pin, tempType, climateTempCold, climateTempWarm }) => {
       if (!username || !password || !region || !pin || !climateTempCold || !tempType || !climateTempWarm) {
@@ -140,6 +186,11 @@ export async function loadConfigScreen() {
         type: 'numberValue',
         label: 'Climate temp when pre-cooling (whole number or .5)',
         isRequired: true,
+      },
+      allowWidgetRemoteRefresh: {
+        type: 'checkbox',
+        label: 'Enable background remote refresh',
+        isRequired: false,
       },
       debugLogging: {
         type: 'checkbox',

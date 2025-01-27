@@ -20,17 +20,31 @@ const DARK_BG_COLOR = '000000'
 const LIGHT_BG_COLOR = 'FFFFFF'
 
 const KEYCHAIN_WIDGET_REFRESH_KEY = 'egmp-bluelink-widget'
-const DEFAULT_STATUS_CHECK_INTERVAL_DAY = 3600
-const DEFAULT_STATUS_CHECK_INTERVAL_NIGHT = 10800
-const DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL_DAY = 7200
-const DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL_NIGHT = 14400
+
+// Definition of Day/Night Hours
 const NIGHT_HOUR_START = 23
 const NIGHT_HOUR_STOP = 7
+
+// Day Intervals - day lasts for 16 days
+const DEFAULT_STATUS_CHECK_INTERVAL_DAY = 3600
+const DEFAULT_REMOTE_REFRESH_INTERVAL_DAY = 3600 * 4 // max 4 remote refreshes per day
+const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_DAY = 3600 * 2 // max 8 remote refreshes per day
+
+// Night Intervals - night lasts for 8 hours
+const DEFAULT_STATUS_CHECK_INTERVAL_NIGHT = 3600 * 2
+const DEFAULT_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 6 // max 1 remote refresh per night
+const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 4 // max 2 remote refreshes per night
 
 const WIDGET_LOG_FILE = 'egmp-bluelink-widget-log'
 
 interface WidgetRefreshCache {
   normalRefreshRequired: boolean
+  lastRemoteRefresh: number
+}
+
+const DEFAULT_WIDGET_CACHE = {
+  normalRefreshRequired: false,
+  lastRemoteRefresh: 0,
 }
 
 async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Status> {
@@ -39,49 +53,65 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Statu
   const currentTimestamp = Math.floor(Date.now() / 1000)
   const currentHour = new Date().getHours()
 
+  // Set status periods based on day/night
   let DEFAULT_STATUS_CHECK_INTERVAL = DEFAULT_STATUS_CHECK_INTERVAL_NIGHT
-  let DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL = DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL_NIGHT
+  let DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL = DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_NIGHT
+  let DEFAULT_REMOTE_REFRESH_INTERVAL = DEFAULT_REMOTE_REFRESH_INTERVAL_NIGHT
   if (currentHour < NIGHT_HOUR_START && currentHour > NIGHT_HOUR_STOP) {
     DEFAULT_STATUS_CHECK_INTERVAL = DEFAULT_STATUS_CHECK_INTERVAL_DAY
-    DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL = DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL_DAY
+    DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL = DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_DAY
+    DEFAULT_REMOTE_REFRESH_INTERVAL = DEFAULT_REMOTE_REFRESH_INTERVAL_DAY
   }
 
   if (Keychain.contains(KEYCHAIN_WIDGET_REFRESH_KEY)) {
-    cache = JSON.parse(Keychain.get(KEYCHAIN_WIDGET_REFRESH_KEY))
+    cache = {
+      ...DEFAULT_WIDGET_CACHE,
+      ...JSON.parse(Keychain.get(KEYCHAIN_WIDGET_REFRESH_KEY)),
+    }
   }
   if (!cache) {
-    cache = {
-      normalRefreshRequired: false,
-    }
+    cache = DEFAULT_WIDGET_CACHE
   }
   let status = bl.getCachedStatus()
 
+  // Get last remote check from cached API and convert
+  // then compare to cache.lastRemoteRefresh and use whatever value is greater
+  // we have both as we may have requested a remote refresh and that request is still pending
   const lastRemoteCheckString = status.status.lastRemoteStatusCheck + 'Z'
   const df = new DateFormatter()
   df.dateFormat = 'yyyyMMddHHmmssZ'
-  const lastRemoteCheck = Math.floor(df.date(lastRemoteCheckString).getTime() / 1000)
+  let lastRemoteCheck = Math.floor(df.date(lastRemoteCheckString).getTime() / 1000)
+  lastRemoteCheck = lastRemoteCheck > cache.lastRemoteRefresh ? lastRemoteCheck : cache.lastRemoteRefresh
 
   // LOGIC for refresh within widget
-  // 1. If charging OR charger plugged in do a forceRefresh (poll car) every DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL period
-  //    Note we do not block for the response of this call - we just init it, get the normal API status,
-  //    and set normalRefreshRequired to true - to ensure remote data is fetched on next widget refresh (normally ~15 mins)
-  // 2. If NOT charing perform a normal (non car polling) refresh based on time of day (localtime) using DEFAULT_STATUS_CHECK_INTERVAL_DAY or DEFAULT_STATUS_CHECK_INTERVAL_NIGHT
-  // 3. Otherwise accept whatever was from the getCachedStatus call
+  // 1.Force refresh if user opted in via config AND last remote check is older than:
+  //   - DEFAULT_REMOTE_REFRESH_INTERVAL if NOT charging
+  //   - DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL if charging
+  // 2. Normal refresh if:
+  //   - normalRefreshRequired is set OR
+  //   - last status check is older than DEFAULT_STATUS_CHECK_INTERVAL
+  // 3. Use cached status if none of the above conditions are met
+  //
+  // The time intervals vary based on day/night - with day being more frequent
+  const chargingAndOverRemoteRefreshInterval =
+    status.status.isCharging && lastRemoteCheck + DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL < currentTimestamp
+
+  const notChargingAndOverRemoteRefreshInterval =
+    !status.status.isCharging && lastRemoteCheck + DEFAULT_REMOTE_REFRESH_INTERVAL < currentTimestamp
+
+  const overNormalRefreshInterval = status.status.lastStatusCheck + DEFAULT_STATUS_CHECK_INTERVAL < currentTimestamp
 
   try {
     if (
-      (status.status.isCharging || status.status.isPluggedIn) &&
-      lastRemoteCheck + DEFAULT_CHARGING_FORCE_REFRESH_INTERVAL < currentTimestamp
+      config.allowWidgetRemoteRefresh &&
+      (chargingAndOverRemoteRefreshInterval || notChargingAndOverRemoteRefreshInterval)
     ) {
       if (config.debugLogging) await logger.log('Doing Force Refresh')
-      status = await bl.getStatus(false, true)
       bl.getStatus(true, true) // no await deliberatly
       sleep(500) // wait for API request to be actually sent in background
+      cache.lastRemoteRefresh = currentTimestamp
       cache.normalRefreshRequired = true
-    } else if (
-      cache.normalRefreshRequired ||
-      status.status.lastStatusCheck + DEFAULT_STATUS_CHECK_INTERVAL < currentTimestamp
-    ) {
+    } else if (cache.normalRefreshRequired || overNormalRefreshInterval) {
       if (config.debugLogging) await logger.log('Doing API Refresh')
       status = await bl.getStatus(false, true)
       cache.normalRefreshRequired = false
@@ -89,7 +119,8 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Statu
       if (config.debugLogging) await logger.log('Using Cached Status')
     }
   } catch (_error) {
-    // ignore error and just displayed last cached values in widget - we have no guarentee of network connection
+    // ignore any API errors and just displayed last cached values in widget
+    // we have no guarentee of network connection
   }
 
   Keychain.set(KEYCHAIN_WIDGET_REFRESH_KEY, JSON.stringify(cache))

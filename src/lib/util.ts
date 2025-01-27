@@ -96,9 +96,9 @@ export function getChargeCompletionString(dateFrom: Date, minutes: number): stri
 }
 
 export function getBatteryPercentColor(batteryPercent: number): Color {
-  if (batteryPercent >= 75) {
+  if (batteryPercent >= 50) {
     return Color.green()
-  } else if (batteryPercent >= 50) {
+  } else if (batteryPercent >= 30) {
     return Color.orange()
   }
   return Color.red()
