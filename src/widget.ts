@@ -122,13 +122,13 @@ export async function createWidget(config: Config) {
   const appIconElement = titleStack.addImage(appIcon)
   appIconElement.imageSize = new Size(30, 30)
   appIconElement.cornerRadius = 4
-  // mainStack.addSpacer()
+  mainStack.addSpacer()
 
   // Center Stack
   const contentStack = mainStack.addStack()
   const carImageElement = contentStack.addImage(appIcon)
-  carImageElement.imageSize = new Size(130, 90)
-  contentStack.addSpacer()
+  carImageElement.imageSize = new Size(170, 70)
+  // contentStack.addSpacer()
 
   // Battery Info
   const batteryInfoStack = contentStack.addStack()
@@ -180,8 +180,10 @@ export async function createWidget(config: Config) {
 
   if (isCharging) {
     const chargeComplete = getChargeCompletionString(lastSeen, remainingChargingTime)
-    const batteryChargingTimeStack = batteryInfoStack.addStack()
+    const batteryChargingTimeStack = mainStack.addStack()
+    batteryChargingTimeStack.layoutHorizontally()
     batteryChargingTimeStack.addSpacer()
+    // batteryChargingTimeStack.addSpacer()
 
     const chargingSpeedElement = batteryChargingTimeStack.addText(`${chargingKw} kW`)
     chargingSpeedElement.font = Font.mediumSystemFont(14)
@@ -200,7 +202,7 @@ export async function createWidget(config: Config) {
     chargingTimeElement.textColor = DARK_MODE ? Color.white() : Color.black()
     chargingTimeElement.rightAlignText()
   }
-  batteryInfoStack.addSpacer()
+  mainStack.addSpacer()
 
   // Footer
   const footerStack = mainStack.addStack()
@@ -210,7 +212,7 @@ export async function createWidget(config: Config) {
     ? `${Math.floor(Number(odometer / 1.6)).toString()} mi`
     : `${Math.floor(Number(odometer)).toString()} km`
   const odometerElement = footerStack.addText(odometerText)
-  odometerElement.font = Font.mediumSystemFont(10)
+  odometerElement.font = Font.mediumSystemFont(12)
   odometerElement.textColor = DARK_MODE ? Color.white() : Color.black()
   odometerElement.textOpacity = 0.5
   odometerElement.minimumScaleFactor = 0.5
@@ -221,7 +223,7 @@ export async function createWidget(config: Config) {
   const lastSeenElement = footerStack.addText(
     'Last Updated: ' + lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown',
   )
-  lastSeenElement.font = Font.mediumSystemFont(10)
+  lastSeenElement.font = Font.mediumSystemFont(12)
   lastSeenElement.textOpacity = 0.5
   lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()
   lastSeenElement.minimumScaleFactor = 0.5
