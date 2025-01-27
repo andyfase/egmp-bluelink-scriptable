@@ -13,7 +13,6 @@ import {
   RadioField,
   ReadonlyField,
   SelectMultiField,
-  TextAreaField,
   TextInputField,
   YYYYMMDDDatePickerField,
 } from './fieldRows'
@@ -78,11 +77,6 @@ const fieldRenderers: FieldRenderers = {
   textInput: (opts) => {
     const { currValue, onChange } = opts
     return [TextInputField({ ...commonOpts(opts), currValue, onChange }), HR()].flat()
-  },
-
-  textarea: (opts) => {
-    const { currValue, onChange } = opts
-    return [TextAreaField({ ...commonOpts(opts), currValue, onChange }), HR()].flat()
   },
 
   YYYMMDDDatePicker: (opts) => {

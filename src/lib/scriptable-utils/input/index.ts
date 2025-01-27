@@ -11,11 +11,9 @@ export {
   RadioField,
   ReadonlyField,
   SelectMultiField,
-  TextAreaField,
   TextInputField,
   YYYYMMDDDatePickerField,
 } from './form'
-export { default as textArea } from './textArea'
 export { default as alert } from './alert'
 export * from './chooseColor'
 export { default as chooseColor } from './chooseColor'

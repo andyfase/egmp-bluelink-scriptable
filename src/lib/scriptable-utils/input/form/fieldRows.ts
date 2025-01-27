@@ -14,7 +14,6 @@ import { destructiveConfirm } from '../confirm'
 import { pickDate } from '../date/pickDate'
 import pickDateAndTIme from '../date/pickDateAndTIme'
 import quickOptions from '../quickOptions'
-import textArea from '../textArea'
 import textInput from '../textInput'
 import { MultiOptionRow, StandardFieldRow } from './atoms'
 import { CommonFieldOpts, MultiOptionRowValueOpt, ValidFieldValue } from './types'
@@ -208,40 +207,6 @@ export const TextInputField = (opts: TextInputOpts) => {
       valueRowLabel: mapLabel(opts, currValue) ?? 'Add text',
       showErrorIndicator: Boolean(errorMessage),
       showClearIndicator: canUserClear,
-    },
-  })
-}
-
-//
-
-type TextAreaOpts = {
-  currValue?: string
-  onChange: MapFn<string>
-} & CommonFieldOpts
-
-export const TextAreaField = (opts: TextAreaOpts) => {
-  const { onChange, currValue, customIcon, label } = opts
-  const rowOpts = getRowOpts({
-    isFaded: !currValue,
-    onTap: async () => {
-      const newVal = await textArea({
-        title: label ?? 'Enter text',
-        initValue: currValue,
-        placeholder: currValue,
-        includeClearButton: true,
-      })
-      if (newVal && newVal !== currValue) onChange(newVal)
-    },
-  })
-  const errorMessage = getErrorMessage(opts, currValue)
-  return StandardFieldRow({
-    labelOpts: { fieldLabel: label, rowOpts },
-    errorOpts: { errorMessage, rowOpts },
-    valueOpts: {
-      icon: customIcon,
-      rowOpts,
-      valueRowLabel: mapLabel(opts, currValue) ?? 'Add text',
-      showErrorIndicator: Boolean(errorMessage),
     },
   })
 }

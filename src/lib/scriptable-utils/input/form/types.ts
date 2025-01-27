@@ -14,7 +14,6 @@ type FieldTypeToSupportedValue = {
   selectMulti: (string | number)[]
   radio: string | number
   dropdown: string | number
-  textarea: string
   readonly: string
   color: EnhancedColor
   numberValue: number
