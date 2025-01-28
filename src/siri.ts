@@ -27,12 +27,7 @@ export async function processSiriRequest(config: Config, shortcutParameter: any)
 
 async function getStatus(bl: Bluelink): Promise<string> {
   const status = await bl.getStatus(false, true)
-
-  const updatedTime = status.status.lastRemoteStatusCheck + 'Z'
-  // date conversion
-  const df = new DateFormatter()
-  df.dateFormat = 'yyyyMMddHHmmssZ'
-  const lastSeen = df.date(updatedTime)
+  const lastSeen = new Date(status.status.lastRemoteStatusCheck)
 
   const carName = status.car.nickName || `${status.car.modelYear}`
 
@@ -47,7 +42,7 @@ async function getStatus(bl: Bluelink): Promise<string> {
     response += 'Also your car is currently plugged into a charger.'
   }
   const lastSeenShort = lastSeen.toLocaleString(undefined, {
-    weekday: 'short',
+    weekday: 'long',
     hour: 'numeric',
     minute: 'numeric',
   })
