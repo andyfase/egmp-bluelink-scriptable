@@ -157,11 +157,13 @@ export async function loadConfigScreen() {
         type: 'textInput',
         label: 'Bluelink Password',
         isRequired: true,
+        secure: true,
       },
       pin: {
         type: 'numberValue',
         label: 'Bluelink PIN',
         isRequired: true,
+        secure: true,
       },
       region: {
         type: 'dropdown',

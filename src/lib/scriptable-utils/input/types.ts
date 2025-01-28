@@ -9,6 +9,7 @@ export type TextFieldFormatting = {
 export type TextFieldConfigOpts = {
   placeholder?: string
   initValue?: string
+  secure?: boolean
 } & TextFieldFormatting
 
 export type AlertButton = {
@@ -26,4 +27,5 @@ export type AlertOpts<TextFieldKey extends string = string, ButtonKey extends st
   /** `ButtonKey` values are used as button labels */
   buttons: Record<ButtonKey, AlertButton>
   presentAsSheet?: boolean
+  secure?: boolean
 }

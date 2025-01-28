@@ -20,9 +20,9 @@ const applyTextFieldFlavor = (flavor: TextFieldKeyboardFlavor, field: TextField)
   }
 }
 
-const addTextFields = (textFields: TextFieldConfigOpts[], alert: Alert) => {
+const addTextFields = (textFields: TextFieldConfigOpts[], alert: Alert, secure: boolean) => {
   for (const { placeholder = '', initValue, flavor = 'default', font, textColor } of textFields) {
-    const field = alert.addTextField(placeholder, initValue)
+    const field = secure ? alert.addSecureTextField(placeholder, initValue) : alert.addTextField(placeholder, initValue)
     applyTextFieldFlavor(flavor, field)
     if (font) field.font = font
     if (textColor) field.textColor = textColor
@@ -77,6 +77,7 @@ export default async <TextFieldKey extends string = string, ButtonKey extends st
   textFields,
   buttons,
   presentAsSheet = false,
+  secure = false,
 }: AlertOpts<TextFieldKey, ButtonKey>) => {
   const alert = new Alert()
   alert.title = title
@@ -88,6 +89,7 @@ export default async <TextFieldKey extends string = string, ButtonKey extends st
       // Ensure preserved order
       fieldKeys.map((key) => textFields[key]),
       alert,
+      secure,
     )
   }
 

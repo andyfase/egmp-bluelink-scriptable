@@ -51,11 +51,12 @@ export type FieldOpts<T extends FieldType, FormState extends FormStateShape, K e
   // Specifically for dropdown. TODO: eventually, would be nice to have opts
   // specific to each kind of input element. This is a bit lazy
   allowCustom?: boolean
+  secure?: boolean
 }
 
 export type FieldRenderOpts<T extends FieldType> = Pick<
   FieldOpts<T, AnyObj, string>,
-  'isClearable' | 'label' | 'options' | 'customIcon' | 'mapDisplayValue' | 'isRequired' | 'allowCustom'
+  'isClearable' | 'label' | 'options' | 'customIcon' | 'mapDisplayValue' | 'isRequired' | 'allowCustom' | 'secure'
 > & {
   currValue: ValidFieldValue<T>
   /** This allows passing `undefined`, but this should not be allowed if
@@ -123,7 +124,7 @@ export type MultiOptionRowOpts = {
 
 export type CommonFieldOpts = Pick<
   FieldRenderOpts<any>,
-  'errorMessage' | 'label' | 'customIcon' | 'mapDisplayValue' | 'isRequired' | 'allowCustom' | 'isClearable'
+  'errorMessage' | 'label' | 'customIcon' | 'mapDisplayValue' | 'isRequired' | 'allowCustom' | 'isClearable' | 'secure'
 >
 
 export const NO_FIELD_SECTION = Symbol('NO_FIELD_SECTION')

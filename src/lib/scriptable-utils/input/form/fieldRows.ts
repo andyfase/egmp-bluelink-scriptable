@@ -180,6 +180,7 @@ export const ChooseColorField = (opts: ChooseColorOpts) => {
 
 type TextInputOpts = {
   currValue?: string
+  secure?: boolean
   onChange: MapFn<ValidFieldValue<'textInput'>>
 } & CommonFieldOpts
 
@@ -191,6 +192,7 @@ export const TextInputField = (opts: TextInputOpts) => {
       const newVal = await textInput(label ?? 'Enter text', {
         initValue: currValue,
         placeholder: currValue,
+        secure: opts.secure,
       })
       if (newVal && newVal !== currValue) onChange(newVal)
     },
@@ -204,7 +206,7 @@ export const TextInputField = (opts: TextInputOpts) => {
     valueOpts: {
       icon: customIcon,
       rowOpts,
-      valueRowLabel: mapLabel(opts, currValue) ?? 'Add text',
+      valueRowLabel: mapLabel(opts, opts.secure ? '********' : currValue) ?? 'Add text',
       showErrorIndicator: Boolean(errorMessage),
       showClearIndicator: canUserClear,
     },
@@ -411,6 +413,7 @@ export const NumberField = (opts: NumberOpts) => {
   const rowOpts = getRowOpts({
     onTap: async () => {
       const newVal = await textInput('Enter number', {
+        secure: opts.secure,
         flavor: 'number',
         ...(isNumber(currValue) && { initValue: String(currValue) }),
         placeholder: isNumber(currValue) ? String(currValue) : '42',
@@ -427,7 +430,8 @@ export const NumberField = (opts: NumberOpts) => {
     valueOpts: {
       icon: customIcon,
       rowOpts,
-      valueRowLabel: mapLabel(opts, isNumber(currValue) ? String(currValue) : null) ?? 'Enter number',
+      valueRowLabel:
+        mapLabel(opts, isNumber(currValue) ? (opts.secure ? '****' : String(currValue)) : null) ?? 'Enter number',
       showErrorIndicator: Boolean(errorMessage),
     },
   })

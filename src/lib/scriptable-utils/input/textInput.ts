@@ -10,6 +10,7 @@ type Opts = {
   onCancel?: NoParamFn
   flavor?: TextFieldKeyboardFlavor
   showClipboardButton?: boolean
+  secure?: boolean
 } & TextFieldConfigOpts
 
 export default async (
@@ -24,6 +25,7 @@ export default async (
     placeholder,
     flavor,
     showClipboardButton = false,
+    secure = false,
   }: Opts = {},
 ) => {
   const clipboardValue = showClipboardButton && Pasteboard.paste()
@@ -40,6 +42,7 @@ export default async (
       [submitText]: {},
     },
     textFields: { inputText: { placeholder, initValue, flavor } },
+    secure: secure,
   })
 
   const shouldUseClipboard = tappedButtonText === USE_CLIPBOARD_LABEL

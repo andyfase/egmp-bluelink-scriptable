@@ -26,6 +26,7 @@ const commonOptsKeys = getTypesafeArrOfType<keyof CommonFieldOpts>({
   isRequired: null,
   label: null,
   mapDisplayValue: null,
+  secure: null,
 })
 const commonOpts = (opts: FieldRenderOpts<any>) => pick(opts, commonOptsKeys)
 
