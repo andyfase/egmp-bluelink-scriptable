@@ -100,23 +100,33 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
   const notChargingAndOverRemoteRefreshInterval =
     !status.status.isCharging && lastRemoteCheck + DEFAULT_REMOTE_REFRESH_INTERVAL < currentTimestamp
 
-  // define next refresh date. Should be the lowest value between API refresh and remote refresh
-  const nextRemoteRefreshTime =
-    lastRemoteCheck +
-    (status.status.isCharging ? DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL : DEFAULT_REMOTE_REFRESH_INTERVAL)
-  const nextAPIRefreshTime = status.status.lastStatusCheck + DEFAULT_STATUS_CHECK_INTERVAL
-  let nextRefresh = new Date(nextAPIRefreshTime < nextRemoteRefreshTime ? nextAPIRefreshTime : nextRemoteRefreshTime)
+  // calculate next remote check - reset if calculated value is in the past
+  const remoteRefreshInterval = status.status.isCharging
+    ? DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL
+    : DEFAULT_REMOTE_REFRESH_INTERVAL
+  let nextRemoteRefreshTime = lastRemoteCheck + remoteRefreshInterval
+  if (nextRemoteRefreshTime < currentTimestamp) nextRemoteRefreshTime = currentTimestamp + remoteRefreshInterval
+
+  // calculate next API refresh - reset if calculated value is in the past
+  let nextAPIRefreshTime = status.status.lastStatusCheck + DEFAULT_STATUS_CHECK_INTERVAL
+  if (nextAPIRefreshTime < currentTimestamp) nextAPIRefreshTime = currentTimestamp + DEFAULT_STATUS_CHECK_INTERVAL
+
+  // choose the lowest of the two values.
+  const lowestRefreshTime = nextAPIRefreshTime < nextRemoteRefreshTime ? nextAPIRefreshTime : nextRemoteRefreshTime
+  let nextRefresh = new Date(lowestRefreshTime)
 
   try {
     if (
       config.allowWidgetRemoteRefresh &&
       (chargingAndOverRemoteRefreshInterval || notChargingAndOverRemoteRefreshInterval)
     ) {
+      // Note a remote refresh takes to long to wait for - so trigger it and set a small nextRefresh value to pick
+      // up the remote data on the next widget refresh
       if (config.debugLogging) await logger.log('Doing Force Refresh')
       bl.getStatus(true, true) // no await deliberatly
       sleep(500) // wait for API request to be actually sent in background
       cache.lastRemoteRefresh = currentTimestamp
-      nextRefresh = new Date(Date.now() + 5 * 60 * 1000) // over-ride next refresh to allow API refresh to occur 5 minutes after this.
+      nextRefresh = new Date(Date.now() + 5 * 60 * 1000)
     } else {
       if (config.debugLogging) await logger.log('Doing API Refresh')
       status = await bl.getStatus(false, true)
