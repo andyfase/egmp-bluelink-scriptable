@@ -1,5 +1,5 @@
-import { carImageMap } from 'resources/images'
 import { Config } from '../../config'
+import { defaultImage } from '../../resources/defaultImage'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
 
@@ -71,6 +71,12 @@ export interface ClimateRequest {
   steering: boolean
   temp: number
   durationMinutes: number
+}
+
+const carImageHttpURL = 'https://bluelink.andyfase.com/app-assets/car-images/'
+const carImageMap: Record<string, string> = {
+  ioniq5: 'ioniq5.png',
+  default: 'ioniq5.png',
 }
 
 export class Bluelink {
@@ -267,12 +273,34 @@ export class Bluelink {
     }
   }
 
-  public getCarImage(): string {
-    for (const [name, image] of Object.entries(carImageMap)) {
-      if (this.cache.car.modelName.toLocaleLowerCase().includes(name)) return image
+  public async getCarImage(): Promise<Image> {
+    let carFileName = ''
+    for (const [name, fileName] of Object.entries(carImageMap)) {
+      if (this.cache.car.modelName.toLocaleLowerCase().includes(name)) {
+        carFileName = fileName
+        break
+      }
     }
-    // default
-    return carImageMap['default']!
+    if (!carFileName) carFileName = carImageMap['default']!
+
+    const fs = FileManager.local()
+    const localFilePath = `${fs.libraryDirectory()}/${carFileName}`
+    if (fs.fileExists(localFilePath)) {
+      return fs.readImage(localFilePath)
+    }
+
+    // download and store image
+    const req = new Request(`${carImageHttpURL}/${carFileName}`)
+    req.method = 'GET'
+
+    try {
+      const image = await req.loadImage()
+      fs.writeImage(localFilePath, image)
+      return image
+    } catch (_error) {
+      // failed download - return low quality local default image which is base64 encoded
+      return Image.fromData(Data.fromBase64String(defaultImage))
+    }
   }
 
   protected async sleep(milliseconds: number): Promise<void> {

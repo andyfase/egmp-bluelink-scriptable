@@ -154,7 +154,7 @@ export async function createWidget(config: Config) {
   const status = refresh.status
 
   // Prepare image
-  const appIcon = Image.fromData(Data.fromBase64String(bl.getCarImage()))
+  const appIcon = await bl.getCarImage()
   const title = status.car.nickName || `${status.car.modelYear} ${status.car.modelName}`
 
   // define widget and set date for when the next refresh should not occur before.

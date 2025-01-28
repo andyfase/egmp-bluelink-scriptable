@@ -51,19 +51,28 @@ const { present, connect, setState } = getTable<{
   lastUpdated: number
   twelveSoc: number
   updatingActions: updatingActions | undefined
+  appIcon: Image
 }>({
   name: 'Testing',
 })
+
+const MIN_API_REFRESH_TIME = 900000 // 15 minutes
 
 export async function createApp(config: Config) {
   const bl = await initRegionalBluelink(config)
   await loadTintedIcons()
 
   // not blocking call - render UI with last cache and then update from a non forced remote call (i.e. to server but not to car)
+  // if its been at least MIN_API_REFRESH_TIME milliseconds
   const cachedStatus = bl.getCachedStatus()
-  bl.getStatus(false, true).then(async (status) => {
-    updateStatus(status)
-  })
+  if (!cachedStatus || cachedStatus.status.lastStatusCheck < Date.now() + MIN_API_REFRESH_TIME) {
+    bl.getStatus(false, true).then(async (status) => {
+      updateStatus(status)
+    })
+  }
+
+  // fetch app icon
+  const appIcon = await bl.getCarImage()
 
   return present({
     defaultState: {
@@ -80,15 +89,9 @@ export async function createApp(config: Config) {
       lastUpdated: cachedStatus.status.lastRemoteStatusCheck,
       updatingActions: undefined,
       twelveSoc: cachedStatus.status.twelveSoc,
+      appIcon: appIcon,
     },
-    render: () => [
-      pageTitle(),
-      batteryStatus(),
-      pageImage(bl),
-      pageIcons(bl),
-      Spacer({ rowHeight: 200 }),
-      settings(bl),
-    ],
+    render: () => [pageTitle(), batteryStatus(), pageImage(), pageIcons(bl), Spacer({ rowHeight: 200 }), settings(bl)],
   })
 }
 
@@ -380,12 +383,11 @@ const pageIcons = connect(
   },
 )
 
-function pageImage(bl: Bluelink) {
-  const appIcon = Image.fromData(Data.fromBase64String(bl.getCarImage()))
+const pageImage = connect(({ state: { appIcon } }) => {
   appIcon.size.width = 500
   appIcon.size.height = 90
   return Div([Img(appIcon)], { height: 150 })
-}
+})
 
 function updateStatus(status: Status) {
   setState({
