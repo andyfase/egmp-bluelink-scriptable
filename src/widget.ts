@@ -107,9 +107,8 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
   let nextRemoteRefreshTime = lastRemoteCheck + remoteRefreshInterval
   if (nextRemoteRefreshTime < currentTimestamp) nextRemoteRefreshTime = currentTimestamp + remoteRefreshInterval
 
-  // calculate next API refresh - reset if calculated value is in the past
-  let nextAPIRefreshTime = status.status.lastStatusCheck + DEFAULT_STATUS_CHECK_INTERVAL
-  if (nextAPIRefreshTime < currentTimestamp) nextAPIRefreshTime = currentTimestamp + DEFAULT_STATUS_CHECK_INTERVAL
+  // nextAPIRefreshTime is always based on DEFAULT_STATUS_CHECK_INTERVAL as its the default option
+  const nextAPIRefreshTime = currentTimestamp + DEFAULT_STATUS_CHECK_INTERVAL
 
   // choose the lowest of the two values.
   const lowestRefreshTime = nextAPIRefreshTime < nextRemoteRefreshTime ? nextAPIRefreshTime : nextRemoteRefreshTime
