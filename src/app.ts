@@ -142,18 +142,25 @@ const batteryStatus = connect(({ state: { soc, range, isCharging, isPluggedIn } 
   icons.push(
     Img(getTintedIcon(calculateBatteryIcon(soc)), {
       align: 'left',
-      width: '10%',
+      width: '18%',
     }),
   )
   if (chargingIcon) {
     icons.push(
       Img(getTintedIcon(chargingIcon), {
         align: 'left',
-        width: '10%',
       }),
     )
   }
-  return Div(icons.concat([P(`${soc.toString()}% (~ ${range} km)`, { align: 'left' })]))
+  return Div(
+    icons.concat([
+      P(`${soc.toString()}% (~ ${range} km)`, {
+        align: 'left',
+        fontSize: 22,
+        width: '90%',
+      }),
+    ]),
+  )
 })
 
 const pageIcons = connect(
