@@ -10,9 +10,39 @@ layout: home
 A [scriptable app](https://scriptable.app/) for IOS that allows you to control your Hyundai / Kia electric car using the Bluelink API. 
 {: .fs-6 .fw-300 }
 
+
+<script>
+function lightbox_open() {
+  var lightBoxVideo = document.getElementById("VisaChipCardVideo");
+  window.scrollTo(0, 0);
+  document.getElementById('light').style.display = 'block';
+  document.getElementById('fade').style.display = 'block';
+  lightBoxVideo.play();
+}
+
+function lightbox_close() {
+  var lightBoxVideo = document.getElementById("VisaChipCardVideo");
+  document.getElementById('light').style.display = 'none';
+  document.getElementById('fade').style.display = 'none';
+  lightBoxVideo.pause();
+}
+</script>
+
+<div id="light">
+  <a class="boxclose" id="boxclose" onclick="lightbox_close();"></a>
+  <video id="VisaChipCardVideo" height="680" autoplay controls>
+      <source src="./images/egmp-scriptable-in-use.mp4" type="video/mp4">
+      <!--Browser does not support <video> tag -->
+    </video>
+</div>
+
+<div id="fade" onClick="lightbox_close();"></div>
+
 <table border="0">
 <tr>
-<td width="55%" class="aTable"><img src="./images/widget_charging.png" width="400" /></td>
+<td width="55%" class="aTable"><a href="#" onclick="lightbox_open();"><img src="./images/widget_charging.png" width="400" /></a>
+<br/><center>Click to show app in action</center>
+</td>
 <td>
 
 <p>
