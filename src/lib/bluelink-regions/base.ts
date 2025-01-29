@@ -1,7 +1,9 @@
 import { Config } from '../../config'
 import { defaultImage } from '../../resources/defaultImage'
+import PersistedLog from '../scriptable-utils/io/PersistedLog'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
+const BLUELINK_LOG_FILE = 'egmp-bluelink-log'
 
 export interface BluelinkTokens {
   accessToken: string
@@ -92,6 +94,7 @@ export class Bluelink {
   protected tempLookup: TempConversion | undefined
   protected tokens: BluelinkTokens | undefined
   protected debugLastRequest: DebugLastRequest | undefined
+  protected logger: any
 
   constructor(config: Config, vin?: string) {
     this.vin = vin
@@ -101,6 +104,7 @@ export class Bluelink {
     this.tokens = undefined
     this.debugLastRequest = undefined
     this.tempLookup = undefined
+    this.logger = PersistedLog(BLUELINK_LOG_FILE)
   }
 
   protected async superInit(config: Config, vin?: string, statusCheckInterval?: number) {
@@ -269,6 +273,7 @@ export class Bluelink {
       const json = await req.loadJSON()
       return { resp: req.response, json: json }
     } catch (error) {
+      await this.logger.log(`Failed to send request to ${props.url}, error ${error}`)
       throw Error(`Failed to send request to ${props.url}, error ${error}`)
     }
   }
