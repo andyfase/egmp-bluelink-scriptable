@@ -4,6 +4,7 @@ import PersistedLog from '../scriptable-utils/io/PersistedLog'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
 const BLUELINK_LOG_FILE = 'egmp-bluelink-log'
+const DEFAULT_API_DOMAIN = 'https://mybluelink.ca/tods/api/'
 
 export interface BluelinkTokens {
   accessToken: string
@@ -77,7 +78,8 @@ export interface ClimateRequest {
 
 const carImageHttpURL = 'https://bluelink.andyfase.com/app-assets/car-images/'
 const carImageMap: Record<string, string> = {
-  ioniq5: 'ioniq5.png',
+  'ioniq 5': 'ioniq5.png',
+  'ev 6': 'ev6.png',
   default: 'ioniq5.png',
 }
 
@@ -88,6 +90,7 @@ export class Bluelink {
   protected cache: Cache
   protected vin: string | undefined
   protected statusCheckInterval: number
+  protected apiDomain: string
 
   protected additionalHeaders: Record<string, string>
   protected authHeader: string
@@ -95,28 +98,51 @@ export class Bluelink {
   protected tokens: BluelinkTokens | undefined
   protected debugLastRequest: DebugLastRequest | undefined
   protected logger: any
+  protected loginFailure: boolean
 
   constructor(config: Config, vin?: string) {
     this.vin = vin
+    this.apiDomain = DEFAULT_API_DOMAIN
     this.statusCheckInterval = DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {}
     this.authHeader = 'Authentication'
     this.tokens = undefined
+    this.loginFailure = false
     this.debugLastRequest = undefined
     this.tempLookup = undefined
     this.logger = PersistedLog(BLUELINK_LOG_FILE)
   }
 
-  protected async superInit(config: Config, vin?: string, statusCheckInterval?: number) {
+  protected async superInit(config: Config, statusCheckInterval?: number) {
     this.config = config
-    this.vin = vin
+    this.vin = this.config.vin
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
 
-    this.cache = await this.loadCache()
-    if (!this.tokenValid()) {
-      this.cache.token = await this.login()
-      this.saveCache()
+    const cache = await this.loadCache()
+    if (!cache) {
+      this.loginFailure = true
+      return
     }
+    this.cache = cache
+    if (!this.tokenValid()) {
+      const tokens = await this.login()
+      if (!tokens) this.loginFailure = true
+      else {
+        this.tokens = tokens
+        this.saveCache()
+      }
+    }
+  }
+
+  protected getApiDomain(lookup: string, domains: Record<string, string>, _default: string): string {
+    for (const [key, domain] of Object.entries(domains)) {
+      if (key === lookup) return domain
+    }
+    return _default
+  }
+
+  public loginFailed(): boolean {
+    return this.loginFailure
   }
 
   public getCachedStatus(): Status {
@@ -216,14 +242,19 @@ export class Bluelink {
     Keychain.set(KEYCHAIN_CACHE_KEY, JSON.stringify(this.cache))
   }
 
-  protected async loadCache(): Promise<Cache> {
+  protected async loadCache(): Promise<Cache | undefined> {
     let cache: Cache | undefined = undefined
     if (Keychain.contains(KEYCHAIN_CACHE_KEY)) {
       cache = JSON.parse(Keychain.get(KEYCHAIN_CACHE_KEY))
     }
     if (!cache) {
       // initial use - load car and status
-      this.tokens = await this.login()
+      const tokens = await this.login()
+      if (!tokens) {
+        this.loginFailure = true
+        return
+      }
+      this.tokens = tokens
       const car = await this.getCar()
       cache = {
         token: this.tokens,
@@ -314,7 +345,7 @@ export class Bluelink {
     })
   }
 
-  protected async login(): Promise<BluelinkTokens> {
+  protected async login(): Promise<BluelinkTokens | undefined> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')
   }

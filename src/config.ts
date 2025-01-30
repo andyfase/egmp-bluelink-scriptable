@@ -10,15 +10,18 @@ export interface Auth {
 }
 
 export interface Config {
+  manufacturer: string | undefined
   auth: Auth
   tempType: 'C' | 'F'
   climateTempWarm: number
   climateTempCold: number
   allowWidgetRemoteRefresh: boolean
   debugLogging: boolean
+  vin: string | undefined
 }
 
 export interface FlattenedConfig {
+  manufacturer: string | undefined
   username: string
   password: string
   pin: string
@@ -28,9 +31,11 @@ export interface FlattenedConfig {
   climateTempCold: number
   allowWidgetRemoteRefresh: boolean
   debugLogging: boolean
+  vin: string | undefined
 }
 
 const SUPPORTED_REGIONS = ['canada']
+const SUPPORTED_MANUFACTURERS = ['Hyundai', 'Kia']
 
 const DEFAULT_TEMPS = {
   C: {
@@ -55,6 +60,7 @@ const DEFAULT_CONFIG = {
   climateTempWarm: DEFAULT_TEMPS.C.warm,
   debugLogging: false,
   allowWidgetRemoteRefresh: false,
+  manufacturer: undefined,
 } as Config
 
 export function configExists(): boolean {
@@ -83,10 +89,14 @@ export function getConfig(): Config {
   if (Keychain.contains(KEYCHAIN_BLUELINK_CONFIG_KEY)) {
     config = JSON.parse(Keychain.get(KEYCHAIN_BLUELINK_CONFIG_KEY))
   }
-  if (!config) {
+  if (!config || !configValid) {
     config = DEFAULT_CONFIG
   }
   return config
+}
+
+function configValid(config: Config): boolean {
+  return config && Object.hasOwn(config, 'auth')
 }
 
 export async function loadConfigScreen() {
@@ -103,6 +113,8 @@ export async function loadConfigScreen() {
       climateTempCold,
       debugLogging,
       allowWidgetRemoteRefresh,
+      manufacturer: manufacturer,
+      vin: vin,
     }) => {
       setConfig({
         auth: {
@@ -116,6 +128,8 @@ export async function loadConfigScreen() {
         climateTempWarm: climateTempWarm,
         allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
         debugLogging: debugLogging,
+        manufacturer: manufacturer?.toLowerCase(),
+        vin: vin ? vin.toUpperCase() : undefined,
       } as Config)
     },
     onStateChange: (state, previousState): Partial<FlattenedConfig> => {
@@ -171,6 +185,18 @@ export async function loadConfigScreen() {
         options: SUPPORTED_REGIONS,
         allowCustom: false,
         isRequired: true,
+      },
+      manufacturer: {
+        type: 'dropdown',
+        label: 'Choose your Car Manufacturer',
+        options: SUPPORTED_MANUFACTURERS,
+        allowCustom: false,
+        isRequired: false,
+      },
+      vin: {
+        type: 'textInput',
+        label: 'Optional VIN of car',
+        isRequired: false,
       },
       tempType: {
         type: 'dropdown',

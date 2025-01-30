@@ -8,12 +8,20 @@ import {
 } from './base'
 import { Config } from '../../config'
 
-const API_DOMAIN = 'https://mybluelink.ca/tods/api/'
+const DEFAULT_API_DOMAIN = 'https://mybluelink.ca/tods/api/'
+const API_DOMAINS: Record<string, string> = {
+  hyundai: 'https://mybluelink.ca/tods/api/',
+  kia: 'https://kiaconnect.ca/tods/api/',
+}
+
 const MAX_COMPLETION_POLLS = 20
 
 export class BluelinkCanada extends Bluelink {
-  constructor(config: Config, vin?: string, statusCheckInterval?: number) {
-    super(config, vin)
+  constructor(config: Config, statusCheckInterval?: number) {
+    super(config)
+    this.apiDomain = config.manufacturer
+      ? this.getApiDomain(config.manufacturer, API_DOMAINS, DEFAULT_API_DOMAIN)
+      : DEFAULT_API_DOMAIN
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
       from: 'SPA',
@@ -51,8 +59,8 @@ export class BluelinkCanada extends Bluelink {
   }
 
   static async init(config: Config, vin?: string, statusCheckInterval?: number) {
-    const obj = new BluelinkCanada(config, vin, statusCheckInterval)
-    await obj.superInit(config, vin)
+    const obj = new BluelinkCanada(config, statusCheckInterval)
+    await obj.superInit(config)
     return obj
   }
 
@@ -63,9 +71,9 @@ export class BluelinkCanada extends Bluelink {
     return false
   }
 
-  protected async login(): Promise<BluelinkTokens> {
+  protected async login(): Promise<BluelinkTokens | undefined> {
     const resp = await this.request({
-      url: API_DOMAIN + 'v2/login',
+      url: this.apiDomain + 'v2/login',
       data: JSON.stringify({
         loginId: this.config.auth.username,
         password: this.config.auth.password,
@@ -80,27 +88,27 @@ export class BluelinkCanada extends Bluelink {
     }
 
     const error = `Login Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    await this.logger.log(error)
-    throw Error(error)
+    if (this.config.debugLogging) await this.logger.log(error)
+    return undefined
   }
 
   protected async setCar(id: string) {
     const resp = await this.request({
-      url: API_DOMAIN + 'vhcllst',
+      url: this.apiDomain + 'vhcllst',
       data: JSON.stringify({
         vehicleId: id,
       }),
     })
     if (!this.requestResponseValid(resp.json)) {
       const error = `Failed to set car ${id}: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-      await this.logger.log(error)
+      if (this.config.debugLogging) await this.logger.log(error)
       throw Error(error)
     }
   }
 
   protected async getCar(): Promise<BluelinkCar> {
     const resp = await this.request({
-      url: API_DOMAIN + 'vhcllst',
+      url: this.apiDomain + 'vhcllst',
       method: 'POST',
     })
     if (this.requestResponseValid(resp.json) && resp.json.result.vehicles.length > 0) {
@@ -126,7 +134,7 @@ export class BluelinkCanada extends Bluelink {
       }
     }
     const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    await this.logger.log(error)
+    if (this.config.debugLogging) await this.logger.log(error)
     throw Error(error)
   }
 
@@ -184,7 +192,7 @@ export class BluelinkCanada extends Bluelink {
   protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
     const api = forceUpdate ? 'rltmvhclsts' : 'sltvhcl'
     const resp = await this.request({
-      url: API_DOMAIN + api,
+      url: this.apiDomain + api,
       method: 'POST',
       ...(!forceUpdate && {
         data: JSON.stringify({
@@ -203,14 +211,14 @@ export class BluelinkCanada extends Bluelink {
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    await this.logger.log(error)
+    if (this.config.debugLogging) await this.logger.log(error)
     throw Error(error)
   }
 
   protected async getAuthCode(): Promise<string> {
     const api = 'vrfypin'
     const resp = await this.request({
-      url: API_DOMAIN + api,
+      url: this.apiDomain + api,
       method: 'POST',
       data: JSON.stringify({
         pin: this.config.auth.pin,
@@ -220,7 +228,7 @@ export class BluelinkCanada extends Bluelink {
       return resp.json.result.pAuth
     }
     const error = `Failed to get auth code: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    await this.logger.log(error)
+    if (this.config.debugLogging) await this.logger.log(error)
     throw Error(error)
   }
 
@@ -233,7 +241,7 @@ export class BluelinkCanada extends Bluelink {
     let attempts = 0
     while (attempts <= MAX_COMPLETION_POLLS) {
       const resp = await this.request({
-        url: API_DOMAIN + api,
+        url: this.apiDomain + api,
         method: 'POST',
         headers: {
           Vehicleid: id,
@@ -244,7 +252,7 @@ export class BluelinkCanada extends Bluelink {
 
       if (!this.requestResponseValid(resp.json)) {
         const error = `Failed to poll for command completion: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-        await this.logger.log(error)
+        if (this.config.debugLogging) await this.logger.log(error)
         throw Error(error)
       }
 
@@ -280,7 +288,7 @@ export class BluelinkCanada extends Bluelink {
     const authCode = await this.getAuthCode()
     const api = shouldLock ? 'drlck' : 'drulck'
     const resp = await this.request({
-      url: API_DOMAIN + api,
+      url: this.apiDomain + api,
       method: 'POST',
       data: JSON.stringify({
         pin: this.config.auth.pin,
@@ -295,7 +303,7 @@ export class BluelinkCanada extends Bluelink {
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    await this.logger.log(error)
+    if (this.config.debugLogging) await this.logger.log(error)
     throw Error(error)
   }
 
@@ -314,7 +322,7 @@ export class BluelinkCanada extends Bluelink {
     const authCode = await this.getAuthCode()
     const api = shouldCharge ? 'evc/rcstrt' : 'evc/rcstp'
     const resp = await this.request({
-      url: API_DOMAIN + api,
+      url: this.apiDomain + api,
       method: 'POST',
       data: JSON.stringify({
         pin: this.config.auth.pin,
@@ -329,7 +337,7 @@ export class BluelinkCanada extends Bluelink {
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send charge command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    await this.logger.log(error)
+    if (this.config.debugLogging) await this.logger.log(error)
     throw Error(error)
   }
 
@@ -346,7 +354,7 @@ export class BluelinkCanada extends Bluelink {
     const authCode = await this.getAuthCode()
     const api = 'evc/rfon'
     const resp = await this.request({
-      url: API_DOMAIN + api,
+      url: this.apiDomain + api,
       method: 'POST',
       data: JSON.stringify({
         pin: this.config.auth.pin,
@@ -372,7 +380,7 @@ export class BluelinkCanada extends Bluelink {
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    await this.logger.log(error)
+    if (this.config.debugLogging) await this.logger.log(error)
     throw Error(error)
   }
 
@@ -380,7 +388,7 @@ export class BluelinkCanada extends Bluelink {
     const authCode = await this.getAuthCode()
     const api = 'evc/rfoff'
     const resp = await this.request({
-      url: API_DOMAIN + api,
+      url: this.apiDomain + api,
       method: 'POST',
       data: JSON.stringify({
         pin: this.config.auth.pin,
@@ -395,7 +403,7 @@ export class BluelinkCanada extends Bluelink {
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    await this.logger.log(error)
+    if (this.config.debugLogging) await this.logger.log(error)
     throw Error(error)
   }
 }

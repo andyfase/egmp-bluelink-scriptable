@@ -7,7 +7,6 @@ import {
   getChargeCompletionString,
   sleep,
 } from './lib/util'
-import { initRegionalBluelink } from './lib/bluelink'
 import { Bluelink, Status } from './lib/bluelink-regions/base'
 import { Config } from 'config'
 import PersistedLog from './lib/scriptable-utils/io/PersistedLog'
@@ -147,8 +146,7 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
   }
 }
 
-export async function createWidget(config: Config) {
-  const bl = await initRegionalBluelink(config)
+export async function createWidget(config: Config, bl: Bluelink) {
   const refresh = await refreshDataForWidget(bl, config)
   const status = refresh.status
 

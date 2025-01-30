@@ -1,11 +1,9 @@
 import { Config } from 'config'
-import { initRegionalBluelink } from 'lib/bluelink'
 import { Bluelink, ClimateRequest } from 'lib/bluelink-regions/base'
 import { getChargeCompletionString, sleep } from 'lib/util'
 
-export async function processSiriRequest(config: Config, shortcutParameter: any) {
+export async function processSiriRequest(config: Config, bl: Bluelink, shortcutParameter: any) {
   const shortcutParameterAsString = shortcutParameter as string
-  const bl = await initRegionalBluelink(config)
 
   for (const commandDetection of commandMap) {
     let found = true

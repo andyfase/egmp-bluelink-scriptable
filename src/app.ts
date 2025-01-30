@@ -13,7 +13,6 @@ import {
   dateStringOptions,
   getChargeCompletionString,
 } from 'lib/util'
-import { initRegionalBluelink } from './lib/bluelink'
 
 interface updatingActions {
   status?: {
@@ -58,8 +57,7 @@ const { present, connect, setState } = getTable<{
 
 const MIN_API_REFRESH_TIME = 900000 // 15 minutes
 
-export async function createApp(config: Config) {
-  const bl = await initRegionalBluelink(config)
+export async function createApp(config: Config, bl: Bluelink) {
   await loadTintedIcons()
 
   // not blocking call - render UI with last cache and then update from a non forced remote call (i.e. to server but not to car)
