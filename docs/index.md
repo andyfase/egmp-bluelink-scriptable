@@ -51,6 +51,9 @@ function lightbox_close() {
 <p>
 <a href="https://github.com/andyfase/egmp-bluelink-scriptable" class="btn fs-5 mb-4 mb-md-0">View it on GitHub&#160;&#160;</a>
 </p>
+<p>
+<a href="https://buymeacoffee.com/andyfase"><img src="./images/coffee.png" width="188"></a>
+</p>
 
 </td>
 </tr>

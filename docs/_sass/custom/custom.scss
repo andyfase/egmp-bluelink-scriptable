@@ -47,3 +47,22 @@ border: none;
 .test:hover ~ .test2 {
   display: none;
 }
+
+.btn { display: inline-block; box-sizing: border-box; padding: 0.45em 1em; margin: 0; font-family: inherit; font-size: inherit; font-weight: 500; line-height: 1.5; color: #7253ed; text-decoration: none; vertical-align: baseline; cursor: pointer; background-color: #d0d0d0; border-width: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 3px 10px rgba(0, 0, 0, 0.08); appearance: none; }
+.btn:focus { text-decoration: none; outline: none; box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.25); }
+.btn:focus:hover, .btn.selected:focus { box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.25); }
+.btn:hover, .btn.zeroclipboard-is-hover { color: #6a4aec; }
+.btn:hover, .btn:active, .btn.zeroclipboard-is-hover, .btn.zeroclipboard-is-active { text-decoration: none; background-color: #ffd9d9; }
+.btn:active, .btn.selected, .btn.zeroclipboard-is-active { background-color: #efefef; background-image: none; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15); }
+.btn.selected:hover { background-color: #d0d0d0; }
+.btn:disabled, .btn:disabled:hover, .btn.disabled, .btn.disabled:hover { color: rgba(102, 102, 102, 0.5); cursor: default; background-color: rgba(229, 229, 229, 0.5); background-image: none; box-shadow: none; }
+
+.btn-outline { color: #7253ed; background: transparent; box-shadow: inset 0 0 0 2px #e6e1e8; }
+.btn-outline:hover, .btn-outline:active, .btn-outline.zeroclipboard-is-hover, .btn-outline.zeroclipboard-is-active { color: #6341eb; text-decoration: none; background-color: transparent; box-shadow: inset 0 0 0 3px #e6e1e8; }
+.btn-outline:focus { text-decoration: none; outline: none; box-shadow: inset 0 0 0 2px #5c5962, 0 0 0 3px rgba(0, 0, 255, 0.25); }
+.btn-outline:focus:hover, .btn-outline.selected:focus { box-shadow: inset 0 0 0 2px #5c5962; }
+
+.btn-primary { color: #fff; background-color: #5739ce; background-image: linear-gradient(#6f55d5, #5739ce); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 10px rgba(0, 0, 0, 0.12); }
+.btn-primary:hover, .btn-primary.zeroclipboard-is-hover { color: #fff; background-color: #5132cb; background-image: linear-gradient(#6549d2, #5132cb); }
+.btn-primary:active, .btn-primary.selected, .btn-primary.zeroclipboard-is-active { background-color: #4f31c6; background-image: none; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15); }
+.btn-primary.selected:hover { background-color: #472cb2; }
