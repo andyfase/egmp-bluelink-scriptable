@@ -169,7 +169,7 @@ export class BluelinkCanada extends Bluelink {
       isCharging: status.evStatus.batteryCharge,
       isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
       chargingPower: status.evStatus.batteryCharge // only check for charging power if actually charging
-        ? status.evStatus.batteryPower.batteryFstChrgPower > 0
+        ? (status.evStatus.batteryPower.batteryFstChrgPower && status.evStatus.batteryPower.batteryFstChrgPower) > 0
           ? status.evStatus.batteryPower.batteryFstChrgPower
           : status.evStatus.batteryPower.batteryStndChrgPower
         : 0,

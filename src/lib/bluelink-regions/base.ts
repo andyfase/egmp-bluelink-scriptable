@@ -8,6 +8,7 @@ const DEFAULT_API_DOMAIN = 'https://mybluelink.ca/tods/api/'
 
 export interface BluelinkTokens {
   accessToken: string
+  refreshToken?: string
   expiry: number
 }
 
@@ -17,8 +18,8 @@ export interface BluelinkCar {
   nickName: string
   modelName: string
   modelYear: string
-  modelTrim: string
-  modelColour: string
+  modelTrim?: string
+  modelColour?: string
 }
 
 export interface BluelinkStatus {
@@ -118,17 +119,30 @@ export class Bluelink {
     this.vin = this.config.vin
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
 
+    // loadCache will login user if the cache doesnt exist i.e first app use
     const cache = await this.loadCache()
     if (!cache) {
       this.loginFailure = true
       return
     }
     this.cache = cache
+
+    // if we are here we have logged in successfully at least once and can refresh if supported
     if (!this.tokenValid()) {
-      const tokens = await this.login()
+      let tokens = undefined
+      if (Object.hasOwn(this, 'refreshTokens')) {
+        // @ts-ignore - this is why we check the sub-class has this as its not always implemented
+        tokens = await this.refreshTokens()
+        if (!tokens) {
+          tokens = await this.login() // fallback to normal login if refresh fails
+        }
+      } else {
+        tokens = await this.login()
+      }
+
       if (!tokens) this.loginFailure = true
       else {
-        this.tokens = tokens
+        this.tokens = tokens as BluelinkTokens
         this.saveCache()
       }
     }
