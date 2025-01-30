@@ -79,7 +79,7 @@ export interface ClimateRequest {
 const carImageHttpURL = 'https://bluelink.andyfase.com/app-assets/car-images/'
 const carImageMap: Record<string, string> = {
   'ioniq 5': 'ioniq5.png',
-  'ev 6': 'ev6.png',
+  ev6: 'ev6.png',
   default: 'ioniq5.png',
 }
 
