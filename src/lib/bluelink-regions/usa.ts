@@ -76,11 +76,14 @@ export class BluelinkUSA extends Bluelink {
     return obj
   }
 
-  private requestResponseValid(resp: Record<string, any>): boolean {
+  private requestResponseValid(
+    resp: Record<string, any>,
+    _data: Record<string, any>,
+  ): { valid: boolean; retry: boolean } {
     if (Object.hasOwn(resp, 'statusCode') && resp.statusCode === 200) {
-      return true
+      return { valid: true, retry: false }
     }
-    return false
+    return { valid: false, retry: false }
   }
 
   private carHeaders(): Record<string, string> {
@@ -99,12 +102,14 @@ export class BluelinkUSA extends Bluelink {
         password: this.config.auth.password,
       }),
       noAuth: true,
+      validResponseFunction: this.requestResponseValid,
     })
-    if (this.requestResponseValid(resp.resp)) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
       return {
         accessToken: resp.json.access_token,
         refreshToken: resp.json.refresh_token,
         expiry: Math.floor(Date.now() / 1000) + resp.json.expires_in, // we only get a expireIn not a actual date
+        authCookie: undefined,
       }
     }
 
@@ -120,12 +125,14 @@ export class BluelinkUSA extends Bluelink {
         refresh_token: this.cache.token.refreshToken,
       }),
       noAuth: true,
+      validResponseFunction: this.requestResponseValid,
     })
-    if (this.requestResponseValid(resp.resp)) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
       return {
         accessToken: resp.json.access_token,
         refreshToken: resp.json.refresh_token,
         expiry: Math.floor(Date.now() / 1000) + resp.json.expires_in, // we only get a expireIn not a actual date
+        authCookie: undefined,
       }
     }
 
@@ -137,8 +144,9 @@ export class BluelinkUSA extends Bluelink {
   protected async getCar(): Promise<BluelinkCar> {
     const resp = await this.request({
       url: this.apiDomain + `ac/v2/enrollment/details/${this.config.auth.username}`,
+      validResponseFunction: this.requestResponseValid,
     })
-    if (this.requestResponseValid(resp.resp) && resp.json.enrolledVehicleDetails.length > 0) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.enrolledVehicleDetails.length > 0) {
       let vehicle = resp.json.enrolledVehicleDetails[0].vehicleDetails
       if (this.vin) {
         for (const v of resp.json.enrolledVehicleDetails) {
@@ -206,9 +214,10 @@ export class BluelinkUSA extends Bluelink {
         ...this.carHeaders(),
         refresh: forceUpdate ? 'true' : 'false',
       },
+      validResponseFunction: this.requestResponseValid,
     })
 
-    if (this.requestResponseValid(resp.resp)) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
       return this.returnCarStatus(resp.json.vehicleStatus, forceUpdate)
     }
 

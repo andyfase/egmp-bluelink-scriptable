@@ -8,10 +8,10 @@ import {
 } from './base'
 import { Config } from '../../config'
 
-const DEFAULT_API_DOMAIN = 'https://mybluelink.ca/tods/api/'
+const DEFAULT_API_DOMAIN = 'mybluelink.ca'
 const API_DOMAINS: Record<string, string> = {
-  hyundai: 'https://mybluelink.ca/tods/api/',
-  kia: 'https://kiaconnect.ca/tods/api/',
+  hyundai: 'mybluelink.ca',
+  kia: 'kiaconnect.ca',
 }
 
 const MAX_COMPLETION_POLLS = 20
@@ -19,14 +19,19 @@ const MAX_COMPLETION_POLLS = 20
 export class BluelinkCanada extends Bluelink {
   constructor(config: Config, statusCheckInterval?: number) {
     super(config)
-    this.apiDomain = config.manufacturer
+    this.apiHost = config.manufacturer
       ? this.getApiDomain(config.manufacturer, API_DOMAINS, DEFAULT_API_DOMAIN)
       : DEFAULT_API_DOMAIN
+    this.apiDomain = `https://${this.apiHost}/tods/api/`
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
-      from: 'CWP',
+      from: 'SPA',
+      client_id: 'HATAHSPACA0232141ED9722C67715A0B',
+      client_secret: 'CLISCR01AHSPA',
       language: '0',
+      brand: this.apiHost === 'mybluelink.ca' ? 'H' : 'kia',
       offset: `-${new Date().getTimezoneOffset() / 60}`,
+      'User-Agent': 'MyHyundai/2.0.25 (iPhone; iOS 18.3; Scale/3.00)',
     }
     this.authHeader = 'Accesstoken'
     this.tempLookup = {
@@ -64,26 +69,61 @@ export class BluelinkCanada extends Bluelink {
     return obj
   }
 
-  private requestResponseValid(payload: any): boolean {
+  private requestResponseValid(
+    resp: Record<string, any>,
+    payload: Record<string, any>,
+  ): { valid: boolean; retry: boolean } {
     if (Object.hasOwn(payload, 'responseHeader') && payload.responseHeader.responseCode == 0) {
-      return true
+      return { valid: true, retry: false }
     }
-    return false
+    if (Object.hasOwn(payload, 'responseHeader') && payload.responseHeader.responseCode == 1) {
+      // check failure
+      if (
+        Object.hasOwn(payload, 'error') &&
+        Object.hasOwn(payload.error, 'errorDesc') &&
+        (payload.error.errorDesc.toLocaleString().includes('expired') ||
+          payload.error.errorDesc.toLocaleString().includes('deleted') ||
+          payload.error.errorDesc.toLocaleString().includes('ip validation'))
+      ) {
+        return { valid: false, retry: true }
+      }
+    }
+    return { valid: false, retry: false }
+  }
+
+  protected async getSessionCookie(): Promise<string> {
+    const req = new Request(`https://${this.apiHost}/login`)
+    req.headers = this.additionalHeaders
+    req.method = 'GET'
+    await req.load()
+    for (const cookie of req.response.cookies) {
+      if (cookie.name === 'dtCookie') {
+        return `dtCookie=${cookie.value}`
+      }
+    }
+    return ''
   }
 
   protected async login(): Promise<BluelinkTokens | undefined> {
+    // get cookie
+    const cookieValue = await this.getSessionCookie()
     const resp = await this.request({
       url: this.apiDomain + 'v2/login',
       data: JSON.stringify({
         loginId: this.config.auth.username,
         password: this.config.auth.password,
       }),
+      headers: {
+        Cookie: cookieValue,
+      },
       noAuth: true,
+      validResponseFunction: this.requestResponseValid,
     })
-    if (this.requestResponseValid(resp.json)) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
       return {
         accessToken: resp.json.result.token.accessToken,
         expiry: Math.floor(Date.now() / 1000) + resp.json.result.token.expireIn, // we only get a expireIn not a actual date
+        authCookie: cookieValue,
       }
     }
 
@@ -98,8 +138,9 @@ export class BluelinkCanada extends Bluelink {
       data: JSON.stringify({
         vehicleId: id,
       }),
+      validResponseFunction: this.requestResponseValid,
     })
-    if (!this.requestResponseValid(resp.json)) {
+    if (!this.requestResponseValid(resp.resp, resp.json).valid) {
       const error = `Failed to set car ${id}: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
       if (this.config.debugLogging) await this.logger.log(error)
       throw Error(error)
@@ -110,8 +151,9 @@ export class BluelinkCanada extends Bluelink {
     const resp = await this.request({
       url: this.apiDomain + 'vhcllst',
       method: 'POST',
+      validResponseFunction: this.requestResponseValid,
     })
-    if (this.requestResponseValid(resp.json) && resp.json.result.vehicles.length > 0) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.result.vehicles.length > 0) {
       let vehicle = resp.json.result.vehicles[0]
       if (this.vin) {
         for (const v of resp.json.result.vehicles) {
@@ -202,9 +244,10 @@ export class BluelinkCanada extends Bluelink {
       headers: {
         Vehicleid: id,
       },
+      validResponseFunction: this.requestResponseValid,
     })
 
-    if (this.requestResponseValid(resp.json)) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
       return forceUpdate
         ? this.returnCarStatus(resp.json.result.status, forceUpdate, resp.json.result.status.odometer)
         : this.returnCarStatus(resp.json.result.status, forceUpdate, resp.json.result.vehicle.odometer)
@@ -223,8 +266,10 @@ export class BluelinkCanada extends Bluelink {
       data: JSON.stringify({
         pin: this.config.auth.pin,
       }),
+      validResponseFunction: this.requestResponseValid,
+      headers: {},
     })
-    if (this.requestResponseValid(resp.json)) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
       return resp.json.result.pAuth
     }
     const error = `Failed to get auth code: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
@@ -248,9 +293,10 @@ export class BluelinkCanada extends Bluelink {
           Pauth: authCode,
           TransactionId: transactionId,
         },
+        validResponseFunction: this.requestResponseValid,
       })
 
-      if (!this.requestResponseValid(resp.json)) {
+      if (!this.requestResponseValid(resp.resp, resp.json).valid) {
         const error = `Failed to poll for command completion: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
         if (this.config.debugLogging) await this.logger.log(error)
         throw Error(error)
@@ -297,8 +343,9 @@ export class BluelinkCanada extends Bluelink {
         Vehicleid: id,
         Pauth: authCode,
       },
+      validResponseFunction: this.requestResponseValid,
     })
-    if (this.requestResponseValid(resp.json)) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
       const transactionId = resp.resp.headers.transactionId
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
@@ -331,8 +378,9 @@ export class BluelinkCanada extends Bluelink {
         Vehicleid: id,
         Pauth: authCode,
       },
+      validResponseFunction: this.requestResponseValid,
     })
-    if (this.requestResponseValid(resp.json)) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
       const transactionId = resp.resp.headers.transactionId
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
@@ -374,8 +422,9 @@ export class BluelinkCanada extends Bluelink {
         Vehicleid: id,
         Pauth: authCode,
       },
+      validResponseFunction: this.requestResponseValid,
     })
-    if (this.requestResponseValid(resp.json)) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
       const transactionId = resp.resp.headers.transactionId
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
@@ -397,8 +446,9 @@ export class BluelinkCanada extends Bluelink {
         Vehicleid: id,
         Pauth: authCode,
       },
+      validResponseFunction: this.requestResponseValid,
     })
-    if (this.requestResponseValid(resp.json)) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
       const transactionId = resp.resp.headers.transactionId
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }

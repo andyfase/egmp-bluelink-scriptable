@@ -4,12 +4,14 @@ import PersistedLog from '../scriptable-utils/io/PersistedLog'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
 const BLUELINK_LOG_FILE = 'egmp-bluelink-log'
-const DEFAULT_API_DOMAIN = 'https://mybluelink.ca/tods/api/'
+const DEFAULT_API_HOST = 'mybluelink.ca'
+const DEFAULT_API_DOMAIN = `https://${DEFAULT_API_HOST}/tods/api/`
 
 export interface BluelinkTokens {
   accessToken: string
   refreshToken?: string
   expiry: number
+  authCookie: string | undefined
 }
 
 export interface BluelinkCar {
@@ -54,6 +56,8 @@ export interface RequestProps {
   method?: string
   noAuth?: boolean
   headers?: Record<string, string>
+  validResponseFunction: (resp: Record<string, any>, data: Record<string, any>) => { valid: boolean; retry: boolean }
+  noRetry?: boolean
 }
 
 export interface DebugLastRequest {
@@ -92,6 +96,7 @@ export class Bluelink {
   protected cache: Cache
   protected vin: string | undefined
   protected statusCheckInterval: number
+  protected apiHost: string
   protected apiDomain: string
 
   protected additionalHeaders: Record<string, string>
@@ -106,6 +111,7 @@ export class Bluelink {
     this.config = config
     this.vin = vin
     this.apiDomain = DEFAULT_API_DOMAIN
+    this.apiHost = DEFAULT_API_HOST
     this.statusCheckInterval = DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {}
     this.authHeader = 'Authentication'
@@ -127,9 +133,12 @@ export class Bluelink {
       return
     }
     this.cache = cache
+    await this.refreshLogin()
+  }
 
+  protected async refreshLogin(force?: boolean) {
     // if we are here we have logged in successfully at least once and can refresh if supported
-    if (!this.tokenValid()) {
+    if (force || !this.tokenValid()) {
       let tokens = undefined
       if (Object.hasOwn(this, 'refreshTokens')) {
         // @ts-ignore - this is why we check the sub-class has this as its not always implemented
@@ -144,6 +153,7 @@ export class Bluelink {
       if (!tokens) this.loginFailure = true
       else {
         this.tokens = tokens as BluelinkTokens
+        this.cache.token = this.tokens
         this.saveCache()
       }
     }
@@ -288,16 +298,28 @@ export class Bluelink {
   }
 
   protected async request(props: RequestProps): Promise<{ resp: { [key: string]: any }; json: any }> {
+    let requestTokens: BluelinkTokens | undefined = undefined
+    if (!props.noAuth) {
+      requestTokens = this.tokens ? this.tokens : this.cache.token
+    }
+
     const req = new Request(props.url)
     req.method = props.method ? props.method : props.data ? 'POST' : 'GET'
     req.headers = {
-      Accept: 'application/json',
+      Accept: 'application/json, text/plain, */*',
+      'Accept-Encoding': 'gzip, deflate, br, zstd',
+      'Accept-Language': 'en-US,en;q=0.9',
       ...(props.data && {
         'Content-Type': 'application/json',
       }),
-      ...(!props.noAuth && {
-        [this.authHeader]: this.tokens ? this.tokens?.accessToken : this.cache.token.accessToken,
-      }),
+      ...(!props.noAuth &&
+        requestTokens?.accessToken && {
+          [this.authHeader]: requestTokens?.accessToken,
+        }),
+      ...(!props.noAuth &&
+        requestTokens?.authCookie && {
+          Cookie: requestTokens.authCookie,
+        }),
       ...this.additionalHeaders,
       ...(props.headers && {
         ...props.headers,
@@ -319,6 +341,16 @@ export class Bluelink {
       if (this.config.debugLogging) await this.logger.log(`Sending request ${JSON.stringify(this.debugLastRequest)}`)
       const json = await req.loadJSON()
       await this.logger.log(`response ${JSON.stringify(req.response)} data: ${JSON.stringify(json)}`)
+
+      const checkResponse = props.validResponseFunction(req.response, json)
+      if (!props.noRetry && checkResponse.retry) {
+        // re-auth and call ourselves
+        await this.refreshLogin(true)
+        return await this.request({
+          ...props,
+          noRetry: true,
+        })
+      }
       return { resp: req.response, json: json }
     } catch (error) {
       const errorString = `Failed to send request to ${props.url}, request ${JSON.stringify(this.debugLastRequest)} - error ${error}`
