@@ -6,6 +6,11 @@ import { getConfig, loadConfigScreen, configExists } from 'config'
 import { confirm } from './lib/scriptable-utils'
 ;(async () => {
   if (!configExists() && (config.runsWithSiri || config.runsInWidget)) return
+  if (!configExists()) {
+    await loadConfigScreen()
+    return
+  }
+
   const blConfig = getConfig()
   const bl = await initRegionalBluelink(blConfig)
 
@@ -33,6 +38,7 @@ import { confirm } from './lib/scriptable-utils'
       const resp = await createApp(blConfig, bl)
       // @ts-ignore - undocumented api
       App.close() // add this back after dev
+      Script.complete()
       return resp
     } catch (error) {
       logError(JSON.stringify(error))
