@@ -1,17 +1,11 @@
-import { initRegionalBluelink } from 'lib/bluelink'
-import { getConfig, deleteConfig } from 'config'
-import { deleteWidgetCache } from 'widget'
-import { loadTintedIcons } from './lib/util'
 import { Spacer, getTable, Div, P, destructiveConfirm } from './lib/scriptable-utils'
-import { Bluelink } from 'lib/bluelink-regions/base'
+
+const keychain_keys = ['egmp-bluelink-config', 'egmp-bluelink-cache', 'egmp-bluelink-widget']
+
 ;(async () => {
   if (config.runsWithSiri || config.runsInWidget) {
     return
   }
-  const blConfig = getConfig()
-  const bl = await initRegionalBluelink(blConfig)
-
-  await loadTintedIcons()
 
   const { present } = getTable<{
     foo: string
@@ -23,11 +17,11 @@ import { Bluelink } from 'lib/bluelink-regions/base'
     defaultState: {
       foo: 'foobar',
     },
-    render: () => [Spacer({ rowHeight: 200 }), reset(bl)],
+    render: () => [Spacer({ rowHeight: 200 }), reset()],
   })
 })()
 
-function reset(bl: Bluelink | Bluelink | undefined) {
+function reset() {
   return Div(
     [
       P('Click me to Reset All Settings?', {
@@ -41,18 +35,9 @@ function reset(bl: Bluelink | Bluelink | undefined) {
         destructiveConfirm('Confirm Setting Reset - ALL settings/data will be removed', {
           confirmButtonTitle: 'Delete all Settings/Data',
           onConfirm: () => {
-            if (bl) bl.deleteCache()
-            try {
-              deleteConfig()
-            } catch {
-              // do nothing it if fails as it didnt exist
+            for (const key of keychain_keys) {
+              if (Keychain.contains(key)) Keychain.remove(key)
             }
-            try {
-              deleteWidgetCache()
-            } catch {
-              // do nothing it if fails as it didnt exist
-            }
-            Script.complete()
           },
         })
       },

@@ -24,7 +24,7 @@ export class BluelinkCanada extends Bluelink {
       : DEFAULT_API_DOMAIN
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
-      from: 'SPA',
+      from: 'CWP',
       language: '0',
       offset: `-${new Date().getTimezoneOffset() / 60}`,
     }
