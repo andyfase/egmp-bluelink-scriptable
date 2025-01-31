@@ -8,28 +8,38 @@ import {
 } from './base'
 import { Config } from '../../config'
 
-const DEFAULT_API_DOMAIN = 'https://api.telematics.hyundaiusa.com/ac/v2/'
+const DEFAULT_API_DOMAIN = 'https://api.telematics.hyundaiusa.com/'
 const API_DOMAINS: Record<string, string> = {
-  hyundai: 'https://api.telematics.hyundaiusa.com/ac/v2/',
+  hyundai: 'https://api.telematics.hyundaiusa.com/',
+  kia: 'https://api.owners.kia.com/apigw/v1/',
 }
 
 export class BluelinkUSA extends Bluelink {
+  private carVin: string | undefined
+  private carId: string | undefined
+
   constructor(config: Config, statusCheckInterval?: number) {
     super(config)
     this.apiDomain = config.manufacturer
       ? this.getApiDomain(config.manufacturer, API_DOMAINS, DEFAULT_API_DOMAIN)
       : DEFAULT_API_DOMAIN
+
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
       from: 'SPA',
+      to: 'ISS',
       language: '0',
       offset: `-${new Date().getTimezoneOffset() / 60}`,
       gen: '2',
-      client_id: 'm66129Bb-em93-SPAHYN-bZ91-am4540zp19920',
-      clientSecret: 'v558o935-6nne-423i-baa8',
+      client_id:
+        config.manufacturer && config.manufacturer === 'kia' ? 'MWAMOBILE' : 'm66129Bb-em93-SPAHYN-bZ91-am4540zp19920',
+      clientSecret:
+        config.manufacturer && config.manufacturer === 'kia' ? '98er-w34rf-ibf3-3f6h' : 'v558o935-6nne-423i-baa8',
       username: this.config.auth.username,
-      blueLinkServicePin: this.config.auth.pin,
+      blueLinkServicePin: `${this.config.auth.pin}`,
+      brandIndicator: 'H',
     }
+
     this.authHeader = 'accessToken'
     this.tempLookup = {
       F: [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82],
@@ -67,7 +77,7 @@ export class BluelinkUSA extends Bluelink {
   }
 
   private requestResponseValid(resp: Record<string, any>): boolean {
-    if (Object.hasOwn(resp, 'statusCode') && resp['statusCode'] == '200') {
+    if (Object.hasOwn(resp, 'statusCode') && resp.statusCode === 200) {
       return true
     }
     return false
@@ -75,14 +85,15 @@ export class BluelinkUSA extends Bluelink {
 
   private carHeaders(): Record<string, string> {
     return {
-      registrationId: this.cache.car.id,
-      vin: this.cache.car.vin,
+      // on first load cache is not populated - hence default to optional local vars set when fetching the car.
+      registrationId: this.cache ? this.cache.car.id : this.carId!,
+      vin: this.cache ? this.cache.car.vin : this.carVin!,
     }
   }
 
   protected async login(): Promise<BluelinkTokens | undefined> {
     const resp = await this.request({
-      url: this.apiDomain.replace('/ac/v2/', '/v2/ac/oauth/token'),
+      url: this.apiDomain + 'v2/ac/oauth/token',
       data: JSON.stringify({
         username: this.config.auth.username,
         password: this.config.auth.password,
@@ -93,7 +104,7 @@ export class BluelinkUSA extends Bluelink {
       return {
         accessToken: resp.json.access_token,
         refreshToken: resp.json.refresh_token,
-        expiry: Math.floor(Date.now() / 1000) + resp.json.result.token.expires_in, // we only get a expireIn not a actual date
+        expiry: Math.floor(Date.now() / 1000) + resp.json.expires_in, // we only get a expireIn not a actual date
       }
     }
 
@@ -104,7 +115,7 @@ export class BluelinkUSA extends Bluelink {
 
   protected async refreshTokens(): Promise<BluelinkTokens | undefined> {
     const resp = await this.request({
-      url: this.apiDomain.replace('/ac/v2/', '/v2/ac/oauth/token/refresh'),
+      url: this.apiDomain + 'v2/ac/oauth/token/refresh',
       data: JSON.stringify({
         refresh_token: this.cache.token.refreshToken,
       }),
@@ -114,7 +125,7 @@ export class BluelinkUSA extends Bluelink {
       return {
         accessToken: resp.json.access_token,
         refreshToken: resp.json.refresh_token,
-        expiry: Math.floor(Date.now() / 1000) + resp.json.result.token.expires_in, // we only get a expireIn not a actual date
+        expiry: Math.floor(Date.now() / 1000) + resp.json.expires_in, // we only get a expireIn not a actual date
       }
     }
 
@@ -125,20 +136,22 @@ export class BluelinkUSA extends Bluelink {
 
   protected async getCar(): Promise<BluelinkCar> {
     const resp = await this.request({
-      url: this.apiDomain + `enrollment/details/${this.config.auth.username}`,
-      method: 'POST',
+      url: this.apiDomain + `ac/v2/enrollment/details/${this.config.auth.username}`,
     })
     if (this.requestResponseValid(resp.resp) && resp.json.enrolledVehicleDetails.length > 0) {
-      let vehicle = resp.json.result.enrolledVehicleDetails[0]
+      let vehicle = resp.json.enrolledVehicleDetails[0].vehicleDetails
       if (this.vin) {
-        for (const v of resp.json.result.enrolledVehicleDetails) {
-          if (v.vin === this.vin) {
-            vehicle = v
+        for (const v of resp.json.enrolledVehicleDetails) {
+          if (v.vehicleDetails.vin === this.vin) {
+            vehicle = v.vehicleDetails
             break
           }
         }
       }
 
+      await this.logger.log(`Choose car ${JSON.stringify(vehicle)}`)
+      this.carVin = vehicle.vin
+      this.carId = vehicle.regid
       return {
         id: vehicle.regid,
         vin: vehicle.vin,
@@ -165,9 +178,9 @@ export class BluelinkUSA extends Bluelink {
       isCharging: status.evStatus.batteryCharge,
       isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
       chargingPower: status.evStatus.batteryCharge // only check for charging power if actually charging
-        ? (status.evStatus.batteryPower.batteryFstChrgPower && status.evStatus.batteryPower.batteryFstChrgPower) > 0
-          ? status.evStatus.batteryPower.batteryFstChrgPower
-          : status.evStatus.batteryPower.batteryStndChrgPower
+        ? (status.evStatus.batteryFstChrgPower && status.evStatus.batteryFstChrgPower) > 0
+          ? status.evStatus.batteryFstChrgPower
+          : status.evStatus.batteryStndChrgPower
         : 0,
       remainingChargeTimeMins: status.evStatus.remainTime2.atc.value,
       // sometimes range back as zero? if so ignore and use cache
@@ -186,14 +199,12 @@ export class BluelinkUSA extends Bluelink {
   }
 
   protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
-    const api = 'rcs/rvs/vehicleStatus'
+    const api = 'ac/v2/rcs/rvs/vehicleStatus'
     const resp = await this.request({
       url: this.apiDomain + api,
       headers: {
         ...this.carHeaders(),
-        ...(forceUpdate && {
-          REFRESH: 'true',
-        }),
+        refresh: forceUpdate ? 'true' : 'false',
       },
     })
 

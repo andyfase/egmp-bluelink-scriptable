@@ -34,7 +34,7 @@ export interface FlattenedConfig {
   vin: string | undefined
 }
 
-const SUPPORTED_REGIONS = ['canada']
+const SUPPORTED_REGIONS = ['canada', 'usa']
 const SUPPORTED_MANUFACTURERS = ['Hyundai', 'Kia']
 
 const DEFAULT_TEMPS = {

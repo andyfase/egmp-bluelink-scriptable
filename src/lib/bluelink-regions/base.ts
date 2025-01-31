@@ -102,6 +102,7 @@ export class Bluelink {
   protected loginFailure: boolean
 
   constructor(config: Config, vin?: string) {
+    this.config = config
     this.vin = vin
     this.apiDomain = DEFAULT_API_DOMAIN
     this.statusCheckInterval = DEFAULT_STATUS_CHECK_INTERVAL
@@ -115,7 +116,6 @@ export class Bluelink {
   }
 
   protected async superInit(config: Config, statusCheckInterval?: number) {
-    this.config = config
     this.vin = this.config.vin
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
 
@@ -315,11 +315,14 @@ export class Bluelink {
       }),
     }
     try {
+      if (this.config.debugLogging) await this.logger.log(`Sending request ${JSON.stringify(this.debugLastRequest)}`)
       const json = await req.loadJSON()
+      await this.logger.log(`response ${JSON.stringify(req.response)} data: ${JSON.stringify(json)}`)
       return { resp: req.response, json: json }
     } catch (error) {
-      await this.logger.log(`Failed to send request to ${props.url}, error ${error}`)
-      throw Error(`Failed to send request to ${props.url}, error ${error}`)
+      const errorString = `Failed to send request to ${props.url}, request ${JSON.stringify(this.debugLastRequest)} - error ${error}`
+      if (this.config.debugLogging) await this.logger.log(error)
+      throw Error(errorString)
     }
   }
 

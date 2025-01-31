@@ -35,7 +35,7 @@ import { confirm } from './lib/scriptable-utils'
       App.close() // add this back after dev
       return resp
     } catch (error) {
-      logError(error)
+      logError(JSON.stringify(error))
     }
   }
 })()

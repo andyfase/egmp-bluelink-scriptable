@@ -458,7 +458,7 @@ async function doAsyncUpdate(props: doAsyncUpdateProps) {
 
       // log error on failure
       if (!didSucceed) {
-        logError(data)
+        logError(JSON.stringify(data))
       }
     } else {
       // continue to rotate icon indicating ongoing update
