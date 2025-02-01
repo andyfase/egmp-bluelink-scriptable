@@ -206,16 +206,31 @@ export class BluelinkCanada extends Bluelink {
       }
     }
 
+    // deal with charging speed - JSON response if variable / inconsistent - hence check for various objects
+    let chargingPower = 0
+    let isCharging = false
+    if (status.evStatus.batteryPower && status.evStatus.batteryCharge) {
+      if (status.evStatus.batteryPower.batteryFstChrgPower && status.evStatus.batteryPower.batteryFstChrgPower > 0) {
+        chargingPower = status.evStatus.batteryPower.batteryFstChrgPower
+        isCharging = true
+      } else if (
+        status.evStatus.batteryPower.batteryStndChrgPower &&
+        status.evStatus.batteryPower.batteryStndChrgPower > 0
+      ) {
+        chargingPower = status.evStatus.batteryPower.batteryStndChrgPower
+        isCharging = true
+      } else {
+        // should never get here - log failure to get charging power
+        this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)
+      }
+    }
+
     return {
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
-      isCharging: status.evStatus.batteryCharge,
+      isCharging: isCharging,
       isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
-      chargingPower: status.evStatus.batteryCharge // only check for charging power if actually charging
-        ? (status.evStatus.batteryPower.batteryFstChrgPower && status.evStatus.batteryPower.batteryFstChrgPower) > 0
-          ? status.evStatus.batteryPower.batteryFstChrgPower
-          : status.evStatus.batteryPower.batteryStndChrgPower
-        : 0,
+      chargingPower: chargingPower,
       remainingChargeTimeMins: status.evStatus.remainTime2.atc.value,
       // sometimes range back as zero? if so ignore and use cache
       range:

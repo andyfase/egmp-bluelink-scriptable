@@ -14,6 +14,7 @@ const getIO = (filename: string) =>
   persisted({
     filename: filename,
     defaultData: '',
+    disableCache: true,
   })
 
 const log = async (val: any, { ignoreLineLimit = false } = {}, filename: string) => {
