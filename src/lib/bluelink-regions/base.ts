@@ -106,6 +106,7 @@ export class Bluelink {
   protected debugLastRequest: DebugLastRequest | undefined
   protected logger: any
   protected loginFailure: boolean
+  protected distanceUnit: string
 
   constructor(config: Config, vin?: string) {
     this.config = config
@@ -119,6 +120,7 @@ export class Bluelink {
     this.loginFailure = false
     this.debugLastRequest = undefined
     this.tempLookup = undefined
+    this.distanceUnit = 'km'
     this.logger = PersistedLog(BLUELINK_LOG_FILE)
   }
 
@@ -164,6 +166,10 @@ export class Bluelink {
       if (key === lookup) return domain
     }
     return _default
+  }
+
+  public getDistanceUnit(): string {
+    return this.distanceUnit
   }
 
   public loginFailed(): boolean {

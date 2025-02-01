@@ -89,7 +89,14 @@ export async function createApp(config: Config, bl: Bluelink) {
       twelveSoc: cachedStatus.status.twelveSoc,
       appIcon: appIcon,
     },
-    render: () => [pageTitle(), batteryStatus(), pageImage(), pageIcons(bl), Spacer({ rowHeight: 200 }), settings(bl)],
+    render: () => [
+      pageTitle(),
+      batteryStatus(bl),
+      pageImage(),
+      pageIcons(bl),
+      Spacer({ rowHeight: 200 }),
+      settings(bl),
+    ],
   })
 }
 
@@ -134,7 +141,7 @@ const settings = (bl: Bluelink) => {
   )
 }
 
-const batteryStatus = connect(({ state: { soc, range, isCharging, isPluggedIn } }) => {
+const batteryStatus = connect(({ state: { soc, range, isCharging, isPluggedIn } }, bl: Bluelink) => {
   const chargingIcon = getChargingIcon(isCharging, isPluggedIn)
   const icons: DivChild[] = []
   icons.push(
@@ -152,7 +159,7 @@ const batteryStatus = connect(({ state: { soc, range, isCharging, isPluggedIn } 
   }
   return Div(
     icons.concat([
-      P(`${soc.toString()}% (~ ${range} km)`, {
+      P(`${soc.toString()}% (~ ${range} ${bl.getDistanceUnit()})`, {
         align: 'left',
         fontSize: 22,
         width: '90%',

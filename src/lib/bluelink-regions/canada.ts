@@ -19,6 +19,7 @@ const MAX_COMPLETION_POLLS = 20
 export class BluelinkCanada extends Bluelink {
   constructor(config: Config, statusCheckInterval?: number) {
     super(config)
+    this.distanceUnit = 'km'
     this.apiHost = config.manufacturer
       ? this.getApiDomain(config.manufacturer, API_DOMAINS, DEFAULT_API_DOMAIN)
       : DEFAULT_API_DOMAIN

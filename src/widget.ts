@@ -12,8 +12,6 @@ import { Config } from 'config'
 import PersistedLog from './lib/scriptable-utils/io/PersistedLog'
 
 // Widget Config
-const RANGE_IN_MILES = false // true
-
 const DARK_MODE = true // Device.isUsingDarkAppearance(); // or set manually to (true or false)
 const DARK_BG_COLOR = '000000'
 const LIGHT_BG_COLOR = 'FFFFFF'
@@ -191,7 +189,7 @@ export async function createWidget(config: Config, bl: Bluelink) {
   // Range
   const rangeStack = batteryInfoStack.addStack()
   rangeStack.addSpacer()
-  const rangeText = `${status.status.range}km`
+  const rangeText = `${status.status.range} ${bl.getDistanceUnit()}`
   const rangeElement = rangeStack.addText(rangeText)
   rangeElement.font = Font.mediumSystemFont(20)
   rangeElement.textColor = DARK_MODE ? Color.white() : Color.black()
@@ -256,9 +254,7 @@ export async function createWidget(config: Config, bl: Bluelink) {
   const footerStack = mainStack.addStack()
 
   // Add odometer
-  const odometerText = RANGE_IN_MILES
-    ? `${Math.floor(Number(odometer / 1.6)).toString()} mi`
-    : `${Math.floor(Number(odometer)).toString()} km`
+  const odometerText = `${Math.floor(Number(odometer)).toString()} ${bl.getDistanceUnit()}`
   const odometerElement = footerStack.addText(odometerText)
   odometerElement.font = Font.mediumSystemFont(12)
   odometerElement.textColor = DARK_MODE ? Color.white() : Color.black()

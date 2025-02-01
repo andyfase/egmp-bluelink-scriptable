@@ -20,6 +20,7 @@ export class BluelinkUSA extends Bluelink {
 
   constructor(config: Config, statusCheckInterval?: number) {
     super(config)
+    this.distanceUnit = 'mi'
     this.apiDomain = config.manufacturer
       ? this.getApiDomain(config.manufacturer, API_DOMAINS, DEFAULT_API_DOMAIN)
       : DEFAULT_API_DOMAIN
