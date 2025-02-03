@@ -3,7 +3,7 @@ import {
   BluelinkTokens,
   BluelinkCar,
   BluelinkStatus,
-  // ClimateRequest,
+  ClimateRequest,
   DEFAULT_STATUS_CHECK_INTERVAL,
 } from './base'
 import { Config } from '../../config'
@@ -248,15 +248,15 @@ export class BluelinkUSA extends Bluelink {
     return await this.lockUnlock(id, false)
   }
 
-  protected async lockUnlock(id: string, shouldLock: boolean): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+  protected async lockUnlock(_id: string, shouldLock: boolean): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const api = shouldLock ? '/ac/v2/rcs/rdo/off' : '/ac/v2/rcs/rdo/on'
-    const params = new URLSearchParams()
-    params.append('userName', this.config.auth.username)
-    params.append('vin', this.cache.car.vin)
     const resp = await this.request({
       url: this.apiDomain + api,
       method: 'POST',
-      data: params.toString(),
+      data: JSON.stringify({
+        userName: this.config.auth.username,
+        vin: this.cache.car.vin,
+      }),
       headers: {
         ...this.carHeaders(),
         bluelinkservicepin: this.config.auth.pin,
@@ -280,17 +280,17 @@ export class BluelinkUSA extends Bluelink {
   }
 
   protected async chargeStopCharge(
-    id: string,
+    _id: string,
     shouldCharge: boolean,
   ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const api = shouldCharge ? '/ac/v2/evc/charge/start' : '/ac/v2/evc/charge/stop'
-    const params = new URLSearchParams()
-    params.append('userName', this.config.auth.username)
-    params.append('vin', this.cache.car.vin)
     const resp = await this.request({
       url: this.apiDomain + api,
       method: 'POST',
-      data: params.toString(),
+      data: JSON.stringify({
+        userName: this.config.auth.username,
+        vin: this.cache.car.vin,
+      }),
       headers: {
         ...this.carHeaders(),
         bluelinkservicepin: this.config.auth.pin,
@@ -301,6 +301,68 @@ export class BluelinkUSA extends Bluelink {
       return await this.pollForCommandCompletion(resp)
     }
     const error = `Failed to send charge command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) await this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async climateOn(
+    _id: string,
+    config: ClimateRequest,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    if (!this.tempLookup) {
+      throw Error(`Mis-Configured sub-class - no temp lookup defined`)
+    }
+    const configTempIndex = this.config.tempType
+    const tempIndex = this.tempLookup[configTempIndex].indexOf(config.temp)
+
+    if (!tempIndex || tempIndex == -1) {
+      throw Error(`Failed to convert temp ${config.temp} in climateOn command`)
+    }
+
+    const api = '/ac/v2/evc/fatc/start'
+    const resp = await this.request({
+      url: this.apiDomain + api,
+      method: 'POST',
+      data: JSON.stringify({
+        airCtrl: 1,
+        defrost: config.defrost,
+        airTemp: {
+          value: this.tempLookup.H[tempIndex],
+          unit: 0,
+          hvacTempType: 1,
+        },
+        igniOnDuration: config.durationMinutes,
+        heating1: config.steering ? 4 : 0,
+      }),
+      headers: {
+        ...this.carHeaders(),
+        bluelinkservicepin: this.config.auth.pin,
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      return await this.pollForCommandCompletion(resp)
+    }
+    const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) await this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async climateOff(_id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const api = '/ac/v2/evc/fatc/stop'
+    const resp = await this.request({
+      url: this.apiDomain + api,
+      method: 'POST',
+      headers: {
+        ...this.carHeaders(),
+        bluelinkservicepin: this.config.auth.pin,
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      return await this.pollForCommandCompletion(resp)
+    }
+    const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) await this.logger.log(error)
     throw Error(error)
   }

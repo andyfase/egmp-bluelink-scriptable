@@ -409,7 +409,8 @@ export class BluelinkCanada extends Bluelink {
     if (!this.tempLookup) {
       throw Error(`Mis-Configured sub-class - no temp lookup defined`)
     }
-    const tempIndex = this.tempLookup.C.indexOf(config.temp)
+    const configTempIndex = this.config.tempType
+    const tempIndex = this.tempLookup[configTempIndex].indexOf(config.temp)
 
     if (!tempIndex || tempIndex == -1) {
       throw Error(`Failed to convert temp ${config.temp} in climateOn command`)
