@@ -142,7 +142,7 @@ export class Bluelink {
     // if we are here we have logged in successfully at least once and can refresh if supported
     if (force || !this.tokenValid()) {
       let tokens = undefined
-      if (Object.hasOwn(this, 'refreshTokens')) {
+      if (Boolean(typeof (this as any).refreshTokens === "function")) {
         // @ts-ignore - this is why we check the sub-class has this as its not always implemented
         tokens = await this.refreshTokens()
         if (!tokens) {
