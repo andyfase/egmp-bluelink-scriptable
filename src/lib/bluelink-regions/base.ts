@@ -300,7 +300,9 @@ export class Bluelink {
 
   protected tokenValid(): boolean {
     // invalid if within 30 seconds of expiry
-    return this.cache.token.expiry - 30 > Math.floor(Date.now() / 1000)
+    if (this.config.debugLogging)
+      this.logger.log(`Token expiry ${this.cache.token.expiry} now ${Math.floor(Date.now() / 1000)}`)
+    return Boolean(this.cache.token.expiry - 30 > Math.floor(Date.now() / 1000))
   }
 
   protected async request(props: RequestProps): Promise<{ resp: { [key: string]: any }; json: any }> {

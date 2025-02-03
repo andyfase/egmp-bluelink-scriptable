@@ -84,7 +84,7 @@ export class BluelinkUSA extends Bluelink {
     if (Object.hasOwn(resp, 'statusCode') && resp.statusCode === 200) {
       return { valid: true, retry: false }
     }
-    return { valid: false, retry: false }
+    return { valid: false, retry: true }
   }
 
   private carHeaders(): Record<string, string> {
@@ -120,6 +120,7 @@ export class BluelinkUSA extends Bluelink {
   }
 
   protected async refreshTokens(): Promise<BluelinkTokens | undefined> {
+    if (this.config.debugLogging) await this.logger.log('Refreshing tokens')
     const resp = await this.request({
       url: this.apiDomain + 'v2/ac/oauth/token/refresh',
       data: JSON.stringify({
