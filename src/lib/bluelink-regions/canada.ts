@@ -123,7 +123,7 @@ export class BluelinkCanada extends Bluelink {
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
       return {
         accessToken: resp.json.result.token.accessToken,
-        expiry: Math.floor(Date.now() / 1000) + resp.json.result.token.expireIn, // we only get a expireIn not a actual date
+        expiry: Math.floor(Date.now() / 1000) + Number(resp.json.result.token.expireIn), // we only get a expireIn not a actual date
         authCookie: cookieValue,
       }
     }

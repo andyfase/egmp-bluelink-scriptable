@@ -109,7 +109,7 @@ export class BluelinkUSA extends Bluelink {
       return {
         accessToken: resp.json.access_token,
         refreshToken: resp.json.refresh_token,
-        expiry: Math.floor(Date.now() / 1000) + resp.json.expires_in, // we only get a expireIn not a actual date
+        expiry: Math.floor(Date.now() / 1000) + Number(resp.json.expires_in), // we only get a expireIn not a actual date
         authCookie: undefined,
       }
     }
@@ -224,6 +224,83 @@ export class BluelinkUSA extends Bluelink {
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) await this.logger.log(error)
+    throw Error(error)
+  }
+
+  // US implementation does not seem to have a mechanism to check for succesful commands or not
+  // for now do nothing but return success until we get some logs and can work out what to do
+  protected async pollForCommandCompletion(resp: {
+    resp: Record<string, any>
+    json: any
+  }): Promise<{ isSuccess: boolean; data: any }> {
+    return {
+      isSuccess: true,
+      data: resp.json,
+    }
+  }
+
+  protected async lock(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.lockUnlock(id, true)
+  }
+
+  protected async unlock(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.lockUnlock(id, false)
+  }
+
+  protected async lockUnlock(id: string, shouldLock: boolean): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const api = shouldLock ? '/ac/v2/rcs/rdo/off' : '/ac/v2/rcs/rdo/on'
+    const params = new URLSearchParams()
+    params.append('userName', this.config.auth.username)
+    params.append('vin', this.cache.car.vin)
+    const resp = await this.request({
+      url: this.apiDomain + api,
+      method: 'POST',
+      data: params.toString(),
+      headers: {
+        ...this.carHeaders(),
+        bluelinkservicepin: this.config.auth.pin,
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      return await this.pollForCommandCompletion(resp)
+    }
+    const error = `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) await this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async startCharge(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.chargeStopCharge(id, true)
+  }
+
+  protected async stopCharge(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.chargeStopCharge(id, false)
+  }
+
+  protected async chargeStopCharge(
+    id: string,
+    shouldCharge: boolean,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const api = shouldCharge ? '/ac/v2/evc/charge/start' : '/ac/v2/evc/charge/stop'
+    const params = new URLSearchParams()
+    params.append('userName', this.config.auth.username)
+    params.append('vin', this.cache.car.vin)
+    const resp = await this.request({
+      url: this.apiDomain + api,
+      method: 'POST',
+      data: params.toString(),
+      headers: {
+        ...this.carHeaders(),
+        bluelinkservicepin: this.config.auth.pin,
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      return await this.pollForCommandCompletion(resp)
+    }
+    const error = `Failed to send charge command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) await this.logger.log(error)
     throw Error(error)
   }
