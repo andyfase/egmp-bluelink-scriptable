@@ -201,7 +201,7 @@ export class BluelinkCanada extends Bluelink {
         soc: this.cache ? this.cache.status.soc : 0,
         locked: status.doorLock,
         climate: status.airCtrlOn,
-        twelveSoc: status.battery.batSoc,
+        twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
         odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
       }
     }
@@ -242,7 +242,7 @@ export class BluelinkCanada extends Bluelink {
       locked: status.doorLock,
       climate: status.airCtrlOn,
       soc: status.evStatus.batteryStatus,
-      twelveSoc: status.battery.batSoc,
+      twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
       odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
     }
   }

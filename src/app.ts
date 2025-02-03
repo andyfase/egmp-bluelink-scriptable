@@ -205,6 +205,8 @@ const pageIcons = connect(
     const lockedText = locked ? 'Car Locked' : 'Car Unlocked'
     const lockedIcon = locked ? 'locked' : 'unlocked'
 
+    const twelveSocText = twelveSoc > 0 ? `12v battery at ${twelveSoc}%` : '12v battery status unknown'
+
     return Div([
       Div(
         [
@@ -387,10 +389,7 @@ const pageIcons = connect(
           },
         },
       ),
-      Div([
-        Img(getTintedIcon('twelve-volt'), { align: 'center' }),
-        P(`12v battery at ${twelveSoc}%`, { align: 'left', width: '70%' }),
-      ]),
+      Div([Img(getTintedIcon('twelve-volt'), { align: 'center' }), P(twelveSocText, { align: 'left', width: '70%' })]),
     ])
   },
 )

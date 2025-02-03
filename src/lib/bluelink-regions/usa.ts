@@ -203,7 +203,7 @@ export class BluelinkUSA extends Bluelink {
       locked: status.doorLock,
       climate: status.airCtrlOn,
       soc: status.evStatus.batteryStatus,
-      twelveSoc: status.battery.batSoc,
+      twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
       odometer: status.odometer ? status.odometer : 0,
     }
   }
