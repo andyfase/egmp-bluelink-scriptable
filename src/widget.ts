@@ -9,7 +9,7 @@ import {
 } from './lib/util'
 import { Bluelink, Status } from './lib/bluelink-regions/base'
 import { Config } from 'config'
-import PersistedLog from './lib/scriptable-utils/io/PersistedLog'
+import { Logger } from './lib/logger'
 
 // Widget Config
 const DARK_MODE = true // Device.isUsingDarkAppearance(); // or set manually to (true or false)
@@ -32,7 +32,7 @@ const DEFAULT_STATUS_CHECK_INTERVAL_NIGHT = 3600 * 2 * 1000
 const DEFAULT_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 6 * 1000 // max 1 remote refresh per night
 const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 4 * 1000 // max 2 remote refreshes per night
 
-const WIDGET_LOG_FILE = 'egmp-bluelink-widget-log'
+const WIDGET_LOG_FILE = 'egmp-bluelink-widget.log'
 
 interface WidgetRefreshCache {
   lastRemoteRefresh: number
@@ -52,7 +52,7 @@ export function deleteWidgetCache() {
 }
 
 async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<WidgetRefresh> {
-  const logger = PersistedLog(WIDGET_LOG_FILE)
+  const logger = new Logger(WIDGET_LOG_FILE, 100)
   let cache: WidgetRefreshCache | undefined = undefined
   const currentTimestamp = Date.now()
   const currentHour = new Date().getHours()
@@ -118,13 +118,13 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
     ) {
       // Note a remote refresh takes to long to wait for - so trigger it and set a small nextRefresh value to pick
       // up the remote data on the next widget refresh
-      if (config.debugLogging) await logger.log('Doing Force Refresh')
+      if (config.debugLogging) logger.log('Doing Force Refresh')
       bl.getStatus(true, true) // no await deliberatly
       sleep(500) // wait for API request to be actually sent in background
       cache.lastRemoteRefresh = currentTimestamp
       nextRefresh = new Date(Date.now() + 5 * 60 * 1000)
     } else {
-      if (config.debugLogging) await logger.log('Doing API Refresh')
+      if (config.debugLogging) logger.log('Doing API Refresh')
       status = await bl.getStatus(false, true)
     }
   } catch (_error) {
@@ -134,8 +134,8 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
 
   Keychain.set(KEYCHAIN_WIDGET_REFRESH_KEY, JSON.stringify(cache))
   if (config.debugLogging)
-    await logger.log(
-      `Current time: ${new Date().toLocaleString()}. Setting next refresh to ${nextRefresh.toLocaleString()}`,
+    logger.log(
+      `Current time: ${new Date().toLocaleString()}. Last Remote refresh: last refresh ${new Date(status.status.lastRemoteStatusCheck).toLocaleString()} Setting next refresh to ${nextRefresh.toLocaleString()}`,
     )
 
   return {

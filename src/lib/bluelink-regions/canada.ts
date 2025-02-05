@@ -129,7 +129,7 @@ export class BluelinkCanada extends Bluelink {
     }
 
     const error = `Login Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     return undefined
   }
 
@@ -143,7 +143,7 @@ export class BluelinkCanada extends Bluelink {
     })
     if (!this.requestResponseValid(resp.resp, resp.json).valid) {
       const error = `Failed to set car ${id}: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-      if (this.config.debugLogging) await this.logger.log(error)
+      if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
   }
@@ -177,7 +177,7 @@ export class BluelinkCanada extends Bluelink {
       }
     }
     const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -270,7 +270,7 @@ export class BluelinkCanada extends Bluelink {
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -289,7 +289,7 @@ export class BluelinkCanada extends Bluelink {
       return resp.json.result.pAuth
     }
     const error = `Failed to get auth code: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -314,7 +314,7 @@ export class BluelinkCanada extends Bluelink {
 
       if (!this.requestResponseValid(resp.resp, resp.json).valid) {
         const error = `Failed to poll for command completion: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-        if (this.config.debugLogging) await this.logger.log(error)
+        if (this.config.debugLogging) this.logger.log(error)
         throw Error(error)
       }
 
@@ -366,7 +366,7 @@ export class BluelinkCanada extends Bluelink {
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -401,7 +401,7 @@ export class BluelinkCanada extends Bluelink {
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send charge command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -446,7 +446,7 @@ export class BluelinkCanada extends Bluelink {
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -470,7 +470,7 @@ export class BluelinkCanada extends Bluelink {
       return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 }

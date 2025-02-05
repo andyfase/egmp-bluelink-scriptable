@@ -115,12 +115,12 @@ export class BluelinkUSA extends Bluelink {
     }
 
     const error = `Login Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     return undefined
   }
 
   protected async refreshTokens(): Promise<BluelinkTokens | undefined> {
-    if (this.config.debugLogging) await this.logger.log('Refreshing tokens')
+    if (this.config.debugLogging) this.logger.log('Refreshing tokens')
     const resp = await this.request({
       url: this.apiDomain + 'v2/ac/oauth/token/refresh',
       data: JSON.stringify({
@@ -139,7 +139,7 @@ export class BluelinkUSA extends Bluelink {
     }
 
     const error = `Login Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     return undefined
   }
 
@@ -159,7 +159,6 @@ export class BluelinkUSA extends Bluelink {
         }
       }
 
-      await this.logger.log(`Choose car ${JSON.stringify(vehicle)}`)
       this.carVin = vehicle.vin
       this.carId = vehicle.regid
       return {
@@ -174,7 +173,7 @@ export class BluelinkUSA extends Bluelink {
       }
     }
     const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -224,7 +223,7 @@ export class BluelinkUSA extends Bluelink {
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -267,7 +266,7 @@ export class BluelinkUSA extends Bluelink {
       return await this.pollForCommandCompletion(resp)
     }
     const error = `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -301,7 +300,7 @@ export class BluelinkUSA extends Bluelink {
       return await this.pollForCommandCompletion(resp)
     }
     const error = `Failed to send charge command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -344,7 +343,7 @@ export class BluelinkUSA extends Bluelink {
       return await this.pollForCommandCompletion(resp)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 
@@ -363,7 +362,7 @@ export class BluelinkUSA extends Bluelink {
       return await this.pollForCommandCompletion(resp)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) await this.logger.log(error)
+    if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
 }

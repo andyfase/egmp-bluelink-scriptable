@@ -1,9 +1,9 @@
 import { Config } from '../../config'
 import { defaultImage } from '../../resources/defaultImage'
-import PersistedLog from '../scriptable-utils/io/PersistedLog'
+import { Logger } from '../logger'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
-const BLUELINK_LOG_FILE = 'egmp-bluelink-log'
+const BLUELINK_LOG_FILE = 'egmp-bluelink.log'
 const DEFAULT_API_HOST = 'mybluelink.ca'
 const DEFAULT_API_DOMAIN = `https://${DEFAULT_API_HOST}/tods/api/`
 
@@ -121,7 +121,7 @@ export class Bluelink {
     this.debugLastRequest = undefined
     this.tempLookup = undefined
     this.distanceUnit = 'km'
-    this.logger = PersistedLog(BLUELINK_LOG_FILE)
+    this.logger = new Logger(BLUELINK_LOG_FILE, 100)
   }
 
   protected async superInit(config: Config, statusCheckInterval?: number) {
@@ -346,9 +346,10 @@ export class Bluelink {
       }),
     }
     try {
-      if (this.config.debugLogging) await this.logger.log(`Sending request ${JSON.stringify(this.debugLastRequest)}`)
+      if (this.config.debugLogging) this.logger.log(`Sending request ${JSON.stringify(this.debugLastRequest)}`)
       const json = await req.loadJSON()
-      await this.logger.log(`response ${JSON.stringify(req.response)} data: ${JSON.stringify(json)}`)
+      if (this.config.debugLogging)
+        this.logger.log(`response ${JSON.stringify(req.response)} data: ${JSON.stringify(json)}`)
 
       const checkResponse = props.validResponseFunction(req.response, json)
       if (!props.noRetry && checkResponse.retry) {
@@ -362,7 +363,7 @@ export class Bluelink {
       return { resp: req.response, json: json }
     } catch (error) {
       const errorString = `Failed to send request to ${props.url}, request ${JSON.stringify(this.debugLastRequest)} - error ${error}`
-      if (this.config.debugLogging) await this.logger.log(error)
+      if (this.config.debugLogging) this.logger.log(error)
       throw Error(errorString)
     }
   }
