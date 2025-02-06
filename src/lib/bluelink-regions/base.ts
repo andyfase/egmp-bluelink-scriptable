@@ -22,6 +22,7 @@ export interface BluelinkCar {
   modelYear: string
   modelTrim?: string
   modelColour?: string
+  odometer?: number
 }
 
 export interface BluelinkStatus {
@@ -58,6 +59,7 @@ export interface RequestProps {
   headers?: Record<string, string>
   validResponseFunction: (resp: Record<string, any>, data: Record<string, any>) => { valid: boolean; retry: boolean }
   noRetry?: boolean
+  notJSON?: boolean
 }
 
 export interface DebugLastRequest {
@@ -130,6 +132,7 @@ export class Bluelink {
 
     // loadCache will login user if the cache doesnt exist i.e first app use
     const cache = await this.loadCache()
+    this.logger.log(`loaded cache ${cache} login failure ${this.loginFailure}`)
     if (!cache) {
       this.loginFailure = true
       return
@@ -186,6 +189,7 @@ export class Bluelink {
   public async getStatus(forceUpdate: boolean, noCache: boolean): Promise<Status> {
     if (forceUpdate) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, true)
+      this.cache.car = await this.getCar()
       this.saveCache()
     } else if (noCache || this.cache.status.lastStatusCheck + this.statusCheckInterval < Date.now()) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, false)
@@ -238,6 +242,7 @@ export class Bluelink {
         callback(false, false, undefined)
       } else {
         timer.invalidate()
+        if (this.config.debugLogging) this.logger.log(`Returning poll completion ${didSucceed}, data: ${data}`)
         callback(true, didSucceed, data)
       }
     })
@@ -347,12 +352,14 @@ export class Bluelink {
     }
     try {
       if (this.config.debugLogging) this.logger.log(`Sending request ${JSON.stringify(this.debugLastRequest)}`)
-      const json = await req.loadJSON()
+      const json = !props.notJSON ? await req.loadJSON() : await req.load()
       if (this.config.debugLogging)
-        this.logger.log(`response ${JSON.stringify(req.response)} data: ${JSON.stringify(json)}`)
+        this.logger.log(
+          `response ${JSON.stringify(req.response)} data: ${!props.notJSON ? JSON.stringify(json) : json}`,
+        )
 
       const checkResponse = props.validResponseFunction(req.response, json)
-      if (!props.noRetry && checkResponse.retry) {
+      if (!props.noRetry && checkResponse.retry && !props.noAuth) {
         // re-auth and call ourselves
         await this.refreshLogin(true)
         return await this.request({

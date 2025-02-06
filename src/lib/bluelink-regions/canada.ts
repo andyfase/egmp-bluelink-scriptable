@@ -149,6 +149,11 @@ export class BluelinkCanada extends Bluelink {
   }
 
   protected async getCar(): Promise<BluelinkCar> {
+    let vin = this.vin
+    if (!vin && this.cache) {
+      vin = this.cache.car.vin
+    }
+
     const resp = await this.request({
       url: this.apiDomain + 'vhcllst',
       method: 'POST',
@@ -156,9 +161,9 @@ export class BluelinkCanada extends Bluelink {
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.result.vehicles.length > 0) {
       let vehicle = resp.json.result.vehicles[0]
-      if (this.vin) {
+      if (vin) {
         for (const v of resp.json.result.vehicles) {
-          if (v.vin === this.vin) {
+          if (v.vin === vin) {
             vehicle = v
             break
           }

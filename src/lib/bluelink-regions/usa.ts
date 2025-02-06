@@ -13,6 +13,7 @@ const API_DOMAINS: Record<string, string> = {
   hyundai: 'https://api.telematics.hyundaiusa.com/',
   kia: 'https://api.owners.kia.com/apigw/v1/',
 }
+const MAX_COMPLETION_POLLS = 20
 
 export class BluelinkUSA extends Bluelink {
   private carVin: string | undefined
@@ -39,6 +40,7 @@ export class BluelinkUSA extends Bluelink {
       username: this.config.auth.username,
       blueLinkServicePin: `${this.config.auth.pin}`,
       brandIndicator: 'H',
+      'User-Agent': 'okhttp/3.14.9',
     }
 
     this.authHeader = 'accessToken'
@@ -91,7 +93,8 @@ export class BluelinkUSA extends Bluelink {
     return {
       // on first load cache is not populated - hence default to optional local vars set when fetching the car.
       registrationId: this.cache ? this.cache.car.id : this.carId!,
-      vin: this.cache ? this.cache.car.vin : this.carVin!,
+      VIN: this.cache ? this.cache.car.vin : this.carVin!,
+      'APPCLOUD-VIN': this.cache ? this.cache.car.vin : this.carVin!,
     }
   }
 
@@ -144,15 +147,20 @@ export class BluelinkUSA extends Bluelink {
   }
 
   protected async getCar(): Promise<BluelinkCar> {
+    let vin = this.vin
+    if (!vin && this.cache) {
+      vin = this.cache.car.vin
+    }
+
     const resp = await this.request({
       url: this.apiDomain + `ac/v2/enrollment/details/${this.config.auth.username}`,
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.enrolledVehicleDetails.length > 0) {
       let vehicle = resp.json.enrolledVehicleDetails[0].vehicleDetails
-      if (this.vin) {
+      if (vin) {
         for (const v of resp.json.enrolledVehicleDetails) {
-          if (v.vehicleDetails.vin === this.vin) {
+          if (v.vehicleDetails.vin === vin) {
             vehicle = v.vehicleDetails
             break
           }
@@ -167,6 +175,7 @@ export class BluelinkUSA extends Bluelink {
         nickName: vehicle.nickName,
         modelName: vehicle.modelCode,
         modelYear: vehicle.modelYear,
+        odometer: vehicle.odometer ? vehicle.odometer : 0,
         // colour and trim dont exist in US implementation
         // modelColour: vehicle.exteriorColor,
         // modelTrim: vehicle.trim,
@@ -229,13 +238,54 @@ export class BluelinkUSA extends Bluelink {
 
   // US implementation does not seem to have a mechanism to check for succesful commands or not
   // for now do nothing but return success until we get some logs and can work out what to do
-  protected async pollForCommandCompletion(resp: {
-    resp: Record<string, any>
-    json: any
-  }): Promise<{ isSuccess: boolean; data: any }> {
+  protected async pollForCommandCompletion(
+    resp: {
+      resp: Record<string, any>
+      json: any
+    },
+    transactionId: string,
+  ): Promise<{ isSuccess: boolean; data: any }> {
+    const api = 'ac/v2/rmt/getRunningStatus'
+    let attempts = 0
+    while (attempts <= MAX_COMPLETION_POLLS) {
+      const resp = await this.request({
+        url: this.apiDomain + api,
+        headers: {
+          ...this.carHeaders(),
+          tid: transactionId,
+          login_id: this.config.auth.username,
+          service_type: 'REMOTE_POLL', // Note this value is made up - the header needs to exist but the value does not appear to matter. Valid values so far are REMOTE_LOCK, REMOTE_CLIMATE_STOP
+        },
+        validResponseFunction: this.requestResponseValid,
+      })
+
+      if (
+        !this.requestResponseValid(resp.resp, resp.json).valid ||
+        (resp.json.status && resp.json.status === 'ERROR')
+      ) {
+        const error = `Failed to poll for command completion: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+        if (this.config.debugLogging) this.logger.log(error)
+        throw Error(error)
+      }
+
+      if (resp.json.status === 'SUCCESS') {
+        // fetch status from API as we dont get it in response.
+        const status = await this.getCarStatus(this.cache.car.id, false)
+        this.cache.status = status
+        this.saveCache()
+        if (this.config.debugLogging) this.logger.log(`Return poll success!! ${JSON.stringify(this.cache.status)}`)
+        return {
+          isSuccess: true,
+          data: this.cache.status,
+        }
+      }
+      attempts += 1
+      await this.sleep(4000)
+    }
+    if (this.config.debugLogging) this.logger.log(`Return poll failure!! -  last response ${JSON.stringify(resp.json)}`)
     return {
-      isSuccess: true,
-      data: resp.json,
+      isSuccess: false,
+      data: undefined,
     }
   }
 
@@ -248,7 +298,8 @@ export class BluelinkUSA extends Bluelink {
   }
 
   protected async lockUnlock(_id: string, shouldLock: boolean): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
-    const api = shouldLock ? '/ac/v2/rcs/rdo/off' : '/ac/v2/rcs/rdo/on'
+    const api = shouldLock ? 'ac/v2/rcs/rdo/off' : 'ac/v2/rcs/rdo/on'
+
     const resp = await this.request({
       url: this.apiDomain + api,
       method: 'POST',
@@ -258,12 +309,13 @@ export class BluelinkUSA extends Bluelink {
       }),
       headers: {
         ...this.carHeaders(),
-        bluelinkservicepin: this.config.auth.pin,
       },
+      notJSON: true,
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return await this.pollForCommandCompletion(resp)
+      const transactionId = resp.resp.headers.tmsTid as string
+      return await this.pollForCommandCompletion(resp, transactionId)
     }
     const error = `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
@@ -282,7 +334,7 @@ export class BluelinkUSA extends Bluelink {
     _id: string,
     shouldCharge: boolean,
   ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
-    const api = shouldCharge ? '/ac/v2/evc/charge/start' : '/ac/v2/evc/charge/stop'
+    const api = shouldCharge ? 'ac/v2/evc/charge/start' : 'ac/v2/evc/charge/stop'
     const resp = await this.request({
       url: this.apiDomain + api,
       method: 'POST',
@@ -297,7 +349,8 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return await this.pollForCommandCompletion(resp)
+      const transactionId = resp.resp.headers.tmsTid as string
+      return await this.pollForCommandCompletion(resp, transactionId)
     }
     const error = `Failed to send charge command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
@@ -318,7 +371,7 @@ export class BluelinkUSA extends Bluelink {
       throw Error(`Failed to convert temp ${config.temp} in climateOn command`)
     }
 
-    const api = '/ac/v2/evc/fatc/start'
+    const api = 'ac/v2/evc/fatc/start'
     const resp = await this.request({
       url: this.apiDomain + api,
       method: 'POST',
@@ -340,7 +393,8 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return await this.pollForCommandCompletion(resp)
+      const transactionId = resp.resp.headers.tmsTid as string
+      return await this.pollForCommandCompletion(resp, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
@@ -348,7 +402,7 @@ export class BluelinkUSA extends Bluelink {
   }
 
   protected async climateOff(_id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
-    const api = '/ac/v2/evc/fatc/stop'
+    const api = 'ac/v2/evc/fatc/stop'
     const resp = await this.request({
       url: this.apiDomain + api,
       method: 'POST',
@@ -359,7 +413,8 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return await this.pollForCommandCompletion(resp)
+      const transactionId = resp.resp.headers.tmsTid as string
+      return await this.pollForCommandCompletion(resp, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)

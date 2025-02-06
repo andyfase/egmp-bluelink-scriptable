@@ -202,7 +202,7 @@ export async function createWidget(config: Config, bl: Bluelink) {
   const batteryPercent = status.status.soc
   const remainingChargingTime = status.status.remainingChargeTimeMins
   const chargingKw = status.status.chargingPower.toString()
-  const odometer = status.status.odometer
+  const odometer = status.status.odometer > 0 ? status.status.odometer : status.car.odometer ? status.car.odometer : 0
   const lastSeen = new Date(status.status.lastRemoteStatusCheck)
 
   // Battery Percent Value
