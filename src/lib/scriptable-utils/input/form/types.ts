@@ -3,6 +3,7 @@ import { SFSymbolKey } from '../../sfSymbols'
 import { AnyObj, Falsy, MapFn, NotUndefined, Omit_, Predicate } from '../../types/utilTypes'
 import { RowOpts } from '../../UITable/Row/types'
 import { ValidTableEl } from '../../UITable/types'
+import { TextFieldKeyboardFlavor } from '../types'
 
 type FieldTypeToSupportedValue = {
   cycle: string | null
@@ -52,11 +53,20 @@ export type FieldOpts<T extends FieldType, FormState extends FormStateShape, K e
   // specific to each kind of input element. This is a bit lazy
   allowCustom?: boolean
   secure?: boolean
+  flavor?: TextFieldKeyboardFlavor
 }
 
 export type FieldRenderOpts<T extends FieldType> = Pick<
   FieldOpts<T, AnyObj, string>,
-  'isClearable' | 'label' | 'options' | 'customIcon' | 'mapDisplayValue' | 'isRequired' | 'allowCustom' | 'secure'
+  | 'isClearable'
+  | 'label'
+  | 'options'
+  | 'customIcon'
+  | 'mapDisplayValue'
+  | 'isRequired'
+  | 'allowCustom'
+  | 'secure'
+  | 'flavor'
 > & {
   currValue: ValidFieldValue<T>
   /** This allows passing `undefined`, but this should not be allowed if
@@ -124,7 +134,15 @@ export type MultiOptionRowOpts = {
 
 export type CommonFieldOpts = Pick<
   FieldRenderOpts<any>,
-  'errorMessage' | 'label' | 'customIcon' | 'mapDisplayValue' | 'isRequired' | 'allowCustom' | 'isClearable' | 'secure'
+  | 'errorMessage'
+  | 'label'
+  | 'customIcon'
+  | 'mapDisplayValue'
+  | 'isRequired'
+  | 'allowCustom'
+  | 'isClearable'
+  | 'secure'
+  | 'flavor'
 >
 
 export const NO_FIELD_SECTION = Symbol('NO_FIELD_SECTION')

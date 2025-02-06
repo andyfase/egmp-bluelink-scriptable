@@ -17,6 +17,7 @@ import quickOptions from '../quickOptions'
 import textInput from '../textInput'
 import { MultiOptionRow, StandardFieldRow } from './atoms'
 import { CommonFieldOpts, MultiOptionRowValueOpt, ValidFieldValue } from './types'
+import { TextFieldKeyboardFlavor } from '../types'
 import { getErrorMessage, getRowOpts, mapLabel } from './utils'
 
 const confirmClearValue = (onChange: MapFn<undefined, any>) =>
@@ -181,6 +182,7 @@ export const ChooseColorField = (opts: ChooseColorOpts) => {
 type TextInputOpts = {
   currValue?: string
   secure?: boolean
+  flavor?: TextFieldKeyboardFlavor
   onChange: MapFn<ValidFieldValue<'textInput'>>
 } & CommonFieldOpts
 
@@ -193,6 +195,7 @@ export const TextInputField = (opts: TextInputOpts) => {
         initValue: currValue,
         placeholder: currValue,
         secure: opts.secure,
+        flavor: opts.flavor,
       })
       if (newVal && newVal !== currValue) onChange(newVal)
     },

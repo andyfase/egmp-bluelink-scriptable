@@ -175,10 +175,11 @@ export async function loadConfigScreen() {
         secure: true,
       },
       pin: {
-        type: 'numberValue',
+        type: 'textInput',
         label: 'Bluelink PIN',
         isRequired: true,
         secure: true,
+        flavor: 'number',
       },
       region: {
         type: 'dropdown',

@@ -51,5 +51,5 @@ export default async (
   const wasCancelled = tappedButtonText === cancelText
   if (wasCancelled) await onCancel()
   else await onSubmit(resultText)
-  return wasCancelled ? '' : resultText
+  return wasCancelled ? '' : resultText?.toString()
 }

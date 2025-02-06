@@ -10,6 +10,7 @@ export type TextFieldConfigOpts = {
   placeholder?: string
   initValue?: string
   secure?: boolean
+  flavor?: TextFieldKeyboardFlavor
 } & TextFieldFormatting
 
 export type AlertButton = {
