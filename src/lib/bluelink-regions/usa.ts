@@ -44,33 +44,6 @@ export class BluelinkUSA extends Bluelink {
     }
 
     this.authHeader = 'accessToken'
-    this.tempLookup = {
-      F: [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82],
-      C: [17, 17.5, 18, 18.5, 19, 19.5, 20, 20.5, 21, 21.5, 22, 22.5, 23, 23.5, 24, 24.5, 25, 25.5, 26, 26.5, 27],
-      H: [
-        '06H',
-        '07H',
-        '08H',
-        '09H',
-        '0AH',
-        '0BH',
-        '0CH',
-        '0DH',
-        '0EH',
-        '0FH',
-        '10H',
-        '11H',
-        '12H',
-        '13H',
-        '14H',
-        '15H',
-        '16H',
-        '17H',
-        '18H',
-        '19H',
-        '1AH',
-      ],
-    }
   }
 
   static async init(config: Config, vin?: string, statusCheckInterval?: number) {
@@ -342,9 +315,9 @@ export class BluelinkUSA extends Bluelink {
         userName: this.config.auth.username,
         vin: this.cache.car.vin,
       }),
+      notJSON: true,
       headers: {
         ...this.carHeaders(),
-        bluelinkservicepin: this.config.auth.pin,
       },
       validResponseFunction: this.requestResponseValid,
     })
@@ -361,16 +334,6 @@ export class BluelinkUSA extends Bluelink {
     _id: string,
     config: ClimateRequest,
   ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
-    if (!this.tempLookup) {
-      throw Error(`Mis-Configured sub-class - no temp lookup defined`)
-    }
-    const configTempIndex = this.config.tempType
-    const tempIndex = this.tempLookup[configTempIndex].indexOf(config.temp)
-
-    if (!tempIndex || tempIndex == -1) {
-      throw Error(`Failed to convert temp ${config.temp} in climateOn command`)
-    }
-
     const api = 'ac/v2/evc/fatc/start'
     const resp = await this.request({
       url: this.apiDomain + api,
@@ -379,16 +342,15 @@ export class BluelinkUSA extends Bluelink {
         airCtrl: 1,
         defrost: config.defrost,
         airTemp: {
-          value: this.tempLookup.H[tempIndex],
-          unit: 0,
-          hvacTempType: 1,
+          value: config.temp.toString(),
+          unit: this.config.tempType === 'F' ? 1 : 0,
         },
-        igniOnDuration: config.durationMinutes,
+        // igniOnDuration: config.durationMinutes, // not supported in US
         heating1: config.steering ? 4 : 0,
       }),
+      notJSON: true,
       headers: {
         ...this.carHeaders(),
-        bluelinkservicepin: this.config.auth.pin,
       },
       validResponseFunction: this.requestResponseValid,
     })
@@ -396,7 +358,7 @@ export class BluelinkUSA extends Bluelink {
       const transactionId = resp.resp.headers.tmsTid as string
       return await this.pollForCommandCompletion(resp, transactionId)
     }
-    const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    const error = `Failed to send climateOn command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
@@ -408,8 +370,8 @@ export class BluelinkUSA extends Bluelink {
       method: 'POST',
       headers: {
         ...this.carHeaders(),
-        bluelinkservicepin: this.config.auth.pin,
       },
+      notJSON: true,
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
