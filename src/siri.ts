@@ -1,9 +1,14 @@
 import { Config } from 'config'
+import { Logger } from 'lib/logger'
 import { Bluelink, ClimateRequest } from 'lib/bluelink-regions/base'
 import { getChargeCompletionString, sleep } from 'lib/util'
 
-export async function processSiriRequest(config: Config, bl: Bluelink, shortcutParameter: any) {
+const SIRI_LOG_FILE = 'egmp-bluelink-siri.log'
+
+export async function processSiriRequest(config: Config, bl: Bluelink, shortcutParameter: any): Promise<string> {
   const shortcutParameterAsString = shortcutParameter as string
+  const logger = new Logger(SIRI_LOG_FILE, 100)
+  if (config.debugLogging) logger.log(`Siri request: ${shortcutParameterAsString}`)
 
   for (const commandDetection of commandMap) {
     let found = true
@@ -15,12 +20,12 @@ export async function processSiriRequest(config: Config, bl: Bluelink, shortcutP
     }
 
     if (found) {
-      const result = await commandDetection.function(bl)
-      Speech.speak(result)
-      return
+      const response = await commandDetection.function(bl)
+      if (config.debugLogging) logger.log(`Siri response: ${response}`)
+      return response
     }
   }
-  Speech.speak(`You asked me ${shortcutParameter} and i dont support that command`)
+  return `You asked me ${shortcutParameter} and i dont support that command`
 }
 
 async function getStatus(bl: Bluelink): Promise<string> {
