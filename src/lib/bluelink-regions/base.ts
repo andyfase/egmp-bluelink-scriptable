@@ -408,6 +408,17 @@ export class Bluelink {
     })
   }
 
+  // helper function to extract a parameter from header / cookie etc - as the Bluelink API changes case frequently
+  protected caseInsensitiveParamExtraction(key: string, data: Record<string, any>): string | undefined {
+    if (Object.hasOwn(data, key)) return data[key] // check for exact match first
+
+    const lowerKey = key.toLowerCase()
+    for (const [k, v] of Object.entries(data)) {
+      if (lowerKey === k.toLowerCase()) return v
+    }
+    return undefined
+  }
+
   protected async login(): Promise<BluelinkTokens | undefined> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')

@@ -98,7 +98,7 @@ export class BluelinkCanada extends Bluelink {
     req.method = 'GET'
     await req.load()
     for (const cookie of req.response.cookies) {
-      if (cookie.name === 'dtCookie') {
+      if (cookie.name.toLowerCase() === 'dtcookie') {
         return `dtCookie=${cookie.value}`
       }
     }
@@ -298,15 +298,6 @@ export class BluelinkCanada extends Bluelink {
     throw Error(error)
   }
 
-  protected getTransactionId(headers: Record<string, any>): string {
-    // response is inconsistant re case
-    if (Object.hasOwn(headers, 'transactionId')) return headers.transactionId
-    if (Object.hasOwn(headers, 'transactionid')) return headers.transactionid
-    const error = `Failed to extract transaction id from: ${JSON.stringify(headers)}`
-    if (this.config.debugLogging) this.logger.log(error)
-    throw Error(error)
-  }
-
   protected async pollForCommandCompletion(
     id: string,
     authCode: string,
@@ -376,8 +367,8 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      const transactionId = this.getTransactionId(resp.resp.headers)
-      return await this.pollForCommandCompletion(id, authCode, transactionId)
+      const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
@@ -411,8 +402,8 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      const transactionId = this.getTransactionId(resp.resp.headers)
-      return await this.pollForCommandCompletion(id, authCode, transactionId)
+      const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send charge command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
@@ -456,8 +447,8 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      const transactionId = this.getTransactionId(resp.resp.headers)
-      return await this.pollForCommandCompletion(id, authCode, transactionId)
+      const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
@@ -480,8 +471,8 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      const transactionId = this.getTransactionId(resp.resp.headers)
-      return await this.pollForCommandCompletion(id, authCode, transactionId)
+      const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)

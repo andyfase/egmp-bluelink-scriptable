@@ -287,8 +287,8 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      const transactionId = resp.resp.headers.tmsTid as string
-      return await this.pollForCommandCompletion(resp, transactionId)
+      const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     }
     const error = `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
@@ -322,8 +322,8 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      const transactionId = resp.resp.headers.tmsTid as string
-      return await this.pollForCommandCompletion(resp, transactionId)
+      const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     }
     const error = `Failed to send charge command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
@@ -355,8 +355,8 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      const transactionId = resp.resp.headers.tmsTid as string
-      return await this.pollForCommandCompletion(resp, transactionId)
+      const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     }
     const error = `Failed to send climateOn command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
@@ -375,8 +375,8 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      const transactionId = resp.resp.headers.tmsTid as string
-      return await this.pollForCommandCompletion(resp, transactionId)
+      const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
