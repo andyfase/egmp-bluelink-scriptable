@@ -132,7 +132,6 @@ export class Bluelink {
 
     // loadCache will login user if the cache doesnt exist i.e first app use
     const cache = await this.loadCache()
-    this.logger.log(`loaded cache ${cache} login failure ${this.loginFailure}`)
     if (!cache) {
       this.loginFailure = true
       return
@@ -305,8 +304,6 @@ export class Bluelink {
 
   protected tokenValid(): boolean {
     // invalid if within 30 seconds of expiry
-    if (this.config.debugLogging)
-      this.logger.log(`Token expiry ${this.cache.token.expiry} now ${Math.floor(Date.now() / 1000)}`)
     return Boolean(this.cache.token.expiry - 30 > Math.floor(Date.now() / 1000))
   }
 
