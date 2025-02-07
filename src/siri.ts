@@ -36,20 +36,19 @@ async function getStatus(bl: Bluelink): Promise<string> {
 
   let response = `${carName}'s battery is at ${status.status.soc}% and ${status.status.locked ? 'locked' : 'un-locked'}`
   if (status.status.climate) response += ', and your climate is currently on'
-  else response += ''
 
   if (status.status.isCharging) {
     const chargeCompleteTime = getChargeCompletionString(lastSeen, status.status.remainingChargeTimeMins)
-    response += `Also your car is charging at ${status.status.chargingPower}kw and will be finished charging at ${chargeCompleteTime}`
+    response += `. Also your car is charging at ${status.status.chargingPower}kw and will be finished charging at ${chargeCompleteTime}`
   } else if (status.status.isPluggedIn) {
-    response += 'Also your car is currently plugged into a charger.'
+    response += '. Also your car is currently plugged into a charger.'
   }
   const lastSeenShort = lastSeen.toLocaleString(undefined, {
     weekday: 'long',
     hour: 'numeric',
     minute: 'numeric',
   })
-  response += `This was the status from ${carName} on ${lastSeenShort}.`
+  response += `. This was the status from ${carName} on ${lastSeenShort}.`
   return response
 }
 
@@ -66,7 +65,7 @@ async function warm(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'climate',
-    `I've issued a request to pre-warm ${status.car.nickName || `your ${status.car.modelName}`}`,
+    `I've issued a request to pre-warm ${status.car.nickName || `your ${status.car.modelName}`}.`,
     {
       enable: true,
       defrost: true,
@@ -82,7 +81,7 @@ async function cool(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'climate',
-    `I've issued a request to pre-cool ${status.car.nickName || `your ${status.car.modelName}`}`,
+    `I've issued a request to pre-cool ${status.car.nickName || `your ${status.car.modelName}`}.`,
     {
       enable: true,
       defrost: false,
@@ -98,7 +97,7 @@ async function climateOff(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'climate',
-    `I've issued a request to turn off the conditioning on ${status.car.nickName || `your ${status.car.modelName}`}`,
+    `I've issued a request to turn off the climate on ${status.car.nickName || `your ${status.car.modelName}`}.`,
     {
       enable: false,
       defrost: false,
@@ -114,7 +113,7 @@ async function lock(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'lock',
-    `I've issued a request to lock ${status.car.nickName || `your ${status.car.modelName}`}`,
+    `I've issued a request to lock ${status.car.nickName || `your ${status.car.modelName}`}.`,
   )
 }
 
@@ -123,7 +122,7 @@ async function unlock(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'unlock',
-    `I've issued a request to lock ${status.car.nickName || `your ${status.car.modelName}`}`,
+    `I've issued a request to lock ${status.car.nickName || `your ${status.car.modelName}`}.`,
   )
 }
 
@@ -132,7 +131,7 @@ async function startCharge(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'startCharge',
-    `I've issued a request to start charging ${status.car.nickName || `your ${status.car.modelName}`}`,
+    `I've issued a request to start charging ${status.car.nickName || `your ${status.car.modelName}`}.`,
   )
 }
 
@@ -141,7 +140,7 @@ async function stopCharge(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'stopCharge',
-    `I've issued a request to stop charging ${status.car.nickName || `your ${status.car.modelName}`}`,
+    `I've issued a request to stop charging ${status.car.nickName || `your ${status.car.modelName}`}.`,
   )
 }
 
