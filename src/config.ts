@@ -78,6 +78,7 @@ export function setConfig(config: Config) {
 
 export function getFlattenedConfig(): FlattenedConfig {
   const config = getConfig()
+  config.auth.pin = config.auth.pin.toString() // convert previous pin if integer
   return {
     ...DEFAULT_CONFIG,
     ...config.auth,
