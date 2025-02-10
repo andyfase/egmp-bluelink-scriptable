@@ -62,6 +62,6 @@ function lightbox_close() {
 It provides a limited feature set but has a fresher more responsive UI, providing both widget and Siri/Shortcuts integration.
 {: .fs-6 .fw-300 }
 
-Note: bluelink-scriptable is very much still in beta, it currently only supports the Canadian region.
+Note: bluelink-scriptable currently supports the US and Canadian Bluelink regions, tested on Hyundai and Kia for Canada and just Hyundai for US.
 
-I am actively looking for e-gmp car owners from other regions that would be willing to work with me so I can develop and test the APIs for their regions (US and Europe specifically). If your willing please [DM me on reddit](https://www.reddit.com/user/andyfase/). It would likely take less than a couple of days to implement and maybe 2 hours of active time using your bluelink account.
+I am actively looking for e-gmp car owners from other regions that would be willing to work with me so I can develop and test the APIs for their regions (Europe specifically). If your willing please [DM me on reddit](https://www.reddit.com/user/andyfase/). It would likely take less than a couple of days to implement and maybe 2 hours of active time using your bluelink account.
