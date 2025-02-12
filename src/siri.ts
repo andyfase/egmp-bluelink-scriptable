@@ -122,7 +122,7 @@ async function unlock(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'unlock',
-    `I've issued a request to lock ${status.car.nickName || `your ${status.car.modelName}`}.`,
+    `I've issued a request to unlock ${status.car.nickName || `your ${status.car.modelName}`}.`,
   )
 }
 
