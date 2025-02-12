@@ -162,6 +162,8 @@ interface commandDetection {
   function: (bl: Bluelink) => Promise<string>
 }
 
+// Note order matters in this list, as we check a sentence for presence of words
+// and certain words contain sub-words. Hence "unlock" needs to be before "lock" etc
 const commandMap: commandDetection[] = [
   {
     words: ['status', 'remote'],
@@ -184,12 +186,12 @@ const commandMap: commandDetection[] = [
     function: climateOff,
   },
   {
-    words: ['lock'],
-    function: lock,
-  },
-  {
     words: ['unlock'],
     function: unlock,
+  },
+  {
+    words: ['lock'],
+    function: lock,
   },
   {
     words: ['start', 'charging'],
