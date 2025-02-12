@@ -18,6 +18,25 @@ export interface Config {
   allowWidgetRemoteRefresh: boolean
   debugLogging: boolean
   vin: string | undefined
+  widgetConfig: WidgetConfig
+}
+
+export interface WidgetConfig {
+  standardPollPeriod: number
+  remotePollPeriod: number
+  chargingRemotePollPeriod: number
+  nightStandardPollPeriod: number
+  nightRemotePollPeriod: number
+  nightChargingRemotePollPeriod: number
+}
+
+export interface CustomClimateConfig {
+  name: string
+  tempType: 'C' | 'F'
+  temp: number
+  defrost: boolean
+  steering: boolean
+  durationMinutes: number
 }
 
 export interface FlattenedConfig {
@@ -32,6 +51,7 @@ export interface FlattenedConfig {
   allowWidgetRemoteRefresh: boolean
   debugLogging: boolean
   vin: string | undefined
+  widgetConfig: WidgetConfig
 }
 
 // const SUPPORTED_REGIONS = ['canada']
@@ -62,6 +82,14 @@ const DEFAULT_CONFIG = {
   debugLogging: false,
   allowWidgetRemoteRefresh: false,
   manufacturer: undefined,
+  widgetConfig: {
+    standardPollPeriod: 1,
+    remotePollPeriod: 4,
+    chargingRemotePollPeriod: 2,
+    nightStandardPollPeriod: 2,
+    nightRemotePollPeriod: 6,
+    nightChargingRemotePollPeriod: 4,
+  },
 } as Config
 
 export function configExists(): boolean {
@@ -228,6 +256,96 @@ export async function loadConfigScreen() {
         label: 'Enable debug logging',
         isRequired: false,
       },
+      widgetConfig: {
+        type: 'clickable',
+        label: 'Optional Advanced Widget Settings',
+        customIcon: 'gear',
+        faded: true,
+        onClickFunction: loadWidgetConfigScreen,
+      },
     },
   })(getFlattenedConfig())
+}
+
+export async function loadWidgetConfigScreen() {
+  return await form<WidgetConfig>({
+    title: 'Widget Poll Periods',
+    subtitle: 'All periods are measured in hours',
+    onSubmit: ({
+      standardPollPeriod,
+      remotePollPeriod,
+      chargingRemotePollPeriod,
+      nightStandardPollPeriod,
+      nightRemotePollPeriod,
+      nightChargingRemotePollPeriod,
+    }) => {
+      const config = getConfig()
+      config.widgetConfig = {
+        standardPollPeriod: standardPollPeriod || config.widgetConfig.standardPollPeriod,
+        remotePollPeriod: remotePollPeriod || config.widgetConfig.remotePollPeriod,
+        chargingRemotePollPeriod: chargingRemotePollPeriod || config.widgetConfig.chargingRemotePollPeriod,
+        nightStandardPollPeriod: nightStandardPollPeriod || config.widgetConfig.nightStandardPollPeriod,
+        nightRemotePollPeriod: nightRemotePollPeriod || config.widgetConfig.nightRemotePollPeriod,
+        nightChargingRemotePollPeriod:
+          nightChargingRemotePollPeriod || config.widgetConfig.nightChargingRemotePollPeriod,
+      }
+      setConfig(config)
+    },
+    onStateChange: (state, _previousState): Partial<WidgetConfig> => {
+      return state
+    },
+    isFormValid: ({
+      standardPollPeriod,
+      remotePollPeriod,
+      chargingRemotePollPeriod,
+      nightStandardPollPeriod,
+      nightRemotePollPeriod,
+      nightChargingRemotePollPeriod,
+    }) => {
+      if (
+        !standardPollPeriod ||
+        !remotePollPeriod ||
+        !chargingRemotePollPeriod ||
+        !nightStandardPollPeriod ||
+        !nightRemotePollPeriod ||
+        !nightChargingRemotePollPeriod
+      ) {
+        return false
+      }
+      return true
+    },
+    submitButtonText: 'Save',
+    fields: {
+      standardPollPeriod: {
+        type: 'numberValue',
+        label: 'API Poll Period',
+        isRequired: true,
+      },
+      remotePollPeriod: {
+        type: 'numberValue',
+        label: 'Remote Car Poll Period',
+        isRequired: true,
+      },
+      chargingRemotePollPeriod: {
+        type: 'numberValue',
+        label: 'Remote Car Charging Poll Period',
+        isRequired: true,
+      },
+      nightStandardPollPeriod: {
+        type: 'numberValue',
+        label: 'Night API Poll Period',
+        isRequired: true,
+      },
+      nightRemotePollPeriod: {
+        type: 'numberValue',
+        label: 'Night Remote Car Poll Period',
+        isRequired: true,
+      },
+      nightChargingRemotePollPeriod: {
+        type: 'numberValue',
+        label: 'Night Remote Car Poll Period',
+        isRequired: true,
+      },
+    },
+  })(getFlattenedConfig().widgetConfig)
 }
