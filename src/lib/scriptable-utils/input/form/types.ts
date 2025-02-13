@@ -4,7 +4,6 @@ import { AnyObj, Falsy, MapFn, NotUndefined, Omit_, Predicate } from '../../type
 import { RowOpts } from '../../UITable/Row/types'
 import { ValidTableEl } from '../../UITable/types'
 import { TextFieldKeyboardFlavor } from '../types'
-import { NoParamFn } from '../../types/utilTypes'
 
 type FieldTypeToSupportedValue = {
   cycle: string | null
@@ -56,7 +55,8 @@ export type FieldOpts<T extends FieldType, FormState extends FormStateShape, K e
   allowCustom?: boolean
   secure?: boolean
   flavor?: TextFieldKeyboardFlavor
-  onClickFunction?: NoParamFn
+  onClickFunction?: (data?: any) => void
+  onClickFunctionData?: any
   faded?: boolean
 }
 
@@ -78,7 +78,8 @@ export type FieldRenderOpts<T extends FieldType> = Pick<
    * though. */
   onChange: MapFn<ValidFieldValue<T>>
   errorMessage?: string
-  onClickFunction?: NoParamFn
+  onClickFunction?: (data?: any) => void
+  onClickFunctionData?: any
   faded?: boolean
 }
 

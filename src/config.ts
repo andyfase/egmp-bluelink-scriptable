@@ -19,6 +19,7 @@ export interface Config {
   debugLogging: boolean
   vin: string | undefined
   widgetConfig: WidgetConfig
+  customClimateConfig1: CustomClimateConfig | undefined
 }
 
 export interface WidgetConfig {
@@ -52,6 +53,7 @@ export interface FlattenedConfig {
   debugLogging: boolean
   vin: string | undefined
   widgetConfig: WidgetConfig
+  customClimateConfig1: CustomClimateConfig | undefined
 }
 
 // const SUPPORTED_REGIONS = ['canada']
@@ -70,6 +72,7 @@ const DEFAULT_TEMPS = {
 }
 
 const DEFAULT_CONFIG = {
+  vin: undefined,
   auth: {
     username: '',
     password: '',
@@ -82,6 +85,7 @@ const DEFAULT_CONFIG = {
   debugLogging: false,
   allowWidgetRemoteRefresh: false,
   manufacturer: undefined,
+  customClimateConfig1: undefined,
   widgetConfig: {
     standardPollPeriod: 1,
     remotePollPeriod: 4,
@@ -263,6 +267,15 @@ export async function loadConfigScreen() {
         faded: true,
         onClickFunction: loadWidgetConfigScreen,
       },
+      customClimateConfig1: {
+        type: 'clickable',
+        label: 'Optional Custom Climate #1',
+        customIcon: 'gear',
+        faded: true,
+        onClickFunction: () => {
+          loadCustomClimateConfig('customClimateConfig1')
+        },
+      },
     },
   })(getFlattenedConfig())
 }
@@ -348,4 +361,89 @@ export async function loadWidgetConfigScreen() {
       },
     },
   })(getFlattenedConfig().widgetConfig)
+}
+
+export async function loadCustomClimateConfig(field: string) {
+  const config = getConfig()
+  let climateConfig = config[field as keyof Config] as CustomClimateConfig | undefined
+  if (!climateConfig) {
+    climateConfig = {
+      name: '',
+      tempType: 'C',
+      temp: DEFAULT_TEMPS.C.warm,
+      defrost: true,
+      steering: true,
+      durationMinutes: 15,
+    } as CustomClimateConfig
+  }
+
+  return await form<CustomClimateConfig>({
+    title: 'Custom Climate Configuration',
+    subtitle: `Config for ${field}`,
+    onSubmit: ({ name, tempType, temp, defrost, steering, durationMinutes }) => {
+      config[field as keyof Config] = {
+        name: name,
+        tempType: tempType,
+        temp: temp,
+        defrost: defrost,
+        steering: steering,
+        durationMinutes: durationMinutes,
+      } as never // not sure this is valid?
+      setConfig(config)
+    },
+
+    onStateChange: (state, previousState): Partial<CustomClimateConfig> => {
+      if (state.tempType !== previousState.tempType) {
+        if (state.tempType === 'C') {
+          state.temp = DEFAULT_TEMPS.C.warm
+        } else {
+          state.temp = DEFAULT_TEMPS.F.warm
+        }
+      }
+      return state
+    },
+    isFormValid: ({ name, tempType, temp, durationMinutes }) => {
+      if (!name || !tempType || !temp || !durationMinutes) return false
+      if (tempType === 'C' && (temp < 17 || temp > 27)) return false
+      if (tempType === 'F' && (temp < 62 || temp > 82)) return false
+      if (temp.toString().includes('.') && temp % 1 !== 0.5) return false
+      if (temp.toString().includes('.') && temp % 1 !== 0.5) return false
+      return true
+    },
+    submitButtonText: 'Save',
+    fields: {
+      name: {
+        type: 'textInput',
+        label: 'Name',
+        isRequired: true,
+      },
+      tempType: {
+        type: 'dropdown',
+        label: 'Choose your preferred temperature scale',
+        options: ['C', 'F'],
+        allowCustom: false,
+        isRequired: true,
+      },
+      temp: {
+        type: 'numberValue',
+        label: 'Desired climate temp (whole number or .5)',
+        isRequired: true,
+      },
+      defrost: {
+        type: 'checkbox',
+        label: 'Enable defrost?',
+        isRequired: false,
+      },
+      steering: {
+        type: 'checkbox',
+        label: 'Enable heated steering?',
+        isRequired: false,
+      },
+      durationMinutes: {
+        type: 'numberValue',
+        label: 'Number of Minutes to run climate',
+        isRequired: true,
+      },
+    },
+  })(climateConfig)
 }
