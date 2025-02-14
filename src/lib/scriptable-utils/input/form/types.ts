@@ -3,11 +3,13 @@ import { SFSymbolKey } from '../../sfSymbols'
 import { AnyObj, Falsy, MapFn, NotUndefined, Omit_, Predicate } from '../../types/utilTypes'
 import { RowOpts } from '../../UITable/Row/types'
 import { ValidTableEl } from '../../UITable/types'
+import { DivStyle } from '../../UITable/index'
 import { TextFieldKeyboardFlavor } from '../types'
 
 type FieldTypeToSupportedValue = {
   cycle: string | null
   checkbox: boolean
+  clickable: null
   chooseIcon: SFSymbolKey
   textInput: string
   YYYMMDDDatePicker: string
@@ -54,6 +56,10 @@ export type FieldOpts<T extends FieldType, FormState extends FormStateShape, K e
   allowCustom?: boolean
   secure?: boolean
   flavor?: TextFieldKeyboardFlavor
+  onClickFunction?: (data?: any) => void
+  onClickFunctionData?: any
+  faded?: boolean
+  dismissOnTap?: boolean
 }
 
 export type FieldRenderOpts<T extends FieldType> = Pick<
@@ -74,6 +80,10 @@ export type FieldRenderOpts<T extends FieldType> = Pick<
    * though. */
   onChange: MapFn<ValidFieldValue<T>>
   errorMessage?: string
+  onClickFunction?: (data?: any) => void
+  onClickFunctionData?: any
+  faded?: boolean
+  dismissOnTap?: boolean
 }
 
 export type FieldRenderer<T extends FieldType> = MapFn<FieldRenderOpts<T>, ValidTableEl>
@@ -122,6 +132,7 @@ export type StandardRowOpts = {
   labelOpts?: LabelRowOpts
   valueOpts: ValueRowOpts
   errorOpts: Omit_<ErrorRowOpts, 'isAboveValueRows'>
+  divOpts?: DivStyle
 }
 
 export type MultiOptionRowValueOpt = Omit_<ValueRowOpts, 'showErrorIndicator'>
@@ -130,6 +141,7 @@ export type MultiOptionRowOpts = {
   labelOpts: LabelRowOpts
   valueOpts: MultiOptionRowValueOpt[]
   errorOpts: Omit_<ErrorRowOpts, 'isAboveValueRows'>
+  divOpts?: DivStyle
 }
 
 export type CommonFieldOpts = Pick<

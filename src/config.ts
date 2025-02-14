@@ -1,6 +1,8 @@
-import { form, confirm } from './lib/scriptable-utils'
+import { form, confirm, quickOptions, destructiveConfirm } from './lib/scriptable-utils'
 
 const KEYCHAIN_BLUELINK_CONFIG_KEY = 'egmp-bluelink-config'
+
+export const STANDARD_CLIMATE_OPTIONS = ['Warm', 'Cool', 'Off', 'Cancel']
 
 export interface Auth {
   username: string
@@ -18,6 +20,26 @@ export interface Config {
   allowWidgetRemoteRefresh: boolean
   debugLogging: boolean
   vin: string | undefined
+  widgetConfig: WidgetConfig
+  customClimates: CustomClimateConfig[]
+}
+
+export interface WidgetConfig {
+  standardPollPeriod: number
+  remotePollPeriod: number
+  chargingRemotePollPeriod: number
+  nightStandardPollPeriod: number
+  nightRemotePollPeriod: number
+  nightChargingRemotePollPeriod: number
+}
+
+export interface CustomClimateConfig {
+  name: string
+  tempType: 'C' | 'F'
+  temp: number
+  defrost: boolean
+  steering: boolean
+  durationMinutes: number
 }
 
 export interface FlattenedConfig {
@@ -32,6 +54,8 @@ export interface FlattenedConfig {
   allowWidgetRemoteRefresh: boolean
   debugLogging: boolean
   vin: string | undefined
+  widgetConfig: WidgetConfig
+  customClimates: CustomClimateConfig[]
 }
 
 // const SUPPORTED_REGIONS = ['canada']
@@ -50,6 +74,7 @@ const DEFAULT_TEMPS = {
 }
 
 const DEFAULT_CONFIG = {
+  vin: undefined,
   auth: {
     username: '',
     password: '',
@@ -62,6 +87,15 @@ const DEFAULT_CONFIG = {
   debugLogging: false,
   allowWidgetRemoteRefresh: false,
   manufacturer: undefined,
+  customClimates: [],
+  widgetConfig: {
+    standardPollPeriod: 1,
+    remotePollPeriod: 4,
+    chargingRemotePollPeriod: 2,
+    nightStandardPollPeriod: 2,
+    nightRemotePollPeriod: 6,
+    nightChargingRemotePollPeriod: 4,
+  },
 } as Config
 
 export function configExists(): boolean {
@@ -94,7 +128,10 @@ export function getConfig(): Config {
   if (!config || !configValid) {
     config = DEFAULT_CONFIG
   }
-  return config
+  return {
+    ...DEFAULT_CONFIG,
+    ...config,
+  }
 }
 
 function configValid(config: Config): boolean {
@@ -228,6 +265,232 @@ export async function loadConfigScreen() {
         label: 'Enable debug logging',
         isRequired: false,
       },
+      widgetConfig: {
+        type: 'clickable',
+        label: 'Optional Advanced Widget Settings',
+        customIcon: 'gear',
+        faded: true,
+        onClickFunction: loadWidgetConfigScreen,
+      },
+      customClimates: {
+        type: 'clickable',
+        label: 'Optional Custom Climates',
+        customIcon: 'gear',
+        faded: true,
+        onClickFunction: () => {
+          const config = getConfig()
+          const customClimateNames = Object.values(config.customClimates).map((x) => x.name)
+          quickOptions(['New'].concat(customClimateNames), {
+            title: 'Create New Custom Climate or Edit Existing',
+            onOptionSelect: (opt) => {
+              loadCustomClimateConfig(
+                opt !== 'New' ? Object.values(config.customClimates).filter((x) => x.name === opt)[0] : undefined,
+              )
+            },
+          })
+        },
+      },
     },
   })(getFlattenedConfig())
+}
+
+export async function loadWidgetConfigScreen() {
+  return await form<WidgetConfig>({
+    title: 'Widget Poll Periods',
+    subtitle: 'All periods are measured in hours',
+    onSubmit: ({
+      standardPollPeriod,
+      remotePollPeriod,
+      chargingRemotePollPeriod,
+      nightStandardPollPeriod,
+      nightRemotePollPeriod,
+      nightChargingRemotePollPeriod,
+    }) => {
+      const config = getConfig()
+      config.widgetConfig = {
+        standardPollPeriod: standardPollPeriod || config.widgetConfig.standardPollPeriod,
+        remotePollPeriod: remotePollPeriod || config.widgetConfig.remotePollPeriod,
+        chargingRemotePollPeriod: chargingRemotePollPeriod || config.widgetConfig.chargingRemotePollPeriod,
+        nightStandardPollPeriod: nightStandardPollPeriod || config.widgetConfig.nightStandardPollPeriod,
+        nightRemotePollPeriod: nightRemotePollPeriod || config.widgetConfig.nightRemotePollPeriod,
+        nightChargingRemotePollPeriod:
+          nightChargingRemotePollPeriod || config.widgetConfig.nightChargingRemotePollPeriod,
+      }
+      setConfig(config)
+    },
+    onStateChange: (state, _previousState): Partial<WidgetConfig> => {
+      return state
+    },
+    isFormValid: ({
+      standardPollPeriod,
+      remotePollPeriod,
+      chargingRemotePollPeriod,
+      nightStandardPollPeriod,
+      nightRemotePollPeriod,
+      nightChargingRemotePollPeriod,
+    }) => {
+      if (
+        !standardPollPeriod ||
+        !remotePollPeriod ||
+        !chargingRemotePollPeriod ||
+        !nightStandardPollPeriod ||
+        !nightRemotePollPeriod ||
+        !nightChargingRemotePollPeriod
+      ) {
+        return false
+      }
+      return true
+    },
+    submitButtonText: 'Save',
+    fields: {
+      standardPollPeriod: {
+        type: 'numberValue',
+        label: 'API Poll Period',
+        isRequired: true,
+      },
+      remotePollPeriod: {
+        type: 'numberValue',
+        label: 'Remote Car Poll Period',
+        isRequired: true,
+      },
+      chargingRemotePollPeriod: {
+        type: 'numberValue',
+        label: 'Remote Car Charging Poll Period',
+        isRequired: true,
+      },
+      nightStandardPollPeriod: {
+        type: 'numberValue',
+        label: 'Night API Poll Period',
+        isRequired: true,
+      },
+      nightRemotePollPeriod: {
+        type: 'numberValue',
+        label: 'Night Remote Car Poll Period',
+        isRequired: true,
+      },
+      nightChargingRemotePollPeriod: {
+        type: 'numberValue',
+        label: 'Night Remote Car Poll Period',
+        isRequired: true,
+      },
+    },
+  })(getFlattenedConfig().widgetConfig)
+}
+
+export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig | undefined) {
+  const previousName = climateConfig ? climateConfig.name : undefined
+  if (!climateConfig) {
+    climateConfig = {
+      name: '',
+      tempType: 'C',
+      temp: DEFAULT_TEMPS.C.warm,
+      defrost: true,
+      steering: true,
+      durationMinutes: 15,
+    } as CustomClimateConfig
+  }
+
+  return await form<CustomClimateConfig & { delete: boolean }>({
+    title: 'Custom Climate Configuration',
+    subtitle: previousName ? `Editing configuration: ${previousName}` : 'Create new configuration',
+    onSubmit: ({ name, tempType, temp, defrost, steering, durationMinutes }) => {
+      const config = getConfig()
+      const newConfig = {
+        name: name,
+        tempType: tempType,
+        temp: temp,
+        defrost: defrost,
+        steering: steering,
+        durationMinutes: durationMinutes,
+      } as CustomClimateConfig
+      if (previousName) {
+        const index = config.customClimates.findIndex((x) => x.name === previousName)
+        config.customClimates[index] = newConfig
+      } else {
+        config.customClimates.push(newConfig)
+      }
+      setConfig(config)
+    },
+    onStateChange: (state, previousState): Partial<CustomClimateConfig> => {
+      if (state.tempType !== previousState.tempType) {
+        if (state.tempType === 'C') {
+          state.temp = DEFAULT_TEMPS.C.warm
+        } else {
+          state.temp = DEFAULT_TEMPS.F.warm
+        }
+      }
+      return state
+    },
+    isFormValid: ({ name, tempType, temp, durationMinutes }) => {
+      if (!name || !tempType || !temp || !durationMinutes) return false
+      if (tempType === 'C' && (temp < 17 || temp > 27)) return false
+      if (tempType === 'F' && (temp < 62 || temp > 82)) return false
+      if (temp.toString().includes('.') && temp % 1 !== 0.5) return false
+      if (temp.toString().includes('.') && temp % 1 !== 0.5) return false
+
+      // check for name collision on our default options
+      if (STANDARD_CLIMATE_OPTIONS.includes(name)) return false
+
+      // check for name collision on other custom options
+      const config = getConfig()
+      const customClimateNames = Object.values(config.customClimates).map((x) => x.name)
+      if (previousName) customClimateNames.splice(customClimateNames.indexOf(previousName), 1)
+      if (customClimateNames.includes(name)) return false
+      return true
+    },
+    submitButtonText: 'Save',
+    fields: {
+      name: {
+        type: 'textInput',
+        label: 'Name',
+        isRequired: true,
+      },
+      tempType: {
+        type: 'dropdown',
+        label: 'Choose your preferred temperature scale',
+        options: ['C', 'F'],
+        allowCustom: false,
+        isRequired: true,
+      },
+      temp: {
+        type: 'numberValue',
+        label: 'Desired climate temp (whole number or .5)',
+        isRequired: true,
+      },
+      defrost: {
+        type: 'checkbox',
+        label: 'Enable defrost?',
+        isRequired: false,
+      },
+      steering: {
+        type: 'checkbox',
+        label: 'Enable heated steering?',
+        isRequired: false,
+      },
+      durationMinutes: {
+        type: 'numberValue',
+        label: 'Number of Minutes to run climate',
+        isRequired: true,
+      },
+      delete: {
+        type: 'clickable',
+        label: 'Delete Climate Configuration',
+        customIcon: 'delete',
+        faded: true,
+        dismissOnTap: true,
+        onClickFunction: () => {
+          if (!previousName) return
+          destructiveConfirm(`Delete Climate Configuration ${previousName}?`, {
+            onConfirm: () => {
+              const config = getConfig()
+              const customClimateNames = Object.values(config.customClimates).map((x) => x.name)
+              const index = customClimateNames.indexOf(previousName)
+              config.customClimates.splice(index, 1)
+              setConfig(config)
+            },
+          })
+        },
+      },
+    },
+  })(climateConfig)
 }

@@ -104,6 +104,7 @@ export default {
   list_in_circle: 'list.bullet.circle',
   lock: 'lock',
   megaphone: 'megaphone',
+  gear: 'gear',
   merge: 'arrow.triangle.merge',
   milestone: 'flag.circle',
   money: 'dollarsign.square',

@@ -1,4 +1,4 @@
-import { Config } from 'config'
+import { Config, STANDARD_CLIMATE_OPTIONS } from 'config'
 import { Bluelink, Status, ClimateRequest } from './lib/bluelink-regions/base'
 import { getTable, Div, P, Img, quickOptions, DivChild, Spacer, destructiveConfirm } from 'lib/scriptable-utils'
 import { loadConfigScreen, deleteConfig } from 'config'
@@ -93,7 +93,7 @@ export async function createApp(config: Config, bl: Bluelink) {
       pageTitle(),
       batteryStatus(bl),
       pageImage(),
-      pageIcons(bl),
+      pageIcons(bl, config),
       Spacer({ rowHeight: 200 }),
       settings(bl),
     ],
@@ -183,6 +183,7 @@ const pageIcons = connect(
       },
     },
     bl: Bluelink,
+    config: Config,
   ) => {
     const lastSeen = new Date(lastUpdated)
     const batteryIcon = isCharging ? 'charging' : 'not-charging'
@@ -269,30 +270,43 @@ const pageIcons = connect(
             if (isUpdating) {
               return
             }
-            quickOptions(['Warm', 'Cool', 'Off', 'Cancel'], {
+            const customClimates = Object.values(config.customClimates).map((x) => x.name)
+            quickOptions(customClimates.concat(STANDARD_CLIMATE_OPTIONS), {
               title: 'Confirm climate action',
               onOptionSelect: (opt) => {
                 if (opt === 'Cancel') return
+                let payload = undefined
+                if (!STANDARD_CLIMATE_OPTIONS.includes(opt)) {
+                  payload = Object.values(config.customClimates).filter((x) => x.name === opt)[0]
+                }
                 doAsyncUpdate({
                   command: 'climate',
                   bl: bl,
-                  payload: {
-                    enable: opt !== 'Off' ? true : false,
-                    defrost: opt === 'Warm' ? true : false,
-                    steering: opt === 'Warm' ? true : false,
-                    temp: opt === 'Warm' ? bl.getConfig().climateTempWarm : bl.getConfig().climateTempCold,
-                    durationMinutes: 15,
-                  } as ClimateRequest,
+                  payload: payload
+                    ? ({ ...payload, enable: true } as ClimateRequest)
+                    : ({
+                        enable: opt !== 'Off' ? true : false,
+                        defrost: opt === 'Warm' ? true : false,
+                        steering: opt === 'Warm' ? true : false,
+                        temp: opt === 'Warm' ? config.climateTempWarm : config.climateTempCold,
+                        durationMinutes: 15,
+                      } as ClimateRequest),
                   actions: updatingActions,
                   actionKey: 'climate',
-                  updatingText:
-                    opt === 'Warm'
+                  updatingText: payload
+                    ? `Starting custom climate ...`
+                    : opt === 'Warm'
                       ? 'Starting pre-heat ...'
                       : opt === 'Cool'
                         ? 'Starting cool ...'
                         : 'Stopping climate ...',
-                  successText:
-                    opt === 'Warm' ? 'Climate heating!' : opt === 'Cool' ? 'Climate cooling!' : 'Climate stopped!',
+                  successText: payload
+                    ? `Custom climate Started!`
+                    : opt === 'Warm'
+                      ? 'Climate heating!'
+                      : opt === 'Cool'
+                        ? 'Climate cooling!'
+                        : 'Climate stopped!',
                   failureText: `Failed to ${opt === 'Off' ? 'Stop' : 'Start'} climate!!!`,
                   successCallback: (data) => {
                     updateStatus({

@@ -98,7 +98,7 @@ export default <CompleteFormState extends FormStateShape>(
       icon: 'checkmark',
       isDisabled: !isValid,
       dismissOnTap: true,
-      isLarge: true,
+      isLarge: false,
       onTap: () => {
         setState({ didSubmit: true })
         onSubmit?.(formState)

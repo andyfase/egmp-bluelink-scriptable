@@ -17,6 +17,8 @@ import {
   YYYYMMDDDatePickerField,
 } from './fieldRows'
 import { CommonFieldOpts, FieldRenderer, FieldRenderOpts, FieldType } from './types'
+import { StandardFieldRow } from './atoms'
+import { getRowOpts } from './utils'
 
 const commonOptsKeys = getTypesafeArrOfType<keyof CommonFieldOpts>({
   allowCustom: null,
@@ -46,6 +48,30 @@ const isArrOfStrOrNum = (arr: unknown[]): arr is (string | number)[] =>
  * export adds top HRs per section.
  */
 const fieldRenderers: FieldRenderers = {
+  clickable: (opts) => {
+    const { label, customIcon, onClickFunction, faded, dismissOnTap } = opts
+    const rowOpts = getRowOpts({
+      onTap: onClickFunction ? onClickFunction : () => {},
+      isFaded: faded || false,
+    })
+    const errorMessage = null
+    return [
+      StandardFieldRow({
+        errorOpts: { errorMessage, rowOpts },
+        valueOpts: {
+          icon: customIcon || 'task_complete',
+          rowOpts,
+          valueRowLabel: label || 'unknown',
+          showErrorIndicator: false,
+        },
+        divOpts: {
+          dismissOnTap: dismissOnTap || false,
+        },
+      }),
+      HR(),
+    ].flat()
+  },
+
   checkbox: (opts) => {
     const { label, currValue, onChange } = opts
     if (!label) throw new Error('Checkbox requires label')
