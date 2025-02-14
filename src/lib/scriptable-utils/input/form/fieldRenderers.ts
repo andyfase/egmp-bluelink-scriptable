@@ -49,7 +49,7 @@ const isArrOfStrOrNum = (arr: unknown[]): arr is (string | number)[] =>
  */
 const fieldRenderers: FieldRenderers = {
   clickable: (opts) => {
-    const { label, customIcon, onClickFunction, faded } = opts
+    const { label, customIcon, onClickFunction, faded, dismissOnTap } = opts
     const rowOpts = getRowOpts({
       onTap: onClickFunction ? onClickFunction : () => {},
       isFaded: faded || false,
@@ -63,6 +63,9 @@ const fieldRenderers: FieldRenderers = {
           rowOpts,
           valueRowLabel: label || 'unknown',
           showErrorIndicator: false,
+        },
+        divOpts: {
+          dismissOnTap: dismissOnTap || false,
         },
       }),
       HR(),

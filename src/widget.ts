@@ -22,16 +22,6 @@ const KEYCHAIN_WIDGET_REFRESH_KEY = 'egmp-bluelink-widget'
 const NIGHT_HOUR_START = 23
 const NIGHT_HOUR_STOP = 7
 
-// Day Intervals - day lasts for 16 days - in milliseconds
-const DEFAULT_STATUS_CHECK_INTERVAL_DAY = 3600 * 1000
-const DEFAULT_REMOTE_REFRESH_INTERVAL_DAY = 3600 * 4 * 1000 // max 4 remote refreshes per day
-const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_DAY = 3600 * 2 * 1000 // max 8 remote refreshes per day
-
-// Night Intervals - night lasts for 8 hours - in milliseconds
-const DEFAULT_STATUS_CHECK_INTERVAL_NIGHT = 3600 * 2 * 1000
-const DEFAULT_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 6 * 1000 // max 1 remote refresh per night
-const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * 4 * 1000 // max 2 remote refreshes per night
-
 const WIDGET_LOG_FILE = 'egmp-bluelink-widget.log'
 
 interface WidgetRefreshCache {
@@ -53,6 +43,17 @@ export function deleteWidgetCache() {
 
 async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<WidgetRefresh> {
   const logger = new Logger(WIDGET_LOG_FILE, 100)
+
+  // Day Intervals - day lasts for 16 days - in milliseconds
+  const DEFAULT_STATUS_CHECK_INTERVAL_DAY = 3600 * config.widgetConfig.standardPollPeriod * 1000
+  const DEFAULT_REMOTE_REFRESH_INTERVAL_DAY = 3600 * config.widgetConfig.remotePollPeriod * 1000
+  const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_DAY = 3600 * config.widgetConfig.chargingRemotePollPeriod * 1000
+
+  // Night Intervals - night lasts for 8 hours - in milliseconds
+  const DEFAULT_STATUS_CHECK_INTERVAL_NIGHT = 3600 * config.widgetConfig.nightStandardPollPeriod * 1000
+  const DEFAULT_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * config.widgetConfig.nightRemotePollPeriod * 1000
+  const DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL_NIGHT = 3600 * config.widgetConfig.nightChargingRemotePollPeriod * 1000
+
   let cache: WidgetRefreshCache | undefined = undefined
   const currentTimestamp = Date.now()
   const currentHour = new Date().getHours()

@@ -93,7 +93,7 @@ export default <CompleteFormState extends FormStateShape>(
     const { isFormValid, onSubmit, submitButtonText = 'Save' } = getOpts(formState)
     const isValid = !isFormValid || isFormValid(formState)
     return Button({
-      ...presetStyles().flavors.secondary,
+      ...presetStyles().flavors.primary,
       text: submitButtonText,
       icon: 'checkmark',
       isDisabled: !isValid,

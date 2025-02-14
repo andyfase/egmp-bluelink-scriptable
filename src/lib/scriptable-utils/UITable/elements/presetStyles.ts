@@ -70,8 +70,8 @@ const presetStyles = () => ({
     domainWork: style({ bgColor: 'domain_work', color: 'white' }),
 
     primary: style({
-      bgColor: getDynamicColor('majorelle_blue', 'neon_blue'),
-      color: getDynamicColor('magnolia', 'white'),
+      bgColor: getDynamicColor('deep_blue', 'deep_blue'),
+      color: getDynamicColor('white', 'white'),
     }),
 
     secondary: style({

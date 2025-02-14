@@ -1,6 +1,8 @@
-import { form, confirm } from './lib/scriptable-utils'
+import { form, confirm, quickOptions, destructiveConfirm } from './lib/scriptable-utils'
 
 const KEYCHAIN_BLUELINK_CONFIG_KEY = 'egmp-bluelink-config'
+
+export const STANDARD_CLIMATE_OPTIONS = ['Warm', 'Cool', 'Off', 'Cancel']
 
 export interface Auth {
   username: string
@@ -19,7 +21,7 @@ export interface Config {
   debugLogging: boolean
   vin: string | undefined
   widgetConfig: WidgetConfig
-  customClimateConfig1: CustomClimateConfig | undefined
+  customClimates: CustomClimateConfig[]
 }
 
 export interface WidgetConfig {
@@ -53,7 +55,7 @@ export interface FlattenedConfig {
   debugLogging: boolean
   vin: string | undefined
   widgetConfig: WidgetConfig
-  customClimateConfig1: CustomClimateConfig | undefined
+  customClimates: CustomClimateConfig[]
 }
 
 // const SUPPORTED_REGIONS = ['canada']
@@ -85,7 +87,7 @@ const DEFAULT_CONFIG = {
   debugLogging: false,
   allowWidgetRemoteRefresh: false,
   manufacturer: undefined,
-  customClimateConfig1: undefined,
+  customClimates: [],
   widgetConfig: {
     standardPollPeriod: 1,
     remotePollPeriod: 4,
@@ -126,7 +128,10 @@ export function getConfig(): Config {
   if (!config || !configValid) {
     config = DEFAULT_CONFIG
   }
-  return config
+  return {
+    ...DEFAULT_CONFIG,
+    ...config,
+  }
 }
 
 function configValid(config: Config): boolean {
@@ -267,13 +272,22 @@ export async function loadConfigScreen() {
         faded: true,
         onClickFunction: loadWidgetConfigScreen,
       },
-      customClimateConfig1: {
+      customClimates: {
         type: 'clickable',
-        label: 'Optional Custom Climate #1',
+        label: 'Optional Custom Climates',
         customIcon: 'gear',
         faded: true,
         onClickFunction: () => {
-          loadCustomClimateConfig('customClimateConfig1')
+          const config = getConfig()
+          const customClimateNames = Object.values(config.customClimates).map((x) => x.name)
+          quickOptions(['New'].concat(customClimateNames), {
+            title: 'Create New Custom Climate or Edit Existing',
+            onOptionSelect: (opt) => {
+              loadCustomClimateConfig(
+                opt !== 'New' ? Object.values(config.customClimates).filter((x) => x.name === opt)[0] : undefined,
+              )
+            },
+          })
         },
       },
     },
@@ -363,9 +377,8 @@ export async function loadWidgetConfigScreen() {
   })(getFlattenedConfig().widgetConfig)
 }
 
-export async function loadCustomClimateConfig(field: string) {
-  const config = getConfig()
-  let climateConfig = config[field as keyof Config] as CustomClimateConfig | undefined
+export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig | undefined) {
+  const previousName = climateConfig ? climateConfig.name : undefined
   if (!climateConfig) {
     climateConfig = {
       name: '',
@@ -377,21 +390,27 @@ export async function loadCustomClimateConfig(field: string) {
     } as CustomClimateConfig
   }
 
-  return await form<CustomClimateConfig>({
+  return await form<CustomClimateConfig & { delete: boolean }>({
     title: 'Custom Climate Configuration',
-    subtitle: `Config for ${field}`,
+    subtitle: previousName ? `Editing configuration: ${previousName}` : 'Create new configuration',
     onSubmit: ({ name, tempType, temp, defrost, steering, durationMinutes }) => {
-      config[field as keyof Config] = {
+      const config = getConfig()
+      const newConfig = {
         name: name,
         tempType: tempType,
         temp: temp,
         defrost: defrost,
         steering: steering,
         durationMinutes: durationMinutes,
-      } as never // not sure this is valid?
+      } as CustomClimateConfig
+      if (previousName) {
+        const index = config.customClimates.findIndex((x) => x.name === previousName)
+        config.customClimates[index] = newConfig
+      } else {
+        config.customClimates.push(newConfig)
+      }
       setConfig(config)
     },
-
     onStateChange: (state, previousState): Partial<CustomClimateConfig> => {
       if (state.tempType !== previousState.tempType) {
         if (state.tempType === 'C') {
@@ -408,6 +427,15 @@ export async function loadCustomClimateConfig(field: string) {
       if (tempType === 'F' && (temp < 62 || temp > 82)) return false
       if (temp.toString().includes('.') && temp % 1 !== 0.5) return false
       if (temp.toString().includes('.') && temp % 1 !== 0.5) return false
+
+      // check for name collision on our default options
+      if (STANDARD_CLIMATE_OPTIONS.includes(name)) return false
+
+      // check for name collision on other custom options
+      const config = getConfig()
+      const customClimateNames = Object.values(config.customClimates).map((x) => x.name)
+      if (previousName) customClimateNames.splice(customClimateNames.indexOf(previousName), 1)
+      if (customClimateNames.includes(name)) return false
       return true
     },
     submitButtonText: 'Save',
@@ -443,6 +471,25 @@ export async function loadCustomClimateConfig(field: string) {
         type: 'numberValue',
         label: 'Number of Minutes to run climate',
         isRequired: true,
+      },
+      delete: {
+        type: 'clickable',
+        label: 'Delete Climate Configuration',
+        customIcon: 'delete',
+        faded: true,
+        dismissOnTap: true,
+        onClickFunction: () => {
+          if (!previousName) return
+          destructiveConfirm(`Delete Climate Configuration ${previousName}?`, {
+            onConfirm: () => {
+              const config = getConfig()
+              const customClimateNames = Object.values(config.customClimates).map((x) => x.name)
+              const index = customClimateNames.indexOf(previousName)
+              config.customClimates.splice(index, 1)
+              setConfig(config)
+            },
+          })
+        },
       },
     },
   })(climateConfig)

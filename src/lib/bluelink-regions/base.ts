@@ -353,9 +353,7 @@ export class Bluelink {
       if (this.config.debugLogging) this.logger.log(`Sending request ${JSON.stringify(this.debugLastRequest)}`)
       const json = !props.notJSON ? await req.loadJSON() : await req.load()
       if (this.config.debugLogging)
-        this.logger.log(
-          `response ${JSON.stringify(req.response)} data: ${!props.notJSON ? JSON.stringify(json) : json}`,
-        )
+        this.logger.log(`response ${JSON.stringify(req.response)} data: ${JSON.stringify(json)}`)
 
       const checkResponse = props.validResponseFunction(req.response, json)
       if (!props.noRetry && checkResponse.retry && !props.noAuth) {
