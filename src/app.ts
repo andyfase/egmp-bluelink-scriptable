@@ -293,14 +293,20 @@ const pageIcons = connect(
                       } as ClimateRequest),
                   actions: updatingActions,
                   actionKey: 'climate',
-                  updatingText:
-                    opt === 'Warm'
+                  updatingText: payload
+                    ? `Starting custom climate ...`
+                    : opt === 'Warm'
                       ? 'Starting pre-heat ...'
                       : opt === 'Cool'
                         ? 'Starting cool ...'
                         : 'Stopping climate ...',
-                  successText:
-                    opt === 'Warm' ? 'Climate heating!' : opt === 'Cool' ? 'Climate cooling!' : 'Climate stopped!',
+                  successText: payload
+                    ? `Custom climate Started!`
+                    : opt === 'Warm'
+                      ? 'Climate heating!'
+                      : opt === 'Cool'
+                        ? 'Climate cooling!'
+                        : 'Climate stopped!',
                   failureText: `Failed to ${opt === 'Off' ? 'Stop' : 'Start'} climate!!!`,
                   successCallback: (data) => {
                     updateStatus({
