@@ -77,7 +77,8 @@ export interface TempConversion {
 
 export interface ClimateRequest {
   enable: boolean
-  defrost: boolean
+  frontDefrost: boolean
+  rearDefrost: boolean
   steering: boolean
   temp: number
   durationMinutes: number
@@ -170,6 +171,18 @@ export class Bluelink {
       if (key === lookup) return domain
     }
     return _default
+  }
+
+  protected getHeatingValue(rearDefrost: boolean, steering: boolean): number {
+    // 0 = None
+    // 2 = Back Defroster only
+    // 3 = Steering Wheel only
+    // 4 = Steering and Defroster
+    if (!rearDefrost && !steering) return 0
+    if (rearDefrost && steering) return 4
+    if (rearDefrost) return 2
+    if (steering) return 3
+    return 0 // default
   }
 
   public getDistanceUnit(): string {

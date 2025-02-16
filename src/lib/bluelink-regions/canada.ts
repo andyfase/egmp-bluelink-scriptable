@@ -430,14 +430,14 @@ export class BluelinkCanada extends Bluelink {
         pin: this.config.auth.pin,
         hvacInfo: {
           airCtrl: 1,
-          defrost: config.defrost,
+          defrost: config.frontDefrost,
           airTemp: {
             value: this.tempLookup.H[tempIndex],
             unit: 0,
             hvacTempType: 1,
           },
           igniOnDuration: config.durationMinutes,
-          heating1: config.steering ? 4 : 0,
+          heating1: this.getHeatingValue(config.rearDefrost, config.steering),
         },
       }),
       headers: {

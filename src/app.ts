@@ -286,7 +286,8 @@ const pageIcons = connect(
                     ? ({ ...payload, enable: true } as ClimateRequest)
                     : ({
                         enable: opt !== 'Off' ? true : false,
-                        defrost: opt === 'Warm' ? true : false,
+                        frontDefrost: opt === 'Warm' ? true : false,
+                        rearDefrost: opt === 'Warm' ? true : false,
                         steering: opt === 'Warm' ? true : false,
                         temp: opt === 'Warm' ? config.climateTempWarm : config.climateTempCold,
                         durationMinutes: 15,

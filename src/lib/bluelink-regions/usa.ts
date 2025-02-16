@@ -340,13 +340,13 @@ export class BluelinkUSA extends Bluelink {
       method: 'POST',
       data: JSON.stringify({
         airCtrl: 1,
-        defrost: config.defrost,
+        defrost: config.frontDefrost,
         airTemp: {
           value: config.temp.toString(),
           unit: this.config.tempType === 'F' ? 1 : 0,
         },
         // igniOnDuration: config.durationMinutes, // not supported in US
-        heating1: config.steering ? 4 : 0,
+        heating1: this.getHeatingValue(config.rearDefrost, config.steering),
       }),
       notJSON: true,
       headers: {

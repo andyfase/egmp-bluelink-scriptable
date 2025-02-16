@@ -37,7 +37,8 @@ export interface CustomClimateConfig {
   name: string
   tempType: 'C' | 'F'
   temp: number
-  defrost: boolean
+  frontDefrost: boolean
+  rearDefrost: boolean
   steering: boolean
   durationMinutes: number
 }
@@ -370,7 +371,7 @@ export async function loadWidgetConfigScreen() {
       },
       nightChargingRemotePollPeriod: {
         type: 'numberValue',
-        label: 'Night Remote Car Poll Period',
+        label: 'Night Remote Car Charging Poll Period',
         isRequired: true,
       },
     },
@@ -384,7 +385,8 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
       name: '',
       tempType: 'C',
       temp: DEFAULT_TEMPS.C.warm,
-      defrost: true,
+      frontDefrost: true,
+      rearDefrost: true,
       steering: true,
       durationMinutes: 15,
     } as CustomClimateConfig
@@ -393,13 +395,14 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
   return await form<CustomClimateConfig & { delete: boolean }>({
     title: 'Custom Climate Configuration',
     subtitle: previousName ? `Editing configuration: ${previousName}` : 'Create new configuration',
-    onSubmit: ({ name, tempType, temp, defrost, steering, durationMinutes }) => {
+    onSubmit: ({ name, tempType, temp, frontDefrost, rearDefrost, steering, durationMinutes }) => {
       const config = getConfig()
       const newConfig = {
         name: name,
         tempType: tempType,
         temp: temp,
-        defrost: defrost,
+        frontDefrost: frontDefrost,
+        rearDefrost: rearDefrost,
         steering: steering,
         durationMinutes: durationMinutes,
       } as CustomClimateConfig
@@ -457,9 +460,14 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
         label: 'Desired climate temp (whole number or .5)',
         isRequired: true,
       },
-      defrost: {
+      frontDefrost: {
         type: 'checkbox',
-        label: 'Enable defrost?',
+        label: 'Enable front defrost?',
+        isRequired: false,
+      },
+      rearDefrost: {
+        type: 'checkbox',
+        label: 'Enable rear/side defrost?',
         isRequired: false,
       },
       steering: {
