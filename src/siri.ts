@@ -23,7 +23,8 @@ export async function processSiriRequest(config: Config, bl: Bluelink, shortcutP
     let found = true
     for (const word of commandDetection.words) {
       if (!shortcutParameterAsString.toLocaleLowerCase().includes(word.toLocaleLowerCase())) {
-        if (config.debugLogging) logger.log(`could not find ${word.toLocaleLowerCase()} in ${shortcutParameterAsString.toLocaleLowerCase()}`)
+        if (config.debugLogging)
+          logger.log(`could not find ${word.toLocaleLowerCase()} in ${shortcutParameterAsString.toLocaleLowerCase()}`)
         found = false
         break
       }
