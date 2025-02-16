@@ -1,4 +1,4 @@
-import { Config } from 'config'
+import { Config, CustomClimateConfig } from 'config'
 import { Logger } from 'lib/logger'
 import { Bluelink, ClimateRequest } from 'lib/bluelink-regions/base'
 import { getChargeCompletionString, sleep } from 'lib/util'
@@ -10,17 +10,27 @@ export async function processSiriRequest(config: Config, bl: Bluelink, shortcutP
   const logger = new Logger(SIRI_LOG_FILE, 100)
   if (config.debugLogging) logger.log(`Siri request: ${shortcutParameterAsString}`)
 
-  for (const commandDetection of commandMap) {
+  const commands = commandMap
+  for (const value of config.customClimates) {
+    commands.push({
+      words: value.name.split(' ').concat(['climate']),
+      function: customClimate,
+      data: value,
+    })
+  }
+
+  for (const commandDetection of commands) {
     let found = true
     for (const word of commandDetection.words) {
-      if (!shortcutParameterAsString.toLocaleLowerCase().includes(word)) {
+      if (!shortcutParameterAsString.toLocaleLowerCase().includes(word.toLocaleLowerCase())) {
+        if (config.debugLogging) logger.log(`could not find ${word.toLocaleLowerCase()} in ${shortcutParameterAsString.toLocaleLowerCase()}`)
         found = false
         break
       }
     }
 
     if (found) {
-      const response = await commandDetection.function(bl)
+      const response = await commandDetection.function(bl, commandDetection.data)
       if (config.debugLogging) logger.log(`Siri response: ${response}`)
       return response
     }
@@ -38,7 +48,7 @@ async function getStatus(bl: Bluelink): Promise<string> {
   if (status.status.climate) response += ', and your climate is currently on'
 
   if (status.status.isCharging) {
-    const chargeCompleteTime = getChargeCompletionString(lastSeen, status.status.remainingChargeTimeMins)
+    const chargeCompleteTime = getChargeCompletionString(lastSeen, status.status.remainingChargeTimeMins, 'long')
     response += `. Also your car is charging at ${status.status.chargingPower}kw and will be finished charging at ${chargeCompleteTime}`
   } else if (status.status.isPluggedIn) {
     response += '. Also your car is currently plugged into a charger.'
@@ -68,7 +78,8 @@ async function warm(bl: Bluelink): Promise<string> {
     `I've issued a request to pre-warm ${status.car.nickName || `your ${status.car.modelName}`}.`,
     {
       enable: true,
-      defrost: true,
+      frontDefrost: true,
+      rearDefrost: true,
       steering: true,
       temp: bl.getConfig().climateTempWarm,
       durationMinutes: 15,
@@ -84,7 +95,8 @@ async function cool(bl: Bluelink): Promise<string> {
     `I've issued a request to pre-cool ${status.car.nickName || `your ${status.car.modelName}`}.`,
     {
       enable: true,
-      defrost: false,
+      frontDefrost: false,
+      rearDefrost: false,
       steering: false,
       temp: bl.getConfig().climateTempCold,
       durationMinutes: 15,
@@ -100,11 +112,22 @@ async function climateOff(bl: Bluelink): Promise<string> {
     `I've issued a request to turn off the climate on ${status.car.nickName || `your ${status.car.modelName}`}.`,
     {
       enable: false,
-      defrost: false,
+      frontDefrost: false,
+      rearDefrost: false,
       steering: false,
       temp: bl.getConfig().climateTempCold,
       durationMinutes: 15,
     } as ClimateRequest,
+  )
+}
+
+async function customClimate(bl: Bluelink, data: CustomClimateConfig): Promise<string> {
+  const status = bl.getCachedStatus()
+  return await blRequest(
+    bl,
+    'climate',
+    `I've issued a request to turn on climate setting ${data.name} on ${status.car.nickName || `your ${status.car.modelName}`}.`,
+    { ...data, enable: true } as ClimateRequest,
   )
 }
 
@@ -159,7 +182,8 @@ async function blRequest(bl: Bluelink, type: string, message: string, payload?: 
 
 interface commandDetection {
   words: string[]
-  function: (bl: Bluelink) => Promise<string>
+  function: (bl: Bluelink, data?: any) => Promise<string>
+  data?: any
 }
 
 // Note order matters in this list, as we check a sentence for presence of words

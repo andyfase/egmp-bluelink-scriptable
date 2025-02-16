@@ -78,13 +78,17 @@ export const dateStringOptions = {
   minute: 'numeric',
 } as Intl.DateTimeFormatOptions
 
-export function getChargeCompletionString(dateFrom: Date, minutes: number): string {
-  // daeFrom passed by references - hence clone it
+export function getChargeCompletionString(
+  dateFrom: Date,
+  minutes: number,
+  dayFormat: 'short' | 'long' = 'short',
+): string {
+  // dateFrom passed by references - hence clone it
   const date = new Date(dateFrom.getTime())
   date.setMinutes(date.getMinutes() + minutes)
   if (new Date().getDate() !== date.getDate()) {
     return date.toLocaleString(undefined, {
-      weekday: 'short',
+      weekday: dayFormat,
       hour: 'numeric',
       minute: 'numeric',
     })
