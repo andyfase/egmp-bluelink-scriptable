@@ -32,7 +32,6 @@ export class BluelinkUSA extends Bluelink {
       to: 'ISS',
       language: '0',
       offset: `-${new Date().getTimezoneOffset() / 60}`,
-      gen: '2',
       client_id:
         config.manufacturer && config.manufacturer === 'kia' ? 'MWAMOBILE' : 'm66129Bb-em93-SPAHYN-bZ91-am4540zp19920',
       clientSecret:
@@ -68,6 +67,8 @@ export class BluelinkUSA extends Bluelink {
       registrationId: this.cache ? this.cache.car.id : this.carId!,
       VIN: this.cache ? this.cache.car.vin : this.carVin!,
       'APPCLOUD-VIN': this.cache ? this.cache.car.vin : this.carVin!,
+      // Seemingly 2025 cars need to have a gen set to '3'
+      gen: this.cache && this.cache.car ? (Number(this.cache.car.modelYear) >= 2025 ? '3' : '2') : '2',
     }
   }
 
