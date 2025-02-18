@@ -1,4 +1,4 @@
-import { Config, STANDARD_CLIMATE_OPTIONS } from 'config'
+import { Config, getConfig, STANDARD_CLIMATE_OPTIONS } from 'config'
 import { Bluelink, Status, ClimateRequest } from './lib/bluelink-regions/base'
 import { getTable, Div, P, Img, quickOptions, DivChild, Spacer, destructiveConfirm } from 'lib/scriptable-utils'
 import { loadConfigScreen, deleteConfig } from 'config'
@@ -93,7 +93,7 @@ export async function createApp(config: Config, bl: Bluelink) {
       pageTitle(),
       batteryStatus(bl),
       pageImage(),
-      pageIcons(bl, config),
+      pageIcons(bl),
       Spacer({ rowHeight: 200 }),
       settings(bl),
     ],
@@ -182,8 +182,7 @@ const pageIcons = connect(
         twelveSoc,
       },
     },
-    bl: Bluelink,
-    config: Config,
+    bl: Bluelink
   ) => {
     const lastSeen = new Date(lastUpdated)
     const batteryIcon = isCharging ? 'charging' : 'not-charging'
@@ -270,6 +269,7 @@ const pageIcons = connect(
             if (isUpdating) {
               return
             }
+            const config = getConfig() // always re-read in case config has been mutated by config screens, and app page is not refreshed
             const customClimates = Object.values(config.customClimates).map((x) => x.name)
             quickOptions(customClimates.concat(STANDARD_CLIMATE_OPTIONS), {
               title: 'Confirm climate action',
