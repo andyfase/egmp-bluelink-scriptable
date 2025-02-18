@@ -182,7 +182,7 @@ const pageIcons = connect(
         twelveSoc,
       },
     },
-    bl: Bluelink
+    bl: Bluelink,
   ) => {
     const lastSeen = new Date(lastUpdated)
     const batteryIcon = isCharging ? 'charging' : 'not-charging'

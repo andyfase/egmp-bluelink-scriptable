@@ -156,20 +156,25 @@ export async function loadConfigScreen() {
       manufacturer: manufacturer,
       vin: vin,
     }) => {
+      // read and combine with current saved config as other config screens may have changed settings (custom climates etc)
+      const config = getConfig()
       setConfig({
-        auth: {
-          username: username,
-          password: password,
-          region: region,
-          pin: pin,
+        ...config,
+        ...{
+          auth: {
+            username: username,
+            password: password,
+            region: region,
+            pin: pin,
+          },
+          tempType: tempType,
+          climateTempCold: climateTempCold,
+          climateTempWarm: climateTempWarm,
+          allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
+          debugLogging: debugLogging,
+          manufacturer: manufacturer?.toLowerCase(),
+          vin: vin ? vin.toUpperCase() : undefined,
         },
-        tempType: tempType,
-        climateTempCold: climateTempCold,
-        climateTempWarm: climateTempWarm,
-        allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
-        debugLogging: debugLogging,
-        manufacturer: manufacturer?.toLowerCase(),
-        vin: vin ? vin.toUpperCase() : undefined,
       } as Config)
     },
     onStateChange: (state, previousState): Partial<FlattenedConfig> => {
