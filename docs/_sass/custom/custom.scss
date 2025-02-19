@@ -1,14 +1,42 @@
-table {
-    border-collapse: collapse;
-    border: none;
-  }
 
-td, th {
-border: none;
+
+.styled-table {
+  border-collapse: collapse;
+  font-size: 1.5em;
+  font-weight: 500;
+
+  // font-size: 1.125rem !important;
+  // font-family: system-ui, -apple-system, blinkmacsystemfont, "Segoe UI", roboto, "Helvetica Neue", arial, sans-serif, "Segoe UI Emoji";
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
 }
 
+.styled-table tr {
+  background-color: red;
+  color: #000;
+  text-align: center;
+  font-size: 20px;
+
+}
+
+.styled-table th, .styled-table td {
+    padding: 12px 15px;
+}
+
+.styled-table thead tr {
+  border-bottom: 3px solid #009879;
+}
+
+.styled-table-row {
+  border-bottom: 3px solid #009879;
+}
+
+.styled-table-col {
+  border-right: 3px solid #009879;
+}
+
+
 .table-wrapper {
-    box-shadow: none;
+  box-shadow: none;
 }
 
 #fade {

@@ -38,9 +38,9 @@ function lightbox_close() {
 
 <div id="fade" onClick="lightbox_close();"></div>
 
-<table border="0">
+<table border="0" class="noBorder">
 <tr>
-<td width="55%" class="aTable"><a href="#" onclick="lightbox_open();"><img src="./images/widget_charging.png" width="400" /></a>
+<td width="55%"><a href="#" onclick="lightbox_open();"><img src="./images/widget_charging.png" width="400" /></a>
 <br/><center>Click to show app in action</center>
 </td>
 <td>
@@ -59,9 +59,11 @@ function lightbox_close() {
 </tr>
 </table>
 
-It provides a limited feature set but has a fresher more responsive UI, providing both widget and Siri/Shortcuts integration.
+Features Include:
 {: .fs-6 .fw-300 }
 
-Note: bluelink-scriptable currently supports the US and Canadian Bluelink regions, tested on Hyundai and Kia for Canada and just Hyundai for US.
-
-I am actively looking for e-gmp car owners from other regions that would be willing to work with me so I can develop and test the APIs for their regions (Europe specifically). If your willing please [DM me on reddit](https://www.reddit.com/user/andyfase/). It would likely take less than a couple of days to implement and maybe 2 hours of active time using your bluelink account.
+- Auto Updating Widget
+- Fresh and more responsive app UI
+- Siri voice support "Hey Siri, ask the car", "Warm the car"
+- Automations via IOS Shortcuts like walk-away lock and auto warm the car on a schedule
+{: .fs-6 .fw-300 }
