@@ -9,10 +9,11 @@ export interface Auth {
   password: string
   pin: string
   region: string
+  subregion?: string
 }
 
 export interface Config {
-  manufacturer: string | undefined
+  manufacturer: string
   auth: Auth
   tempType: 'C' | 'F'
   climateTempWarm: number
@@ -44,11 +45,12 @@ export interface CustomClimateConfig {
 }
 
 export interface FlattenedConfig {
-  manufacturer: string | undefined
+  manufacturer: string
   username: string
   password: string
   pin: string
   region: string
+  subregion?: string
   tempType: 'C' | 'F'
   climateTempWarm: number
   climateTempCold: number
@@ -60,7 +62,8 @@ export interface FlattenedConfig {
 }
 
 // const SUPPORTED_REGIONS = ['canada']
-const SUPPORTED_REGIONS = ['canada', 'usa']
+const SUPPORTED_REGIONS = ['canada', 'usa', 'europe']
+const SUPPORTED_SUBREGIONS = ['en']
 const SUPPORTED_MANUFACTURERS = ['Hyundai', 'Kia']
 
 const DEFAULT_TEMPS = {
@@ -87,7 +90,7 @@ const DEFAULT_CONFIG = {
   climateTempWarm: DEFAULT_TEMPS.C.warm,
   debugLogging: false,
   allowWidgetRemoteRefresh: false,
-  manufacturer: undefined,
+  manufacturer: 'hyundai',
   customClimates: [],
   widgetConfig: {
     standardPollPeriod: 1,
@@ -147,6 +150,7 @@ export async function loadConfigScreen() {
       username,
       password,
       region,
+      subregion,
       pin,
       tempType,
       climateTempWarm,
@@ -165,6 +169,7 @@ export async function loadConfigScreen() {
             username: username,
             password: password,
             region: region,
+            subregion: subregion,
             pin: pin,
           },
           tempType: tempType,
@@ -195,7 +200,7 @@ export async function loadConfigScreen() {
       }
       return state
     },
-    isFormValid: ({ username, password, region, pin, tempType, climateTempCold, climateTempWarm }) => {
+    isFormValid: ({ username, password, region, subregion, pin, tempType, climateTempCold, climateTempWarm }) => {
       if (!username || !password || !region || !pin || !climateTempCold || !tempType || !climateTempWarm) {
         return false
       }
@@ -203,6 +208,7 @@ export async function loadConfigScreen() {
       if (tempType === 'F' && (climateTempCold < 62 || climateTempWarm > 82)) return false
       if (climateTempCold.toString().includes('.') && climateTempCold % 1 !== 0.5) return false
       if (climateTempWarm.toString().includes('.') && climateTempWarm % 1 !== 0.5) return false
+      if (region === 'europe' && !subregion) return false
       return true
     },
     submitButtonText: 'Save',
@@ -232,12 +238,19 @@ export async function loadConfigScreen() {
         allowCustom: false,
         isRequired: true,
       },
+      subregion: {
+        type: 'dropdown',
+        label: 'If in Europe choose your country code',
+        options: SUPPORTED_SUBREGIONS,
+        allowCustom: false,
+        isRequired: false,
+      },
       manufacturer: {
         type: 'dropdown',
         label: 'Choose your Car Manufacturer',
         options: SUPPORTED_MANUFACTURERS,
         allowCustom: false,
-        isRequired: false,
+        isRequired: true,
       },
       vin: {
         type: 'textInput',

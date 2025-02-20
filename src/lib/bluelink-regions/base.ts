@@ -60,6 +60,7 @@ export interface RequestProps {
   validResponseFunction: (resp: Record<string, any>, data: Record<string, any>) => { valid: boolean; retry: boolean }
   noRetry?: boolean
   notJSON?: boolean
+  noRedirect?: boolean
 }
 
 export interface DebugLastRequest {
@@ -164,6 +165,18 @@ export class Bluelink {
         this.saveCache()
       }
     }
+  }
+
+  protected getStamp(appId: string, cfb: string): string {
+    const rawData = `${appId}:${Math.floor(Date.now() / 1000)}`
+    const rawDataBytes = new TextEncoder().encode(rawData)
+    const rawCfbBytes = new TextEncoder().encode(cfb)
+    const result = new Uint8Array(rawDataBytes.length)
+
+    for (const [i, byte] of rawDataBytes.entries()) {
+      if (i <= rawCfbBytes.length) result[i] = byte ^ rawCfbBytes[i]! //
+    }
+    return Buffer.from(result).toString('base64')
   }
 
   protected getApiDomain(lookup: string, domains: Record<string, string>, _default: string): string {
@@ -322,7 +335,18 @@ export class Bluelink {
     return Boolean(this.cache.token.expiry - 30 > Math.floor(Date.now() / 1000))
   }
 
-  protected async request(props: RequestProps): Promise<{ resp: { [key: string]: any }; json: any }> {
+  protected nextRequestCookies(req: Request): string {
+    let cookies = ''
+    if (req.response.cookies) {
+      for (const cookie of req.response.cookies) {
+        cookies = cookies + `${cookie.name}=${cookie.value}; `
+      }
+      cookies = cookies.slice(0, -2)
+    }
+    return cookies
+  }
+
+  protected async request(props: RequestProps): Promise<{ resp: { [key: string]: any }; json: any; cookies: string }> {
     let requestTokens: BluelinkTokens | undefined = undefined
     if (!props.noAuth) {
       requestTokens = this.tokens ? this.tokens : this.cache.token
@@ -334,9 +358,10 @@ export class Bluelink {
       Accept: 'application/json, text/plain, */*',
       'Accept-Encoding': 'gzip, deflate, br, zstd',
       'Accept-Language': 'en-US,en;q=0.9',
-      ...(props.data && {
-        'Content-Type': 'application/json',
-      }),
+      ...(props.data &&
+        !(props.headers && props.headers['Content-Type']) && {
+          'Content-Type': 'application/json',
+        }),
       ...(!props.noAuth &&
         requestTokens?.accessToken && {
           [this.authHeader]: requestTokens?.accessToken,
@@ -353,7 +378,14 @@ export class Bluelink {
     if (props.data) {
       req.body = props.data
     }
-
+    if (props.noRedirect) {
+      // @ts-ignore - returning null is allowed
+      req.onRedirect = (_request) => {
+        this.logger.log('in redirect')
+        return null
+      }
+    }
+    req.allowInsecureRequest = true
     this.debugLastRequest = {
       url: props.url,
       method: req.method,
@@ -364,9 +396,11 @@ export class Bluelink {
     }
     try {
       if (this.config.debugLogging) this.logger.log(`Sending request ${JSON.stringify(this.debugLastRequest)}`)
-      const json = !props.notJSON ? await req.loadJSON() : await req.load()
+      const json = !props.notJSON ? await req.loadJSON() : await req.loadString()
       if (this.config.debugLogging)
-        this.logger.log(`response ${JSON.stringify(req.response)} data: ${JSON.stringify(json)}`)
+        this.logger.log(
+          `response ${JSON.stringify(req.response)} data: ${!props.notJSON ? JSON.stringify(json) : 'not JSON'}`,
+        )
 
       const checkResponse = props.validResponseFunction(req.response, json)
       if (!props.noRetry && checkResponse.retry && !props.noAuth) {
@@ -377,7 +411,7 @@ export class Bluelink {
           noRetry: true,
         })
       }
-      return { resp: req.response, json: json }
+      return { resp: req.response, json: json, cookies: this.nextRequestCookies(req) }
     } catch (error) {
       const errorString = `Failed to send request to ${props.url}, request ${JSON.stringify(this.debugLastRequest)} - error ${error}`
       if (this.config.debugLogging) this.logger.log(error)
