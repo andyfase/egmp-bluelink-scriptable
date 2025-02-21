@@ -1,6 +1,7 @@
 import { Config } from '../../config'
 import { defaultImage } from '../../resources/defaultImage'
 import { Logger } from '../logger'
+import { Buffer } from 'buffer'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
 const BLUELINK_LOG_FILE = 'egmp-bluelink.log'
@@ -169,8 +170,8 @@ export class Bluelink {
 
   protected getStamp(appId: string, cfb: string): string {
     const rawData = `${appId}:${Math.floor(Date.now() / 1000)}`
-    const rawDataBytes = new TextEncoder().encode(rawData)
-    const rawCfbBytes = new TextEncoder().encode(cfb)
+    const rawDataBytes = Buffer.from(rawData, 'utf-8')
+    const rawCfbBytes = Buffer.from(cfb, 'utf-8')
     const result = new Uint8Array(rawDataBytes.length)
 
     for (const [i, byte] of rawDataBytes.entries()) {

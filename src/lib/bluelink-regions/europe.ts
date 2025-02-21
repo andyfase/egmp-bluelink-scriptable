@@ -50,7 +50,6 @@ export class BluelinkEurope extends Bluelink {
 
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
-      // client_id: this.apiConfig.clientId,
       'User-Agent': 'okhttp/3.14.9',
     }
     this.authHeader = 'accessToken'
@@ -81,7 +80,6 @@ export class BluelinkEurope extends Bluelink {
       url: `${this.apiDomain}/api/v1/user/oauth2/authorize?response_type=code&state=test&client_id=${this.apiConfig.clientId}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`,
       noAuth: true,
       notJSON: true,
-      noRedirect: true,
       validResponseFunction: this.requestResponseValid,
     })
 
@@ -91,16 +89,10 @@ export class BluelinkEurope extends Bluelink {
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
-    const sessionCookie = respReset.cookies
-    this.logger.log(`sessionCookie: ${sessionCookie}`)
-
     // user user ID and Service ID
     const respIntegration = await this.request({
       url: `${this.apiDomain}/api/v1/user/integrationinfo`,
       noAuth: true,
-      headers: {
-        'Cookie:': sessionCookie,
-      },
       validResponseFunction: this.requestResponseValid,
     })
     this.logger.log('reset done')
@@ -117,78 +109,71 @@ export class BluelinkEurope extends Bluelink {
       throw Error(error)
     }
 
-    // get login Form to extract form action URL which encodes the session code and execution ID
+    // start login - this could auto redirect and auto login based on previous state
+    // or could send back form to process actual login - so need to handle both
     const respLoginForm = await this.request({
       url: `https://${this.apiConfig.authHost}/auth/realms/euhyundaiidm/protocol/openid-connect/auth?client_id=${this.apiConfig.authClientID}&scope=openid%20profile%20email%20phone&response_type=code&hkid_session_reset=true&redirect_uri=${this.apiDomain}/api/v1/user/integration/redirect/login&ui_locales=en&state=${serviceId}:${userId}`,
       noAuth: true,
       notJSON: true,
       validResponseFunction: this.requestResponseValid,
     })
-    const authHostCookie = respLoginForm.cookies
-    this.logger.log(`authCookie: ${authHostCookie}`)
-    this.logger.log('login form done')
+    this.logger.log(`login form done ${respLoginForm.resp.url.startsWith(this.apiDomain)}`)
     if (!this.requestResponseValid(respLoginForm.resp, respLoginForm.json).valid) {
       const error = `Failed to get login form ${JSON.stringify(respLoginForm.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
-    // Form HTML looks like
-    // <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="https://eu-account.hyundai.com/auth/realms/euhyundaiidm/login-actions/authenticate?session_code=<session_code>&amp;execution=<execution_id>&amp;client_id=<client_id>&amp;tab_id=<tab_id>" method="post">
-    // extract entire action URL - confirm its the right host - then extract session code and execution ID
-    const loginURL = respLoginForm.json.match(/action="([^"]+)"/)
-    this.logger.log(`login form: ${JSON.stringify(loginURL)}`)
-    if (!loginURL || loginURL.length < 2 || !loginURL[1].startsWith(`https://${this.apiConfig.authHost}`)) {
-      const error = `Failed to extract login URL ${JSON.stringify(respLoginForm.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
 
-    const params = Url.parse(loginURL[1].replaceAll('&amp;', '&'), true).query
-    const sessionCode = params.session_code
-    const executionId = params.execution
-    const tabId = params.tab_id
-    if (!sessionCode || !executionId || !tabId) {
-      const error = `Failed to extract session code or execution ID ${JSON.stringify(params)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
-    this.logger.log(`sessionCode: ${sessionCode} executionId: ${executionId} tabId: ${tabId}`)
+    if (!respLoginForm.resp.url.startsWith(this.apiDomain)) {
+      // we have not been redirected - so need to login
+      // Form HTML looks like
+      // <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="https://eu-account.hyundai.com/auth/realms/euhyundaiidm/login-actions/authenticate?session_code=<session_code>&amp;execution=<execution_id>&amp;client_id=<client_id>&amp;tab_id=<tab_id>" method="post">
+      // extract entire action URL - confirm its the right host - then extract session code and execution ID
+      const loginURL = respLoginForm.json.match(/action="([^"]+)"/)
+      this.logger.log(`login form: ${JSON.stringify(loginURL)}`)
+      if (!loginURL || loginURL.length < 2 || !loginURL[1].startsWith(`https://${this.apiConfig.authHost}`)) {
+        const error = `Failed to extract login URL ${JSON.stringify(respLoginForm.resp)}`
+        if (this.config.debugLogging) this.logger.log(error)
+        throw Error(error)
+      }
 
-    // now actually login
-    const loginData = `username=${this.config.auth.username}&password=foo&credentialId=&rememberMe=on`
-    const respLogin = await this.request({
-      url: `https://${this.apiConfig.authHost}/auth/realms/euhyundaiidm/login-actions/authenticate?session_code=${sessionCode}&execution=${executionId}&client_id=${this.apiConfig.authClientID}&tab_id=${tabId}`,
-      noAuth: true,
-      notJSON: true,
-      noRedirect: true,
-      validResponseFunction: this.requestResponseValid,
-      method: 'POST',
-      data: loginData,
-      headers: {
-        // 'Cookie:': `${authHostCookie
-        //   .replace(/KC_RESTART=.*?; /, '')
-        //   .replace(/AUTH_SESSION_ID_LEGACY=.*/, '')
-        //   .replace('; ', '')
-        //   .replace('.', '')}`,
-        'Cookie:': authHostCookie,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    })
-    this.logger.log('login done')
-    if (!this.requestResponseValid(respLogin.resp, respLogin.json).valid) {
-      const error = `Failed to login ${JSON.stringify(respLogin.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
+      const params = Url.parse(loginURL[1].replaceAll('&amp;', '&'), true).query
+      const sessionCode = params.session_code
+      const executionId = params.execution
+      const tabId = params.tab_id
+      if (!sessionCode || !executionId || !tabId) {
+        const error = `Failed to extract session code or execution ID ${JSON.stringify(params)}`
+        if (this.config.debugLogging) this.logger.log(error)
+        throw Error(error)
+      }
+      this.logger.log(`sessionCode: ${sessionCode} executionId: ${executionId} tabId: ${tabId}`)
+
+      // now actually login
+      const loginData = `username=${this.config.auth.username}&password=${this.config.auth.password}&credentialId=&rememberMe=on`
+      const respLogin = await this.request({
+        url: `https://${this.apiConfig.authHost}/auth/realms/euhyundaiidm/login-actions/authenticate?session_code=${sessionCode}&execution=${executionId}&client_id=${this.apiConfig.authClientID}&tab_id=${tabId}`,
+        noAuth: true,
+        notJSON: true,
+        validResponseFunction: this.requestResponseValid,
+        method: 'POST',
+        data: loginData,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      })
+      this.logger.log('login done')
+      if (!this.requestResponseValid(respLogin.resp, respLogin.json).valid) {
+        const error = `Failed to login ${JSON.stringify(respLogin.resp)}`
+        if (this.config.debugLogging) this.logger.log(error)
+        throw Error(error)
+      }
+    } // end of optional login form
 
     // set language
     const respLang = await this.request({
       url: `${this.apiDomain}/api/v1/user/language`,
       noAuth: true,
       notJSON: true,
-      headers: {
-        'Cookie:': sessionCookie,
-      },
       data: JSON.stringify({ language: this.config.auth.subregion }),
       validResponseFunction: this.requestResponseValid,
     })
@@ -203,46 +188,41 @@ export class BluelinkEurope extends Bluelink {
     const respSilent = await this.request({
       url: `${this.apiDomain}/api/v1/user/silentsignin`,
       noAuth: true,
-      headers: {
-        'Cookie:': sessionCookie,
-      },
       data: JSON.stringify({ intUserId: '' }),
       validResponseFunction: this.requestResponseValid,
     })
     this.logger.log('silent login done')
     if (!this.requestResponseValid(respLang.resp, respLang.json).valid) {
-      const error = `Failed to set language ${JSON.stringify(respLang.resp)}`
+      const error = `Failed to perform silent login ${JSON.stringify(respLang.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
 
     const redirectUrl = respSilent.json.redirectUrl
+    this.logger.log(`redirect URL ${redirectUrl}`)
     if (!redirectUrl) {
       const error = `Failed to get redirectUrl ${JSON.stringify(respSilent.resp.json)}`
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
-    const authCode = redirectUrl.match(/code=([^&]+)/)
+    const params = Url.parse(redirectUrl, true).query
+    const authCode = params.code
     if (!authCode) {
       const error = `Failed to extract auth code ${JSON.stringify(respSilent.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
+    this.logger.log(`auth code ${authCode} ${this.apiConfig.appId} ${this.apiConfig.authCfb}`)
+    this.logger.log(`stamp ${this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb)}`)
 
     // final login to get tokens
-    const tokenData = new URLSearchParams()
-    tokenData.append('client_id', this.apiConfig.clientId)
-    tokenData.append('grant_type', 'authorization_code')
-    tokenData.append('code', authCode[0])
-    tokenData.append('redirect_uri', `${this.apiDomain}/api/v1/user/oauth2/redirect`)
-
+    const tokenData = `client_id=${this.apiConfig.clientId}&grant_type=authorization_code&code=${authCode}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`
     const respTokens = await this.request({
       url: `${this.apiDomain}/api/v1/user/oauth2/token`,
       noAuth: true,
       validResponseFunction: this.requestResponseValid,
-      data: tokenData.toString(),
+      data: tokenData,
       headers: {
-        'Cookie:': sessionCookie,
         Authorization: this.apiConfig.authBasic,
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -258,7 +238,7 @@ export class BluelinkEurope extends Bluelink {
     }
 
     return {
-      authCookie: sessionCookie,
+      authCookie: '',
       accessToken: respTokens.json.access_token,
       refreshToken: respTokens.json.refresh_token,
       expiry: respTokens.json.expires_in,
