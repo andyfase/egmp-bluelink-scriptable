@@ -1,7 +1,8 @@
-import { Bluelink, BluelinkTokens, DEFAULT_STATUS_CHECK_INTERVAL } from './base'
+import { Bluelink, BluelinkTokens, BluelinkCar, DEFAULT_STATUS_CHECK_INTERVAL } from './base'
 import { Config } from '../../config'
 import { Buffer } from 'buffer'
 import Url from 'url'
+import { v4 as uuidv4 } from 'uuid'
 
 const b64decode = (str: string): string => Buffer.from(str, 'base64').toString('binary')
 // const b64encode = (str: string): string => Buffer.from(str, 'binary').toString('base64')
@@ -16,6 +17,7 @@ interface APIConfig {
   authHost: string
   clientId: string
   authClientID: string
+  pushType: string
 }
 
 const API_CONFIG: Record<string, APIConfig> = {
@@ -30,6 +32,7 @@ const API_CONFIG: Record<string, APIConfig> = {
     authHost: 'eu-account.hyundai.com',
     clientId: '6d477c38-3ca4-4cf3-9557-2a1929a94654',
     authClientID: '64621b96-0f0d-11ec-82a8-0242ac130003',
+    pushType: 'GCM',
   },
 }
 
@@ -51,7 +54,9 @@ export class BluelinkEurope extends Bluelink {
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
       'User-Agent': 'okhttp/3.14.9',
+      offset: `-${new Date().getTimezoneOffset() / 60}`,
     }
+    this.authIdHeader = 'ccsp-device-id'
     this.authHeader = 'accessToken'
   }
 
@@ -75,7 +80,6 @@ export class BluelinkEurope extends Bluelink {
   }
 
   protected async login(): Promise<BluelinkTokens | undefined> {
-    this.logger.log('starting login')
     const respReset = await this.request({
       url: `${this.apiDomain}/api/v1/user/oauth2/authorize?response_type=code&state=test&client_id=${this.apiConfig.clientId}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`,
       noAuth: true,
@@ -83,19 +87,18 @@ export class BluelinkEurope extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
 
-    this.logger.log('reset done')
     if (!this.requestResponseValid(respReset.resp, respReset.json).valid) {
       const error = `Failed to reset session ${JSON.stringify(respReset.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
-    // user user ID and Service ID
+    // user ID and Service ID
     const respIntegration = await this.request({
       url: `${this.apiDomain}/api/v1/user/integrationinfo`,
       noAuth: true,
       validResponseFunction: this.requestResponseValid,
     })
-    this.logger.log('reset done')
+
     if (!this.requestResponseValid(respIntegration.resp, respIntegration.json).valid) {
       const error = `Failed to reset session ${JSON.stringify(respIntegration.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
@@ -117,7 +120,7 @@ export class BluelinkEurope extends Bluelink {
       notJSON: true,
       validResponseFunction: this.requestResponseValid,
     })
-    this.logger.log(`login form done ${respLoginForm.resp.url.startsWith(this.apiDomain)}`)
+
     if (!this.requestResponseValid(respLoginForm.resp, respLoginForm.json).valid) {
       const error = `Failed to get login form ${JSON.stringify(respLoginForm.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
@@ -130,7 +133,6 @@ export class BluelinkEurope extends Bluelink {
       // <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="https://eu-account.hyundai.com/auth/realms/euhyundaiidm/login-actions/authenticate?session_code=<session_code>&amp;execution=<execution_id>&amp;client_id=<client_id>&amp;tab_id=<tab_id>" method="post">
       // extract entire action URL - confirm its the right host - then extract session code and execution ID
       const loginURL = respLoginForm.json.match(/action="([^"]+)"/)
-      this.logger.log(`login form: ${JSON.stringify(loginURL)}`)
       if (!loginURL || loginURL.length < 2 || !loginURL[1].startsWith(`https://${this.apiConfig.authHost}`)) {
         const error = `Failed to extract login URL ${JSON.stringify(respLoginForm.resp)}`
         if (this.config.debugLogging) this.logger.log(error)
@@ -146,7 +148,6 @@ export class BluelinkEurope extends Bluelink {
         if (this.config.debugLogging) this.logger.log(error)
         throw Error(error)
       }
-      this.logger.log(`sessionCode: ${sessionCode} executionId: ${executionId} tabId: ${tabId}`)
 
       // now actually login
       const loginData = `username=${this.config.auth.username}&password=${this.config.auth.password}&credentialId=&rememberMe=on`
@@ -161,7 +162,7 @@ export class BluelinkEurope extends Bluelink {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       })
-      this.logger.log('login done')
+
       if (!this.requestResponseValid(respLogin.resp, respLogin.json).valid) {
         const error = `Failed to login ${JSON.stringify(respLogin.resp)}`
         if (this.config.debugLogging) this.logger.log(error)
@@ -177,7 +178,7 @@ export class BluelinkEurope extends Bluelink {
       data: JSON.stringify({ language: this.config.auth.subregion }),
       validResponseFunction: this.requestResponseValid,
     })
-    this.logger.log('lang done')
+
     if (!this.requestResponseValid(respLang.resp, respLang.json).valid) {
       const error = `Failed to set language ${JSON.stringify(respLang.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
@@ -191,7 +192,7 @@ export class BluelinkEurope extends Bluelink {
       data: JSON.stringify({ intUserId: '' }),
       validResponseFunction: this.requestResponseValid,
     })
-    this.logger.log('silent login done')
+
     if (!this.requestResponseValid(respLang.resp, respLang.json).valid) {
       const error = `Failed to perform silent login ${JSON.stringify(respLang.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
@@ -199,7 +200,6 @@ export class BluelinkEurope extends Bluelink {
     }
 
     const redirectUrl = respSilent.json.redirectUrl
-    this.logger.log(`redirect URL ${redirectUrl}`)
     if (!redirectUrl) {
       const error = `Failed to get redirectUrl ${JSON.stringify(respSilent.resp.json)}`
       if (this.config.debugLogging) this.logger.log(error)
@@ -212,8 +212,6 @@ export class BluelinkEurope extends Bluelink {
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
-    this.logger.log(`auth code ${authCode} ${this.apiConfig.appId} ${this.apiConfig.authCfb}`)
-    this.logger.log(`stamp ${this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb)}`)
 
     // final login to get tokens
     const tokenData = `client_id=${this.apiConfig.clientId}&grant_type=authorization_code&code=${authCode}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`
@@ -230,7 +228,7 @@ export class BluelinkEurope extends Bluelink {
         'ccsp-application-id': this.apiConfig.appId,
       },
     })
-    this.logger.log('tokens done')
+
     if (!this.requestResponseValid(respTokens.resp, respTokens.json).valid) {
       const error = `Failed to login ${JSON.stringify(respTokens.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
@@ -238,10 +236,112 @@ export class BluelinkEurope extends Bluelink {
     }
 
     return {
-      authCookie: '',
       accessToken: respTokens.json.access_token,
       refreshToken: respTokens.json.refresh_token,
       expiry: respTokens.json.expires_in,
+      authId: await this.getDeviceId(),
     }
+  }
+
+  protected async refreshTokens(): Promise<BluelinkTokens | undefined> {
+    if (!this.cache.token.refreshToken) {
+      if (this.config.debugLogging) this.logger.log('No refresh token - cannot refresh')
+      return undefined
+    }
+    const refreshData = `client_id=${this.apiConfig.clientId}&grant_type=refresh_token&refresh_token=${this.cache.token.refreshToken}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`
+
+    if (this.config.debugLogging) this.logger.log('Refreshing tokens')
+    const resp = await this.request({
+      url: `${this.apiDomain}/api/v1/user/oauth2/token`,
+      data: refreshData,
+      noAuth: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        Authorization: this.apiConfig.authBasic,
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'ccsp-service-id': this.apiConfig.ccspServiceId,
+        'ccsp-application-id': this.apiConfig.appId,
+      },
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      return {
+        authCookie: '',
+        accessToken: resp.json.access_token,
+        refreshToken: resp.json.refresh_token || this.cache.token.refreshToken, // unclear if we get a new refresh token back
+        expiry: resp.json.expires_in,
+      }
+    }
+
+    const error = `Refresh Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    return undefined
+  }
+
+  protected async getDeviceId(): Promise<string | undefined> {
+    const resp = await this.request({
+      url: `${this.apiDomain}/api/v1/spa/notifications/register`,
+      data: JSON.stringify({
+        pushRegId: this.genRanHex(64),
+        pushType: this.apiConfig.pushType,
+        uuid: uuidv4(),
+      }),
+      noAuth: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+        'ccsp-service-id': this.apiConfig.ccspServiceId,
+        'ccsp-application-id': this.apiConfig.appId,
+      },
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      return resp.json.resMsg.deviceId
+    }
+
+    const error = `Failed to fetch Device ID: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    return undefined
+  }
+
+  protected async getCar(): Promise<BluelinkCar> {
+    let vin = this.vin
+    if (!vin && this.cache) {
+      vin = this.cache.car.vin
+    }
+
+    const resp = await this.request({
+      url: this.apiDomain + `/api/v1/spa/vehicles`,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        'ccsp-application-id': this.apiConfig.appId,
+      },
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.vehicles.length > 0) {
+      let vehicle = resp.json.resMsg.vehicles[0]
+      if (vin) {
+        for (const v of resp.json.resMsg.vehicles) {
+          if (v.vin === vin) {
+            vehicle = v
+            break
+          }
+        }
+      }
+
+      return {
+        id: vehicle.vehicleId,
+        vin: vehicle.vin,
+        nickName: vehicle.nickname,
+        modelName: vehicle.vehicleName,
+        // seemingly need to call /api/v1/spa/vehicles/${vehicle.vehicleId}/profile to get this
+        modelYear: 'TBD',
+        odometer: vehicle.odometer ? vehicle.odometer : 0,
+        // colour and trim dont exist in US implementation
+        // modelColour: vehicle.exteriorColor,
+        // modelTrim: vehicle.trim,
+      }
+    }
+    const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
   }
 }

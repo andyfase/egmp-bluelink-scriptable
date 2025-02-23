@@ -12,7 +12,8 @@ export interface BluelinkTokens {
   accessToken: string
   refreshToken?: string
   expiry: number
-  authCookie: string | undefined
+  authCookie?: string
+  authId?: string
 }
 
 export interface BluelinkCar {
@@ -110,6 +111,7 @@ export class Bluelink {
   protected authHeader: string
   protected tempLookup: TempConversion | undefined
   protected tokens: BluelinkTokens | undefined
+  protected authIdHeader: string | undefined
   protected debugLastRequest: DebugLastRequest | undefined
   protected logger: any
   protected loginFailure: boolean
@@ -127,6 +129,7 @@ export class Bluelink {
     this.loginFailure = false
     this.debugLastRequest = undefined
     this.tempLookup = undefined
+    this.authIdHeader = undefined
     this.distanceUnit = 'km'
     this.logger = new Logger(BLUELINK_LOG_FILE, 100)
   }
@@ -178,6 +181,10 @@ export class Bluelink {
       if (i <= rawCfbBytes.length) result[i] = byte ^ rawCfbBytes[i]! //
     }
     return Buffer.from(result).toString('base64')
+  }
+
+  protected genRanHex(size: number): string {
+    return [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('')
   }
 
   protected getApiDomain(lookup: string, domains: Record<string, string>, _default: string): string {
@@ -351,6 +358,9 @@ export class Bluelink {
     let requestTokens: BluelinkTokens | undefined = undefined
     if (!props.noAuth) {
       requestTokens = this.tokens ? this.tokens : this.cache.token
+      if (!requestTokens) {
+        throw Error('No tokens available for request')
+      }
     }
 
     const req = new Request(props.url)
@@ -370,6 +380,11 @@ export class Bluelink {
       ...(!props.noAuth &&
         requestTokens?.authCookie && {
           Cookie: requestTokens.authCookie,
+        }),
+      ...(!props.noAuth &&
+        requestTokens?.authId &&
+        this.authIdHeader && {
+          [this.authIdHeader]: requestTokens.authId,
         }),
       ...this.additionalHeaders,
       ...(props.headers && {
