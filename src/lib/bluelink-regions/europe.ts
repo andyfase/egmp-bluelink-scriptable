@@ -341,18 +341,26 @@ export class BluelinkEurope extends Bluelink {
   }
 
   protected returnCarStatus(fullStatus: any, forceUpdate: boolean, odometer?: number): BluelinkStatus {
-    const status = fullStatus.vehicleStatus
-    const lastRemoteCheckString = status.time + 'Z'
-    const df = new DateFormatter()
-    df.dateFormat = 'yyyyMMddHHmmssZ'
-    const lastRemoteCheck = df.date(lastRemoteCheckString)
-
+    // cached status contains a wrapped status object along with odometer info - force status does not
+    // force status also does not include a time field
+    let lastRemoteCheck = undefined
+    let status = undefined
+    if (forceUpdate) {
+      status = fullStatus
+      lastRemoteCheck = Date.now()
+    } else {
+      status = fullStatus.vehicleStatus
+      const lastRemoteCheckString = status.time + 'Z'
+      const df = new DateFormatter()
+      df.dateFormat = 'yyyyMMddHHmmssZ'
+      lastRemoteCheck = df.date(lastRemoteCheckString).getTime()
+    }
     // For whatever reason sometimes the status will not have the evStatus object
     // deal with that with either cached or zero values
     if (!status.evStatus) {
       return {
         lastStatusCheck: Date.now(),
-        lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
+        lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck,
         isCharging: this.cache ? this.cache.status.isCharging : false,
         isPluggedIn: this.cache ? this.cache.status.isCharging : false,
         chargingPower: this.cache ? this.cache.status.chargingPower : 0,
@@ -387,7 +395,7 @@ export class BluelinkEurope extends Bluelink {
 
     return {
       lastStatusCheck: Date.now(),
-      lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
+      lastRemoteStatusCheck: lastRemoteCheck,
       isCharging: isCharging,
       isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
       chargingPower: chargingPower,
@@ -424,7 +432,9 @@ export class BluelinkEurope extends Bluelink {
     })
 
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return this.returnCarStatus(resp.json.resMsg.vehicleStatusInfo, forceUpdate)
+      return forceUpdate
+        ? this.returnCarStatus(resp.json.resMsg, forceUpdate)
+        : this.returnCarStatus(resp.json.resMsg.vehicleStatusInfo, forceUpdate)
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
