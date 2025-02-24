@@ -1,8 +1,7 @@
-import { Bluelink, BluelinkTokens, BluelinkCar, DEFAULT_STATUS_CHECK_INTERVAL } from './base'
+import { Bluelink, BluelinkTokens, BluelinkCar, BluelinkStatus, DEFAULT_STATUS_CHECK_INTERVAL } from './base'
 import { Config } from '../../config'
 import { Buffer } from 'buffer'
 import Url from 'url'
-import { v4 as uuidv4 } from 'uuid'
 
 const b64decode = (str: string): string => Buffer.from(str, 'base64').toString('binary')
 // const b64encode = (str: string): string => Buffer.from(str, 'binary').toString('base64')
@@ -25,7 +24,7 @@ const API_CONFIG: Record<string, APIConfig> = {
     apiDomain: 'prd.eu-ccapi.hyundai.com',
     apiPort: 8080,
     ccspServiceId: '6d477c38-3ca4-4cf3-9557-2a1929a94654',
-    appId: 'dd1d2e03-f0b1-497d-9a80-3d3eeb141ae1',
+    appId: '014d2225-8495-4735-812d-2616334fd15d',
     authCfb: b64decode('RFtoRq/vDXJmRndoZaZQyfOot7OrIqGVFj96iY2WL3yyH5Z/pUvlUhqmCxD2t+D65SQ='),
     authBasic:
       'Basic NmQ0NzdjMzgtM2NhNC00Y2YzLTk1NTctMmExOTI5YTk0NjU0OktVeTQ5WHhQekxwTHVvSzB4aEJDNzdXNlZYaG10UVI5aVFobUlGampvWTRJcHhzVg==',
@@ -55,9 +54,12 @@ export class BluelinkEurope extends Bluelink {
     this.additionalHeaders = {
       'User-Agent': 'okhttp/3.14.9',
       offset: `-${new Date().getTimezoneOffset() / 60}`,
+      ccuCCS2ProtocolSupport: '0',
+      'ccsp-service-id': this.apiConfig.ccspServiceId,
+      'ccsp-application-id': this.apiConfig.appId,
     }
     this.authIdHeader = 'ccsp-device-id'
-    this.authHeader = 'accessToken'
+    this.authHeader = 'Authorization'
   }
 
   static async init(config: Config, vin?: string, statusCheckInterval?: number) {
@@ -224,8 +226,6 @@ export class BluelinkEurope extends Bluelink {
         Authorization: this.apiConfig.authBasic,
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
         'Content-Type': 'application/x-www-form-urlencoded',
-        'ccsp-service-id': this.apiConfig.ccspServiceId,
-        'ccsp-application-id': this.apiConfig.appId,
       },
     })
 
@@ -236,9 +236,9 @@ export class BluelinkEurope extends Bluelink {
     }
 
     return {
-      accessToken: respTokens.json.access_token,
+      accessToken: `Bearer ${respTokens.json.access_token}`,
       refreshToken: respTokens.json.refresh_token,
-      expiry: respTokens.json.expires_in,
+      expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expires_in), // we only get a expireIn not a actual date
       authId: await this.getDeviceId(),
     }
   }
@@ -260,16 +260,15 @@ export class BluelinkEurope extends Bluelink {
         Authorization: this.apiConfig.authBasic,
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
         'Content-Type': 'application/x-www-form-urlencoded',
-        'ccsp-service-id': this.apiConfig.ccspServiceId,
-        'ccsp-application-id': this.apiConfig.appId,
       },
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
       return {
         authCookie: '',
-        accessToken: resp.json.access_token,
-        refreshToken: resp.json.refresh_token || this.cache.token.refreshToken, // unclear if we get a new refresh token back
-        expiry: resp.json.expires_in,
+        accessToken: `Bearer ${resp.json.access_token}`,
+        refreshToken: this.cache.token.refreshToken, // we never recieve a new refresh token
+        expiry: Math.floor(Date.now() / 1000) + Number(resp.json.expires_in), // we only get a expireIn not a actual date
+        authId: await this.getDeviceId(),
       }
     }
 
@@ -282,16 +281,14 @@ export class BluelinkEurope extends Bluelink {
     const resp = await this.request({
       url: `${this.apiDomain}/api/v1/spa/notifications/register`,
       data: JSON.stringify({
-        pushRegId: this.genRanHex(64),
+        pushRegId: `${this.genRanHex(22)}:${this.genRanHex(63)}-${this.genRanHex(55)}`,
         pushType: this.apiConfig.pushType,
-        uuid: uuidv4(),
+        uuid: UUID.string().toLocaleLowerCase(), // native scriptable UUID method
       }),
       noAuth: true,
       validResponseFunction: this.requestResponseValid,
       headers: {
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-        'ccsp-service-id': this.apiConfig.ccspServiceId,
-        'ccsp-application-id': this.apiConfig.appId,
       },
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
@@ -313,10 +310,10 @@ export class BluelinkEurope extends Bluelink {
       url: this.apiDomain + `/api/v1/spa/vehicles`,
       validResponseFunction: this.requestResponseValid,
       headers: {
-        'ccsp-application-id': this.apiConfig.appId,
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
       },
     })
-    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.vehicles.length > 0) {
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 0) {
       let vehicle = resp.json.resMsg.vehicles[0]
       if (vin) {
         for (const v of resp.json.resMsg.vehicles) {
@@ -332,15 +329,105 @@ export class BluelinkEurope extends Bluelink {
         vin: vehicle.vin,
         nickName: vehicle.nickname,
         modelName: vehicle.vehicleName,
-        // seemingly need to call /api/v1/spa/vehicles/${vehicle.vehicleId}/profile to get this
-        modelYear: 'TBD',
-        odometer: vehicle.odometer ? vehicle.odometer : 0,
-        // colour and trim dont exist in US implementation
-        // modelColour: vehicle.exteriorColor,
-        // modelTrim: vehicle.trim,
+        modelYear: vehicle.year,
+        odometer: 0, // not available here
+        modelColour: vehicle.detailInfo.outColor,
+        modelTrim: vehicle.detailInfo.saleCarmdlCd,
       }
     }
     const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected returnCarStatus(fullStatus: any, forceUpdate: boolean, odometer?: number): BluelinkStatus {
+    const status = fullStatus.vehicleStatus
+    const lastRemoteCheckString = status.time + 'Z'
+    const df = new DateFormatter()
+    df.dateFormat = 'yyyyMMddHHmmssZ'
+    const lastRemoteCheck = df.date(lastRemoteCheckString)
+
+    // For whatever reason sometimes the status will not have the evStatus object
+    // deal with that with either cached or zero values
+    if (!status.evStatus) {
+      return {
+        lastStatusCheck: Date.now(),
+        lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
+        isCharging: this.cache ? this.cache.status.isCharging : false,
+        isPluggedIn: this.cache ? this.cache.status.isCharging : false,
+        chargingPower: this.cache ? this.cache.status.chargingPower : 0,
+        remainingChargeTimeMins: this.cache ? this.cache.status.remainingChargeTimeMins : 0,
+        range: this.cache ? this.cache.status.range : 0,
+        soc: this.cache ? this.cache.status.soc : 0,
+        locked: status.doorLock,
+        climate: status.airCtrlOn,
+        twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
+        odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
+      }
+    }
+
+    // deal with charging speed - JSON response if variable / inconsistent - hence check for various objects
+    let chargingPower = 0
+    let isCharging = false
+    if (status.evStatus.batteryPower && status.evStatus.batteryCharge) {
+      if (status.evStatus.batteryPower.batteryFstChrgPower && status.evStatus.batteryPower.batteryFstChrgPower > 0) {
+        chargingPower = status.evStatus.batteryPower.batteryFstChrgPower
+        isCharging = true
+      } else if (
+        status.evStatus.batteryPower.batteryStndChrgPower &&
+        status.evStatus.batteryPower.batteryStndChrgPower > 0
+      ) {
+        chargingPower = status.evStatus.batteryPower.batteryStndChrgPower
+        isCharging = true
+      } else {
+        // should never get here - log failure to get charging power
+        this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)
+      }
+    }
+
+    return {
+      lastStatusCheck: Date.now(),
+      lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
+      isCharging: isCharging,
+      isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
+      chargingPower: chargingPower,
+      remainingChargeTimeMins: status.evStatus.remainTime2.atc.value,
+      // sometimes range back as zero? if so ignore and use cache
+      range:
+        status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value > 0
+          ? Math.floor(status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value)
+          : this.cache
+            ? this.cache.status.range
+            : 0,
+      locked: status.doorLock,
+      climate: status.airCtrlOn,
+      soc: status.evStatus.batteryStatus,
+      twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
+      odometer:
+        fullStatus.odometer && fullStatus.odometer.value
+          ? fullStatus.odometer.value
+          : this.cache
+            ? this.cache.status.odometer
+            : 0,
+    }
+  }
+
+  protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
+    // we use older non CCS status endpoint as its more consistent with other regions and the remote status check is a sync (hanging) call
+    const api = forceUpdate ? '' : '/latest' // latest == cached
+    const resp = await this.request({
+      url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/status` + api,
+      headers: {
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      return this.returnCarStatus(resp.json.resMsg.vehicleStatusInfo, forceUpdate)
+    }
+
+    const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
