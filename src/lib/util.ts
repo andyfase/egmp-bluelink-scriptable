@@ -1,72 +1,89 @@
 interface icon {
   iconName: string
-  color: Color
+  colorDark: Color
+  colorLight: Color
   image?: Image
 }
 const icons: Record<string, icon> = {
   'battery.0': {
     iconName: 'battery.0percent',
-    color: Color.red(),
+    colorDark: Color.red(),
+    colorLight: Color.red(),
   },
   'battery.25': {
     iconName: 'battery.25percent',
-    color: Color.red(),
+    colorDark: Color.red(),
+    colorLight: Color.red(),
   },
   'battery.50': {
     iconName: 'battery.50percent',
-    color: Color.orange(),
+    colorDark: Color.orange(),
+    colorLight: Color.orange(),
   },
   'battery.75': {
     iconName: 'battery.75percent',
-    color: Color.green(),
+    colorDark: Color.green(),
+    colorLight: Color.green(),
   },
   'battery.100': {
     iconName: 'battery.100percent',
-    color: Color.green(),
+    colorDark: Color.green(),
+    colorLight: Color.green(),
   },
   charging: {
     iconName: 'bolt.fill',
-    color: Color.green(),
+    colorDark: Color.green(),
+    colorLight: Color.green(),
   },
   'charging-complete': {
     iconName: 'clock',
-    color: Color.white(),
+    colorDark: Color.white(),
+    colorLight: Color.black(),
   },
   plugged: {
     iconName: 'powerplug.portrait',
-    color: Color.white(),
+    colorDark: Color.white(),
+    colorLight: Color.black(),
   },
   'not-charging': {
     iconName: 'bolt',
-    color: Color.white(),
+    colorDark: Color.white(),
+    colorLight: Color.black(),
   },
   'climate-on': {
     iconName: 'fan',
-    color: Color.green(),
+    colorDark: Color.green(),
+    colorLight: Color.green(),
   },
   'climate-off': {
     iconName: 'fan',
-    color: Color.white(),
+    colorDark: Color.white(),
+    colorLight: Color.black(),
   },
   locked: {
     iconName: 'lock',
-    color: Color.green(),
+    colorDark: Color.green(),
+    colorLight: Color.green(),
   },
   unlocked: {
     iconName: 'lock.open',
-    color: Color.red(),
+    colorDark: Color.red(),
+    colorLight: Color.red(),
   },
   status: {
     iconName: 'clock.arrow.trianglehead.2.counterclockwise.rotate.90',
-    color: Color.white(),
+    colorDark: Color.white(),
+    colorLight: Color.black(),
   },
   settings: {
     iconName: 'gear',
-    color: Color.white(),
+    colorDark: Color.white(),
+    colorLight: Color.black(),
   },
   'twelve-volt': {
     iconName: 'minus.plus.batteryblock',
-    color: Color.white(),
+    colorDark: Color.white(),
+    colorLight: Color.black(),
   },
 }
 
@@ -108,10 +125,10 @@ export function getBatteryPercentColor(batteryPercent: number): Color {
   return Color.red()
 }
 
-export async function loadTintedIcons() {
+export async function loadTintedIcons(darkMode: boolean = true): Promise<void> {
   const loading: Promise<{ name: string; image: Image }>[] = []
   for (const [key, value] of Object.entries(icons)) {
-    loading.push(tintSFSymbol(key, SFSymbol.named(value.iconName).image, value.color))
+    loading.push(tintSFSymbol(key, SFSymbol.named(value.iconName).image, darkMode ? value.colorDark : value.colorLight))
   }
 
   await Promise.all(loading).then((values) => {
@@ -134,7 +151,7 @@ export function getTintedIcon(name: string): Image {
   return SFSymbol.named('questionmark.app').image
 }
 
-export async function getTintedIconAsync(name: string): Promise<Image> {
+export async function getTintedIconAsync(name: string, darkMode: boolean = true): Promise<Image> {
   if (name in icons && icons[name]?.image) {
     return icons[name].image
   }
@@ -143,7 +160,7 @@ export async function getTintedIconAsync(name: string): Promise<Image> {
       await tintSFSymbol(
         icons[name]?.iconName,
         SFSymbol.named(icons[name].iconName).image,
-        icons[name].color || Color.white(),
+        darkMode ? icons[name].colorDark : icons[name].colorLight || Color.white(),
       )
     ).image
   }
