@@ -215,22 +215,20 @@ export class BluelinkCanada extends Bluelink {
     // deal with charging speed - JSON response if variable / inconsistent - hence check for various objects
     let chargingPower = 0
     let isCharging = false
-    if (status.evStatus.batteryPower && status.evStatus.batteryCharge) {
-      if (status.evStatus.batteryPower.batteryFstChrgPower && status.evStatus.batteryPower.batteryFstChrgPower > 0) {
-        chargingPower = status.evStatus.batteryPower.batteryFstChrgPower
-        isCharging = true
-      } else if (
-        status.evStatus.batteryPower.batteryStndChrgPower &&
-        status.evStatus.batteryPower.batteryStndChrgPower > 0
-      ) {
-        chargingPower = status.evStatus.batteryPower.batteryStndChrgPower
-        isCharging = true
-      } else if (status.evStatus.batteryCharge) {
-        // we know we are charging but not the power
-        isCharging = true
-      } else {
-        // should never get here - log failure to get charging power
-        this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)
+    if (status.evStatus.batteryCharge) {
+      isCharging = true
+      if (status.evStatus.batteryPower) {
+        if (status.evStatus.batteryPower.batteryFstChrgPower && status.evStatus.batteryPower.batteryFstChrgPower > 0) {
+          chargingPower = status.evStatus.batteryPower.batteryFstChrgPower
+        } else if (
+          status.evStatus.batteryPower.batteryStndChrgPower &&
+          status.evStatus.batteryPower.batteryStndChrgPower > 0
+        ) {
+          chargingPower = status.evStatus.batteryPower.batteryStndChrgPower
+        } else {
+          // should never get here - log failure to get charging power
+          this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)
+        }
       }
     }
 

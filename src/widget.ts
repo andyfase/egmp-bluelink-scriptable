@@ -232,7 +232,7 @@ export async function createWidget(config: Config, bl: Bluelink) {
     batteryChargingTimeStack.addSpacer()
     // batteryChargingTimeStack.addSpacer()
 
-    const chargingSpeedElement = batteryChargingTimeStack.addText(`${chargingKw} kW`)
+    const chargingSpeedElement = batteryChargingTimeStack.addText(`${chargingKw}`)
     chargingSpeedElement.font = Font.mediumSystemFont(14)
     chargingSpeedElement.textOpacity = 0.9
     chargingSpeedElement.textColor = DARK_MODE ? Color.white() : Color.black()

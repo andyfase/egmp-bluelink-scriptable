@@ -188,7 +188,7 @@ const pageIcons = connect(
     const lastSeen = new Date(lastUpdated)
     const batteryIcon = isCharging ? 'charging' : 'not-charging'
     const batteryText = 'Not Charging'
-    const chargingPowerText = chargingPower > 0 ? `${chargingPower.toString()} kW` : '-'
+    const chargingPowerText = chargingPower > 0 ? `${chargingPower.toString()} kW` : '? kW'
 
     const chargingRow: DivChild[] = []
     if (updatingActions && updatingActions.charge) {
