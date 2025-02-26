@@ -9,13 +9,13 @@ export interface Auth {
   password: string
   pin: string
   region: string
-  subregion?: string
 }
 
 export interface Config {
   manufacturer: string
   auth: Auth
   tempType: 'C' | 'F'
+  distanceUnit: 'km' | 'mi'
   climateTempWarm: number
   climateTempCold: number
   allowWidgetRemoteRefresh: boolean
@@ -50,8 +50,8 @@ export interface FlattenedConfig {
   password: string
   pin: string
   region: string
-  subregion?: string
   tempType: 'C' | 'F'
+  distanceUnit: 'km' | 'mi'
   climateTempWarm: number
   climateTempCold: number
   allowWidgetRemoteRefresh: boolean
@@ -64,8 +64,6 @@ export interface FlattenedConfig {
 // const SUPPORTED_REGIONS = ['canada']
 const SUPPORTED_REGIONS = ['canada', 'usa', 'europe']
 const SUPPORTED_MANUFACTURERS = ['Hyundai', 'Kia']
-const SUPPORTED_SUBREGIONS = ['cs', 'da', 'nl', 'en', 'fi', 'fr', 'de', 'it', 'pl', 'hu', 'no', 'sk', 'es', 'sv']
-
 const DEFAULT_TEMPS = {
   C: {
     cold: 19,
@@ -86,6 +84,7 @@ const DEFAULT_CONFIG = {
     region: '',
   },
   tempType: 'C',
+  distanceUnit: 'km',
   climateTempCold: DEFAULT_TEMPS.C.cold,
   climateTempWarm: DEFAULT_TEMPS.C.warm,
   debugLogging: false,
@@ -150,9 +149,9 @@ export async function loadConfigScreen() {
       username,
       password,
       region,
-      subregion,
       pin,
       tempType,
+      distanceUnit,
       climateTempWarm,
       climateTempCold,
       debugLogging,
@@ -169,10 +168,10 @@ export async function loadConfigScreen() {
             username: username,
             password: password,
             region: region,
-            subregion: subregion,
             pin: pin,
           },
           tempType: tempType,
+          distanceUnit: distanceUnit,
           climateTempCold: climateTempCold,
           climateTempWarm: climateTempWarm,
           allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
@@ -200,7 +199,7 @@ export async function loadConfigScreen() {
       }
       return state
     },
-    isFormValid: ({ username, password, region, subregion, pin, tempType, climateTempCold, climateTempWarm }) => {
+    isFormValid: ({ username, password, region, pin, tempType, climateTempCold, climateTempWarm }) => {
       if (!username || !password || !region || !pin || !climateTempCold || !tempType || !climateTempWarm) {
         return false
       }
@@ -208,7 +207,6 @@ export async function loadConfigScreen() {
       if (tempType === 'F' && (climateTempCold < 62 || climateTempWarm > 82)) return false
       if (climateTempCold.toString().includes('.') && climateTempCold % 1 !== 0.5) return false
       if (climateTempWarm.toString().includes('.') && climateTempWarm % 1 !== 0.5) return false
-      if (region === 'europe' && !subregion) return false
       return true
     },
     submitButtonText: 'Save',
@@ -238,13 +236,6 @@ export async function loadConfigScreen() {
         allowCustom: false,
         isRequired: true,
       },
-      subregion: {
-        type: 'dropdown',
-        label: 'If in Europe choose your country code',
-        options: SUPPORTED_SUBREGIONS,
-        allowCustom: false,
-        isRequired: false,
-      },
       manufacturer: {
         type: 'dropdown',
         label: 'Choose your Car Manufacturer',
@@ -261,6 +252,13 @@ export async function loadConfigScreen() {
         type: 'dropdown',
         label: 'Choose your preferred temperature scale',
         options: ['C', 'F'],
+        allowCustom: false,
+        isRequired: true,
+      },
+      distanceUnit: {
+        type: 'dropdown',
+        label: 'Choose your preferred distance unit',
+        options: ['km', 'mi'],
         allowCustom: false,
         isRequired: true,
       },

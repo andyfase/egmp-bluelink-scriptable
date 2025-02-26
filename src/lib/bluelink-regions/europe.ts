@@ -49,14 +49,13 @@ const API_CONFIG: Record<string, APIConfig> = {
 }
 
 export class BluelinkEurope extends Bluelink {
-  // private carVin: string | undefined
-  // private carId: string | undefined
+  private lang = 'en' // hard-code to en as the language doesnt appear to matter from an API perspective.
   private apiConfig: APIConfig
   private controlToken: ControlToken | undefined
 
   constructor(config: Config, statusCheckInterval?: number) {
     super(config)
-    this.distanceUnit = this.config.auth.subregion === 'en' ? 'mi' : 'km'
+    this.distanceUnit = this.config.distanceUnit
     if (!(config.manufacturer in API_CONFIG)) {
       throw Error(`Region ${config.manufacturer} not supported`)
     }
@@ -97,7 +96,7 @@ export class BluelinkEurope extends Bluelink {
 
   protected async login(): Promise<BluelinkTokens | undefined> {
     const respReset = await this.request({
-      url: `${this.apiDomain}/api/v1/user/oauth2/authorize?response_type=code&state=test&client_id=${this.apiConfig.clientId}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`,
+      url: `${this.apiDomain}/api/v1/user/oauth2/authorize?response_type=code&state=test&client_id=${this.apiConfig.clientId}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect&lang=${this.lang}`,
       noAuth: true,
       notJSON: true,
       validResponseFunction: this.requestResponseValid,
@@ -131,7 +130,7 @@ export class BluelinkEurope extends Bluelink {
     // start login - this could auto redirect and auto login based on previous state
     // or could send back form to process actual login - so need to handle both
     const respLoginForm = await this.request({
-      url: `https://${this.apiConfig.authHost}/auth/realms/euhyundaiidm/protocol/openid-connect/auth?client_id=${this.apiConfig.authClientID}&scope=openid%20profile%20email%20phone&response_type=code&hkid_session_reset=true&redirect_uri=${this.apiDomain}/api/v1/user/integration/redirect/login&ui_locales=en&state=${serviceId}:${userId}`,
+      url: `https://${this.apiConfig.authHost}/auth/realms/euhyundaiidm/protocol/openid-connect/auth?client_id=${this.apiConfig.authClientID}&scope=openid%20profile%20email%20phone&response_type=code&hkid_session_reset=true&redirect_uri=${this.apiDomain}/api/v1/user/integration/redirect/login&ui_locales=${this.lang}&state=${serviceId}:${userId}`,
       noAuth: true,
       notJSON: true,
       validResponseFunction: this.requestResponseValid,
@@ -166,7 +165,7 @@ export class BluelinkEurope extends Bluelink {
       }
 
       // now actually login
-      const loginData = `username=${this.config.auth.username}&password=${this.config.auth.password}&credentialId=&rememberMe=on`
+      const loginData = `username=${encodeURIComponent(this.config.auth.username)}&password=${encodeURIComponent(this.config.auth.password)}&credentialId=&rememberMe=on`
       const respLogin = await this.request({
         url: `https://${this.apiConfig.authHost}/auth/realms/euhyundaiidm/login-actions/authenticate?session_code=${sessionCode}&execution=${executionId}&client_id=${this.apiConfig.authClientID}&tab_id=${tabId}`,
         noAuth: true,
@@ -184,6 +183,13 @@ export class BluelinkEurope extends Bluelink {
         if (this.config.debugLogging) this.logger.log(error)
         throw Error(error)
       }
+
+      // at this point we should have been rediected to the API domain after completing login - if not its a error - likely password issues
+      if (!respLogin.resp.url.startsWith(this.apiDomain)) {
+        const error = `Login did not redirect - login error: ${JSON.stringify(respLogin.resp)} data: ${respLogin.json}`
+        if (this.config.debugLogging) this.logger.log(error)
+        return undefined
+      }
     } // end of optional login form
 
     // set language
@@ -191,7 +197,7 @@ export class BluelinkEurope extends Bluelink {
       url: `${this.apiDomain}/api/v1/user/language`,
       noAuth: true,
       notJSON: true,
-      data: JSON.stringify({ language: this.config.auth.subregion }),
+      data: JSON.stringify({ language: this.lang }),
       validResponseFunction: this.requestResponseValid,
     })
 
@@ -619,7 +625,7 @@ export class BluelinkEurope extends Bluelink {
       hvacTempType: 1,
       heating1: this.getHeatingValue(config.rearDefrost, config.steering),
       tempUnit: this.config.tempType,
-      drvSeatLoc: this.config.auth.subregion === 'en' ? 'R' : 'L',
+      drvSeatLoc: this.distanceUnit === 'mi' ? 'R' : 'L',
       hvacTemp: config.temp,
     })
   }
