@@ -1,10 +1,23 @@
-import { Bluelink, BluelinkTokens, BluelinkCar, BluelinkStatus, DEFAULT_STATUS_CHECK_INTERVAL } from './base'
+import {
+  Bluelink,
+  BluelinkTokens,
+  BluelinkCar,
+  BluelinkStatus,
+  ClimateRequest,
+  DEFAULT_STATUS_CHECK_INTERVAL,
+  MAX_COMPLETION_POLLS,
+} from './base'
 import { Config } from '../../config'
 import { Buffer } from 'buffer'
 import Url from 'url'
 
 const b64decode = (str: string): string => Buffer.from(str, 'base64').toString('binary')
 // const b64encode = (str: string): string => Buffer.from(str, 'binary').toString('base64')
+
+interface ControlToken {
+  expiry: number
+  token: string
+}
 
 interface APIConfig {
   apiDomain: string
@@ -39,12 +52,12 @@ export class BluelinkEurope extends Bluelink {
   // private carVin: string | undefined
   // private carId: string | undefined
   private apiConfig: APIConfig
+  private controlToken: ControlToken | undefined
 
   constructor(config: Config, statusCheckInterval?: number) {
     super(config)
-    this.distanceUnit = 'mi'
+    this.distanceUnit = this.config.auth.subregion === 'en' ? 'mi' : 'km'
     if (!(config.manufacturer in API_CONFIG)) {
-      logError(`fail ${config.manufacturer} indeed`)
       throw Error(`Region ${config.manufacturer} not supported`)
     }
     this.apiConfig = API_CONFIG[config.manufacturer]!
@@ -53,13 +66,14 @@ export class BluelinkEurope extends Bluelink {
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
       'User-Agent': 'okhttp/3.14.9',
-      offset: `-${new Date().getTimezoneOffset() / 60}`,
+      offset: this.getTimeZone().slice(0, 3),
       ccuCCS2ProtocolSupport: '0',
       'ccsp-service-id': this.apiConfig.ccspServiceId,
       'ccsp-application-id': this.apiConfig.appId,
     }
     this.authIdHeader = 'ccsp-device-id'
     this.authHeader = 'Authorization'
+    this.controlToken = undefined
   }
 
   static async init(config: Config, vin?: string, statusCheckInterval?: number) {
@@ -350,11 +364,21 @@ export class BluelinkEurope extends Bluelink {
       lastRemoteCheck = Date.now()
     } else {
       status = fullStatus.vehicleStatus
-      const lastRemoteCheckString = status.time + 'Z'
+      // response is localtime - hence convert based on getting the current timezone
+      const lastRemoteCheckString = `${status.time} ${this.getTimeZone()}`
       const df = new DateFormatter()
-      df.dateFormat = 'yyyyMMddHHmmssZ'
+      df.dateFormat = 'yyyyMMddHHmmss Z'
       lastRemoteCheck = df.date(lastRemoteCheckString).getTime()
     }
+
+    // convert odometer if needed
+    let newOdometer = fullStatus.odometer && fullStatus.odometer.value ? fullStatus.odometer.value : undefined
+    if (newOdometer) {
+      if (this.distanceUnit === 'mi' && fullStatus.odometer.unit === 1) {
+        newOdometer = Math.floor(newOdometer * 0.621371) // km to miles
+      }
+    }
+
     // For whatever reason sometimes the status will not have the evStatus object
     // deal with that with either cached or zero values
     if (!status.evStatus) {
@@ -411,12 +435,7 @@ export class BluelinkEurope extends Bluelink {
       climate: status.airCtrlOn,
       soc: status.evStatus.batteryStatus,
       twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
-      odometer:
-        fullStatus.odometer && fullStatus.odometer.value
-          ? fullStatus.odometer.value
-          : this.cache
-            ? this.cache.status.odometer
-            : 0,
+      odometer: newOdometer ? newOdometer : this.cache ? this.cache.status.odometer : 0,
     }
   }
 
@@ -438,6 +457,197 @@ export class BluelinkEurope extends Bluelink {
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  // named for consistency - but this is a special Authetication token - used instead of the normal Authentication token?
+  // seemingly has its own expiry which we cache within the current app session only - not across app usages (i.e. saved to cache)
+  protected async getAuthCode(id: string): Promise<string> {
+    if (this.controlToken && this.controlToken.expiry > Date.now()) {
+      return this.controlToken.token
+    }
+    const resp = await this.request({
+      url: `${this.apiDomain}/api/v1/user/pin`,
+      method: 'PUT',
+      data: JSON.stringify({
+        pin: this.config.auth.pin,
+        deviceId: this.cache.token.authId,
+      }),
+      headers: {
+        vehicleId: id,
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.controlToken = {
+        expiry: Date.now() + Number(resp.json.expiresTime) * 1000,
+        token: `Bearer ${resp.json.controlToken}`,
+      }
+      return this.controlToken.token
+    }
+    const error = `Failed to get auth code: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async pollForCommandCompletion(
+    id: string,
+    transactionId: string,
+  ): Promise<{ isSuccess: boolean; data: any }> {
+    let attempts = 0
+    while (attempts <= MAX_COMPLETION_POLLS) {
+      const resp = await this.request({
+        url: `${this.apiDomain}/api/v1/spa/notifications/${id}/records`,
+        headers: {
+          Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+        },
+        validResponseFunction: this.requestResponseValid,
+      })
+
+      if (!this.requestResponseValid(resp.resp, resp.json).valid) {
+        const error = `Failed to poll for command completion: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+        if (this.config.debugLogging) this.logger.log(error)
+        throw Error(error)
+      }
+
+      // iterate over all actions to find the one we are waiting for - if it exists
+      for (const record of resp.json.resMsg) {
+        if (record.recordId === transactionId) {
+          const result = record.result
+          if (result) {
+            switch (result) {
+              case 'success':
+                return {
+                  isSuccess: true,
+                  data: (await this.getStatus(false, true)).status,
+                }
+              case 'fail':
+              case 'non-response':
+                return {
+                  isSuccess: false,
+                  data: record,
+                }
+              default:
+                if (this.config.debugLogging)
+                  this.logger.log(`Waiting for command completion: ${JSON.stringify(record)}`)
+                break
+            }
+          }
+        }
+      }
+
+      attempts += 1
+      await this.sleep(2000)
+    }
+    return {
+      isSuccess: false,
+      data: undefined,
+    }
+  }
+  protected async lock(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.lockUnlock(id, true)
+  }
+
+  protected async unlock(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.lockUnlock(id, false)
+  }
+
+  protected async lockUnlock(id: string, shouldLock: boolean): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const resp = await this.request({
+      url: `${this.apiDomain}/api/v2/spa/vehicles/${id}/ccs2/control/door`,
+      method: 'POST',
+      data: JSON.stringify({
+        command: shouldLock ? 'close' : 'open',
+      }),
+      headers: {
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+      },
+      authTokenOverride: await this.getAuthCode(id),
+      validResponseFunction: this.requestResponseValid,
+      noRetry: true,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      const transactionId = resp.json.msgId // SID or msgId
+      if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
+    }
+    const error = `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async startCharge(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.chargeStopCharge(id, true)
+  }
+
+  protected async stopCharge(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.chargeStopCharge(id, false)
+  }
+
+  protected async chargeStopCharge(
+    id: string,
+    shouldCharge: boolean,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const resp = await this.request({
+      url: `${this.apiDomain}/api/v2/spa/vehicles/${id}/ccs2/control/charge`,
+      method: 'POST',
+      data: JSON.stringify({
+        command: shouldCharge ? 'start' : 'stop',
+      }),
+      headers: {
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+      },
+      authTokenOverride: await this.getAuthCode(id),
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      const transactionId = resp.json.msgId // SID or msgId
+      if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
+    }
+    const error = `Failed to send chargeStartStop command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async climateOn(id: string, config: ClimateRequest): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.climateStartStop(id, {
+      command: 'start',
+      windshieldFrontDefogState: config.frontDefrost,
+      hvacTempType: 1,
+      heating1: this.getHeatingValue(config.rearDefrost, config.steering),
+      tempUnit: this.config.tempType,
+      drvSeatLoc: this.config.auth.subregion === 'en' ? 'R' : 'L',
+      hvacTemp: config.temp,
+    })
+  }
+
+  protected async climateOff(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.climateStartStop(id, {
+      command: 'stop',
+    })
+  }
+
+  protected async climateStartStop(
+    id: string,
+    climateRequest: any,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const resp = await this.request({
+      url: `${this.apiDomain}/api/v2/spa/vehicles/${id}/ccs2/control/temperature`,
+      method: 'POST',
+      data: JSON.stringify(climateRequest),
+      headers: {
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+      },
+      authTokenOverride: await this.getAuthCode(id),
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      const transactionId = resp.json.msgId // SID or msgId
+      if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
+    }
+    const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }

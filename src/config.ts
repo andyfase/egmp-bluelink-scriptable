@@ -63,8 +63,8 @@ export interface FlattenedConfig {
 
 // const SUPPORTED_REGIONS = ['canada']
 const SUPPORTED_REGIONS = ['canada', 'usa', 'europe']
-const SUPPORTED_SUBREGIONS = ['en']
 const SUPPORTED_MANUFACTURERS = ['Hyundai', 'Kia']
+const SUPPORTED_SUBREGIONS = ['cs', 'da', 'nl', 'en', 'fi', 'fr', 'de', 'it', 'pl', 'hu', 'no', 'sk', 'es', 'sv']
 
 const DEFAULT_TEMPS = {
   C: {

@@ -5,6 +5,7 @@ import {
   BluelinkStatus,
   ClimateRequest,
   DEFAULT_STATUS_CHECK_INTERVAL,
+  MAX_COMPLETION_POLLS,
 } from './base'
 import { Config } from '../../config'
 
@@ -13,8 +14,6 @@ const API_DOMAINS: Record<string, string> = {
   hyundai: 'mybluelink.ca',
   kia: 'kiaconnect.ca',
 }
-
-const MAX_COMPLETION_POLLS = 20
 
 export class BluelinkCanada extends Bluelink {
   constructor(config: Config, statusCheckInterval?: number) {
@@ -31,7 +30,7 @@ export class BluelinkCanada extends Bluelink {
       client_secret: 'CLISCR01AHSPA',
       language: '0',
       brand: this.apiHost === 'mybluelink.ca' ? 'H' : 'kia',
-      offset: `-${new Date().getTimezoneOffset() / 60}`,
+      offset: this.getTimeZone().slice(0, 3),
       'User-Agent': 'MyHyundai/2.0.25 (iPhone; iOS 18.3; Scale/3.00)',
     }
     this.authHeader = 'Accesstoken'
@@ -97,9 +96,11 @@ export class BluelinkCanada extends Bluelink {
     req.headers = this.additionalHeaders
     req.method = 'GET'
     await req.load()
-    for (const cookie of req.response.cookies) {
-      if (cookie.name.toLowerCase() === 'dtcookie') {
-        return `dtCookie=${cookie.value}`
+    if (req.response.cookies) {
+      for (const cookie of req.response.cookies) {
+        if (cookie.name.toLowerCase() === 'dtcookie') {
+          return `dtCookie=${cookie.value}`
+        }
       }
     }
     return ''

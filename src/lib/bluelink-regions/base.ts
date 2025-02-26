@@ -4,6 +4,7 @@ import { Logger } from '../logger'
 import { Buffer } from 'buffer'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
+export const MAX_COMPLETION_POLLS = 20
 const BLUELINK_LOG_FILE = 'egmp-bluelink.log'
 const DEFAULT_API_HOST = 'mybluelink.ca'
 const DEFAULT_API_DOMAIN = `https://${DEFAULT_API_HOST}/tods/api/`
@@ -63,6 +64,7 @@ export interface RequestProps {
   noRetry?: boolean
   notJSON?: boolean
   noRedirect?: boolean
+  authTokenOverride?: string
 }
 
 export interface DebugLastRequest {
@@ -185,6 +187,12 @@ export class Bluelink {
 
   protected genRanHex(size: number): string {
     return [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('')
+  }
+
+  protected getTimeZone(): string {
+    const offset = new Date().getTimezoneOffset(),
+      o = Math.abs(offset)
+    return (offset < 0 ? '+' : '-') + ('00' + Math.floor(o / 60)).slice(-2) + ':' + ('00' + (o % 60)).slice(-2)
   }
 
   protected getApiDomain(lookup: string, domains: Record<string, string>, _default: string): string {
@@ -358,9 +366,9 @@ export class Bluelink {
     let requestTokens: BluelinkTokens | undefined = undefined
     if (!props.noAuth) {
       requestTokens = this.tokens ? this.tokens : this.cache.token
-      if (!requestTokens) {
-        throw Error('No tokens available for request')
-      }
+    }
+    if (!props.noAuth && !requestTokens) {
+      throw Error('No tokens available for request')
     }
 
     const req = new Request(props.url)
@@ -374,15 +382,18 @@ export class Bluelink {
           'Content-Type': 'application/json',
         }),
       ...(!props.noAuth &&
-        requestTokens?.accessToken && {
-          [this.authHeader]: requestTokens?.accessToken,
+        requestTokens &&
+        requestTokens.accessToken && {
+          [this.authHeader]: props.authTokenOverride ? props.authTokenOverride : requestTokens.accessToken,
         }),
       ...(!props.noAuth &&
-        requestTokens?.authCookie && {
+        requestTokens &&
+        requestTokens.authCookie && {
           Cookie: requestTokens.authCookie,
         }),
       ...(!props.noAuth &&
-        requestTokens?.authId &&
+        requestTokens &&
+        requestTokens.authId &&
         this.authIdHeader && {
           [this.authIdHeader]: requestTokens.authId,
         }),

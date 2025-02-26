@@ -5,6 +5,7 @@ import {
   BluelinkStatus,
   ClimateRequest,
   DEFAULT_STATUS_CHECK_INTERVAL,
+  MAX_COMPLETION_POLLS,
 } from './base'
 import { Config } from '../../config'
 
@@ -13,7 +14,6 @@ const API_DOMAINS: Record<string, string> = {
   hyundai: 'https://api.telematics.hyundaiusa.com/',
   kia: 'https://api.owners.kia.com/apigw/v1/',
 }
-const MAX_COMPLETION_POLLS = 20
 
 export class BluelinkUSA extends Bluelink {
   private carVin: string | undefined
@@ -31,7 +31,7 @@ export class BluelinkUSA extends Bluelink {
       from: 'SPA',
       to: 'ISS',
       language: '0',
-      offset: `-${new Date().getTimezoneOffset() / 60}`,
+      offset: this.getTimeZone().slice(0, 3),
       client_id:
         config.manufacturer && config.manufacturer === 'kia' ? 'MWAMOBILE' : 'm66129Bb-em93-SPAHYN-bZ91-am4540zp19920',
       clientSecret:
