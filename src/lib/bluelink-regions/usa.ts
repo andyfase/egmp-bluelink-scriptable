@@ -164,16 +164,27 @@ export class BluelinkUSA extends Bluelink {
     // format "2025-01-30T00:38:15Z" - which is standard
     const lastRemoteCheck = new Date(status.dateTime)
 
+    // deal with charging speed - JSON response if variable / inconsistent - hence check for various objects
+    let chargingPower = 0
+    let isCharging = false
+    if (status.evStatus.batteryCharge) {
+      isCharging = true
+      if (status.evStatus.batteryFstChrgPower && status.evStatus.batteryFstChrgPower > 0) {
+        chargingPower = status.evStatus.batteryFstChrgPower
+      } else if (status.evStatus.batteryStndChrgPower && status.evStatus.batteryStndChrgPower > 0) {
+        chargingPower = status.evStatus.batteryStndChrgPower
+      } else {
+        // should never get here - log failure to get charging power
+        this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)
+      }
+    }
+
     return {
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
-      isCharging: status.evStatus.batteryCharge,
+      isCharging: isCharging,
       isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
-      chargingPower: status.evStatus.batteryCharge // only check for charging power if actually charging
-        ? (status.evStatus.batteryFstChrgPower && status.evStatus.batteryFstChrgPower) > 0
-          ? status.evStatus.batteryFstChrgPower
-          : status.evStatus.batteryStndChrgPower
-        : 0,
+      chargingPower: chargingPower,
       remainingChargeTimeMins: status.evStatus.remainTime2.atc.value,
       // sometimes range back as zero? if so ignore and use cache
       range:

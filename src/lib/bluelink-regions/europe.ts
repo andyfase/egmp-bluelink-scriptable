@@ -411,6 +411,9 @@ export class BluelinkEurope extends Bluelink {
       ) {
         chargingPower = status.evStatus.batteryPower.batteryStndChrgPower
         isCharging = true
+      } else if (status.evStatus.batteryCharge) {
+        // we know we are charging but not the power
+        isCharging = true
       } else {
         // should never get here - log failure to get charging power
         this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)

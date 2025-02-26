@@ -188,12 +188,13 @@ const pageIcons = connect(
     const lastSeen = new Date(lastUpdated)
     const batteryIcon = isCharging ? 'charging' : 'not-charging'
     const batteryText = 'Not Charging'
+    const chargingPowerText = chargingPower > 0 ? `${chargingPower.toString()} kW` : '-'
 
     const chargingRow: DivChild[] = []
     if (updatingActions && updatingActions.charge) {
       chargingRow.push(P(updatingActions.charge.text, { align: 'left', width: '70%', color: Color.orange() }))
     } else if (isCharging) {
-      chargingRow.push(P(`${chargingPower.toString()} kW`, { align: 'left', width: '20%' }))
+      chargingRow.push(P(chargingPowerText, { align: 'left', width: '20%' }))
       chargingRow.push(Img(getTintedIcon('charging-complete'), { align: 'left', width: '10%' }))
       chargingRow.push(P(`${getChargeCompletionString(lastSeen, remainingChargeTimeMins)}`, { align: 'left' }))
     } else {
