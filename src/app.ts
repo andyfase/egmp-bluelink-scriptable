@@ -188,13 +188,24 @@ const pageIcons = connect(
     const lastSeen = new Date(lastUpdated)
     const batteryIcon = isCharging ? 'charging' : 'not-charging'
     const batteryText = 'Not Charging'
-    const chargingPowerText = chargingPower > 0 ? `${chargingPower.toString()} kW` : '? kW'
+    const chargingPowerText = chargingPower > 0 ? `${chargingPower.toFixed(1).toString()} kW` : '- kW'
+    let chargingPowerTextRowPercentage = '25%'
+
+    // annoying but impacts UI fairly significantly.
+    if (chargingPowerText.length <= 4)
+      chargingPowerTextRowPercentage = '15%' // '? kw'
+    else if (chargingPowerText.length <= 6)
+      chargingPowerTextRowPercentage = '18%' // '1.2 kw'
+    else if (chargingPowerText.length <= 7)
+      chargingPowerTextRowPercentage = '21%' // '10.5 kw'
+    else if (chargingPowerText.length <= 8) chargingPowerTextRowPercentage = '25%' // '222.1 kw'
 
     const chargingRow: DivChild[] = []
     if (updatingActions && updatingActions.charge) {
       chargingRow.push(P(updatingActions.charge.text, { align: 'left', width: '70%', color: Color.orange() }))
     } else if (isCharging) {
-      chargingRow.push(P(chargingPowerText, { align: 'left', width: '20%' }))
+      // @ts-ignore
+      chargingRow.push(P(chargingPowerText, { align: 'left', width: chargingPowerTextRowPercentage }))
       chargingRow.push(Img(getTintedIcon('charging-complete'), { align: 'left', width: '10%' }))
       chargingRow.push(P(`${getChargeCompletionString(lastSeen, remainingChargeTimeMins)}`, { align: 'left' }))
     } else {

@@ -381,12 +381,15 @@ export class BluelinkEurope extends Bluelink {
         ? Math.floor(status.Drivetrain.Odometer * 0.621371)
         : Math.floor(status.Drivetrain.Odometer)
 
-    // isCharging based on being connected and either use state param if exists or if it doesnt check RemainTime
+    // isCharging based on plug being connected and remainingTime being above zero
     let isCharging = false
-    if (status.Green.ChargingInformation.ConnectorFastening.State) {
-      if (status.Green.ChargingInformation.Charging.State)
-        isCharging = Boolean(status.Green.ChargingInformation.Charging.State)
-      else if (status.Green.ChargingInformation.ConnectorFastening.RemainTime > 0) isCharging = true
+    let chargingPower = 0
+    if (
+      status.Green.ChargingInformation.ConnectorFastening.State &&
+      status.Green.ChargingInformation.Charging.RemainTime > 0
+    ) {
+      isCharging = true
+      chargingPower = status.Green.Electric.SmartGrid.RealTimePower
     }
 
     return {
@@ -394,7 +397,7 @@ export class BluelinkEurope extends Bluelink {
       lastRemoteStatusCheck: Number(updateTime),
       isCharging: isCharging,
       isPluggedIn: status.Green.ChargingInformation.ConnectorFastening.State > 0 ? true : false,
-      chargingPower: 0, // no idea how to get charging power from the new API yet
+      chargingPower: chargingPower,
       remainingChargeTimeMins: status.Green.ChargingInformation.Charging.RemainTime,
       // sometimes range back as zero? if so ignore and use cache
       range:
