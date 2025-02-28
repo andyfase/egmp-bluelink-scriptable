@@ -66,7 +66,6 @@ export class BluelinkEurope extends Bluelink {
     this.additionalHeaders = {
       'User-Agent': 'okhttp/3.14.9',
       offset: this.getTimeZone().slice(0, 3),
-      ccuCCS2ProtocolSupport: '0',
       'ccsp-service-id': this.apiConfig.ccspServiceId,
       'ccsp-application-id': this.apiConfig.appId,
     }
@@ -353,6 +352,7 @@ export class BluelinkEurope extends Bluelink {
         odometer: 0, // not available here
         modelColour: vehicle.detailInfo.outColor,
         modelTrim: vehicle.detailInfo.saleCarmdlCd,
+        europeccs2: Boolean(vehicle.ccuCCS2ProtocolSupport),
       }
     }
     const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
@@ -360,110 +360,96 @@ export class BluelinkEurope extends Bluelink {
     throw Error(error)
   }
 
-  protected returnCarStatus(fullStatus: any, forceUpdate: boolean, odometer?: number): BluelinkStatus {
+  protected returnCarStatus(status: any, updateTime: number): BluelinkStatus {
     // cached status contains a wrapped status object along with odometer info - force status does not
     // force status also does not include a time field
-    let lastRemoteCheck = undefined
-    let status = undefined
-    if (forceUpdate) {
-      status = fullStatus
-      lastRemoteCheck = Date.now()
-    } else {
-      status = fullStatus.vehicleStatus
-      // response is localtime - hence convert based on getting the current timezone
-      const lastRemoteCheckString = `${status.time} ${this.getTimeZone()}`
-      const df = new DateFormatter()
-      df.dateFormat = 'yyyyMMddHHmmss Z'
-      lastRemoteCheck = df.date(lastRemoteCheckString).getTime()
-    }
 
     // convert odometer if needed
-    let newOdometer = fullStatus.odometer && fullStatus.odometer.value ? fullStatus.odometer.value : undefined
-    if (newOdometer) {
-      if (this.distanceUnit === 'mi' && fullStatus.odometer.unit === 1) {
-        newOdometer = Math.floor(newOdometer * 0.621371) // km to miles
-      }
-    }
+    const newOdometer =
+      this.distanceUnit === 'mi'
+        ? Math.floor(status.Drivetrain.Odometer * 0.621371)
+        : Math.floor(status.Drivetrain.Odometer)
 
-    // For whatever reason sometimes the status will not have the evStatus object
-    // deal with that with either cached or zero values
-    if (!status.evStatus) {
-      return {
-        lastStatusCheck: Date.now(),
-        lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck,
-        isCharging: this.cache ? this.cache.status.isCharging : false,
-        isPluggedIn: this.cache ? this.cache.status.isCharging : false,
-        chargingPower: this.cache ? this.cache.status.chargingPower : 0,
-        remainingChargeTimeMins: this.cache ? this.cache.status.remainingChargeTimeMins : 0,
-        range: this.cache ? this.cache.status.range : 0,
-        soc: this.cache ? this.cache.status.soc : 0,
-        locked: status.doorLock,
-        climate: status.airCtrlOn,
-        twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
-        odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
-      }
-    }
-
-    // deal with charging speed - JSON response if variable / inconsistent - hence check for various objects
-    let chargingPower = 0
+    // isCharging based on being connected and either use state param if exists or if it doesnt check RemainTime
     let isCharging = false
-    if (status.evStatus.batteryCharge) {
-      isCharging = true
-      if (status.evStatus.batteryPower) {
-        if (status.evStatus.batteryPower.batteryFstChrgPower && status.evStatus.batteryPower.batteryFstChrgPower > 0) {
-          chargingPower = status.evStatus.batteryPower.batteryFstChrgPower
-        } else if (
-          status.evStatus.batteryPower.batteryStndChrgPower &&
-          status.evStatus.batteryPower.batteryStndChrgPower > 0
-        ) {
-          chargingPower = status.evStatus.batteryPower.batteryStndChrgPower
-        } else {
-          // should never get here - log failure to get charging power
-          this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)
-        }
-      }
+    if (status.Green.ChargingInformation.ConnectorFastening.State) {
+      if (status.Green.ChargingInformation.Charging.State)
+        isCharging = Boolean(status.Green.ChargingInformation.Charging.State)
+      else if (status.Green.ChargingInformation.ConnectorFastening.RemainTime > 0) isCharging = true
     }
 
     return {
       lastStatusCheck: Date.now(),
-      lastRemoteStatusCheck: lastRemoteCheck,
+      lastRemoteStatusCheck: Number(updateTime),
       isCharging: isCharging,
-      isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
-      chargingPower: chargingPower,
-      remainingChargeTimeMins: status.evStatus.remainTime2.atc.value,
+      isPluggedIn: status.Green.ChargingInformation.ConnectorFastening.State > 0 ? true : false,
+      chargingPower: 0, // no idea how to get charging power from the new API yet
+      remainingChargeTimeMins: status.Green.ChargingInformation.Charging.RemainTime,
       // sometimes range back as zero? if so ignore and use cache
       range:
-        status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value > 0
-          ? Math.floor(status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value)
+        status.Drivetrain.FuelSystem.DTE.Total > 0
+          ? Math.floor(status.Drivetrain.FuelSystem.DTE.Total)
           : this.cache
             ? this.cache.status.range
             : 0,
-      locked: status.doorLock,
-      climate: status.airCtrlOn,
-      soc: status.evStatus.batteryStatus,
-      twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
+      locked: !(
+        Boolean(status.Cabin.Door.Row1.Driver.Open) &&
+        Boolean(status.Cabin.Door.Row1.Passenger.Open) &&
+        Boolean(status.Cabin.Door.Row2.Driver.Open) &&
+        Boolean(status.Cabin.Door.Row2.Passenger.Open)
+      ),
+      climate: Boolean(status.Cabin.HVAC.Row1.Driver.Blower.SpeedLevel > 0),
+      soc: status.Green.BatteryManagement.BatteryRemain.Ratio,
+      twelveSoc: status.Electronics.Battery.Level ? status.Electronics.Battery.Level : 0,
       odometer: newOdometer ? newOdometer : this.cache ? this.cache.status.odometer : 0,
     }
   }
 
   protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
-    // we use older non CCS status endpoint as its more consistent with other regions and the remote status check is a sync (hanging) call
-    const api = forceUpdate ? '' : '/latest' // latest == cached
+    // CCS2 endpoint appears to be the only endpoint that works consistantly across all cars
+    if (!forceUpdate) {
+      const resp = await this.request({
+        url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus/latest`,
+        headers: {
+          Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+          ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
+        },
+        validResponseFunction: this.requestResponseValid,
+      })
+
+      if (this.requestResponseValid(resp.resp, resp.json).valid) {
+        return this.returnCarStatus(resp.json.resMsg.state.Vehicle, resp.json.resMsg.lastUpdateTime)
+      }
+      const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+
+    // force update does not return a useful response hence we send the command and then poll the cached status until it updates
+    const currentTime = Date.now()
     const resp = await this.request({
-      url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/status` + api,
+      url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus`,
       headers: {
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
       },
       validResponseFunction: this.requestResponseValid,
     })
-
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return forceUpdate
-        ? this.returnCarStatus(resp.json.resMsg, forceUpdate)
-        : this.returnCarStatus(resp.json.resMsg.vehicleStatusInfo, forceUpdate)
+      // poll cached status API until the date is above currentTime
+      let attempts = 0
+      let resp = undefined
+      while (attempts <= MAX_COMPLETION_POLLS) {
+        attempts += 1
+        await this.sleep(2000)
+        resp = await this.getCarStatus(id, false)
+        if (currentTime < resp.lastRemoteStatusCheck) {
+          return resp
+        }
+      }
     }
 
-    const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    const error = `Failed to retrieve remote vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
@@ -484,6 +470,7 @@ export class BluelinkEurope extends Bluelink {
       headers: {
         vehicleId: id,
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
       },
       validResponseFunction: this.requestResponseValid,
     })
@@ -510,6 +497,7 @@ export class BluelinkEurope extends Bluelink {
         url: `${this.apiDomain}/api/v1/spa/notifications/${id}/records`,
         headers: {
           Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+          ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
         },
         validResponseFunction: this.requestResponseValid,
       })
@@ -571,6 +559,7 @@ export class BluelinkEurope extends Bluelink {
       }),
       headers: {
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
       },
       authTokenOverride: await this.getAuthCode(id),
       validResponseFunction: this.requestResponseValid,
@@ -602,9 +591,11 @@ export class BluelinkEurope extends Bluelink {
       method: 'POST',
       data: JSON.stringify({
         command: shouldCharge ? 'start' : 'stop',
+        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
       }),
       headers: {
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
       },
       authTokenOverride: await this.getAuthCode(id),
       validResponseFunction: this.requestResponseValid,
@@ -646,6 +637,7 @@ export class BluelinkEurope extends Bluelink {
       data: JSON.stringify(climateRequest),
       headers: {
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
       },
       authTokenOverride: await this.getAuthCode(id),
       validResponseFunction: this.requestResponseValid,

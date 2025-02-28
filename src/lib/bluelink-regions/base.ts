@@ -26,6 +26,7 @@ export interface BluelinkCar {
   modelTrim?: string
   modelColour?: string
   odometer?: number
+  europeccs2?: boolean
 }
 
 export interface BluelinkStatus {
