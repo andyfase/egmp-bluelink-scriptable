@@ -66,4 +66,5 @@ Features Include:
 - Fresh and more responsive app UI
 - Siri voice support "Hey Siri, ask the car", "Warm the car"
 - Automations via IOS Shortcuts like walk-away lock and auto warm the car on a schedule
+- Unlimited Custom Climate configurations 
 {: .fs-6 .fw-300 }
