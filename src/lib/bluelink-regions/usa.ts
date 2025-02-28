@@ -5,6 +5,7 @@ import {
   BluelinkStatus,
   ClimateRequest,
   DEFAULT_STATUS_CHECK_INTERVAL,
+  MAX_COMPLETION_POLLS,
 } from './base'
 import { Config } from '../../config'
 
@@ -13,7 +14,6 @@ const API_DOMAINS: Record<string, string> = {
   hyundai: 'https://api.telematics.hyundaiusa.com/',
   kia: 'https://api.owners.kia.com/apigw/v1/',
 }
-const MAX_COMPLETION_POLLS = 20
 
 export class BluelinkUSA extends Bluelink {
   private carVin: string | undefined
@@ -31,7 +31,7 @@ export class BluelinkUSA extends Bluelink {
       from: 'SPA',
       to: 'ISS',
       language: '0',
-      offset: `-${new Date().getTimezoneOffset() / 60}`,
+      offset: this.getTimeZone().slice(0, 3),
       client_id:
         config.manufacturer && config.manufacturer === 'kia' ? 'MWAMOBILE' : 'm66129Bb-em93-SPAHYN-bZ91-am4540zp19920',
       clientSecret:
@@ -164,16 +164,27 @@ export class BluelinkUSA extends Bluelink {
     // format "2025-01-30T00:38:15Z" - which is standard
     const lastRemoteCheck = new Date(status.dateTime)
 
+    // deal with charging speed - JSON response if variable / inconsistent - hence check for various objects
+    let chargingPower = 0
+    let isCharging = false
+    if (status.evStatus.batteryCharge) {
+      isCharging = true
+      if (status.evStatus.batteryFstChrgPower && status.evStatus.batteryFstChrgPower > 0) {
+        chargingPower = status.evStatus.batteryFstChrgPower
+      } else if (status.evStatus.batteryStndChrgPower && status.evStatus.batteryStndChrgPower > 0) {
+        chargingPower = status.evStatus.batteryStndChrgPower
+      } else {
+        // should never get here - log failure to get charging power
+        this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)
+      }
+    }
+
     return {
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
-      isCharging: status.evStatus.batteryCharge,
+      isCharging: isCharging,
       isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
-      chargingPower: status.evStatus.batteryCharge // only check for charging power if actually charging
-        ? (status.evStatus.batteryFstChrgPower && status.evStatus.batteryFstChrgPower) > 0
-          ? status.evStatus.batteryFstChrgPower
-          : status.evStatus.batteryStndChrgPower
-        : 0,
+      chargingPower: chargingPower,
       remainingChargeTimeMins: status.evStatus.remainTime2.atc.value,
       // sometimes range back as zero? if so ignore and use cache
       range:

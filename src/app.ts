@@ -35,6 +35,7 @@ interface updatingActions {
 
 let isUpdating = false
 let updatingIconAngle = 0
+const darkMode = Device.isUsingDarkAppearance()
 
 const { present, connect, setState } = getTable<{
   name: string
@@ -58,7 +59,7 @@ const { present, connect, setState } = getTable<{
 const MIN_API_REFRESH_TIME = 900000 // 15 minutes
 
 export async function createApp(config: Config, bl: Bluelink) {
-  await loadTintedIcons()
+  await loadTintedIcons(darkMode)
 
   // not blocking call - render UI with last cache and then update from a non forced remote call (i.e. to server but not to car)
   // if its been at least MIN_API_REFRESH_TIME milliseconds
@@ -187,12 +188,24 @@ const pageIcons = connect(
     const lastSeen = new Date(lastUpdated)
     const batteryIcon = isCharging ? 'charging' : 'not-charging'
     const batteryText = 'Not Charging'
+    const chargingPowerText = chargingPower > 0 ? `${chargingPower.toFixed(1).toString()} kW` : '- kW'
+    let chargingPowerTextRowPercentage = '25%'
+
+    // annoying but impacts UI fairly significantly.
+    if (chargingPowerText.length <= 4)
+      chargingPowerTextRowPercentage = '15%' // '? kw'
+    else if (chargingPowerText.length <= 6)
+      chargingPowerTextRowPercentage = '18%' // '1.2 kw'
+    else if (chargingPowerText.length <= 7)
+      chargingPowerTextRowPercentage = '21%' // '10.5 kw'
+    else if (chargingPowerText.length <= 8) chargingPowerTextRowPercentage = '25%' // '222.1 kw'
 
     const chargingRow: DivChild[] = []
     if (updatingActions && updatingActions.charge) {
-      chargingRow.push(P(updatingActions.charge.text, { align: 'left', width: '70%', color: Color.yellow() }))
+      chargingRow.push(P(updatingActions.charge.text, { align: 'left', width: '70%', color: Color.orange() }))
     } else if (isCharging) {
-      chargingRow.push(P(`${chargingPower.toString()} kW`, { align: 'left', width: '20%' }))
+      // @ts-ignore
+      chargingRow.push(P(chargingPowerText, { align: 'left', width: chargingPowerTextRowPercentage }))
       chargingRow.push(Img(getTintedIcon('charging-complete'), { align: 'left', width: '10%' }))
       chargingRow.push(P(`${getChargeCompletionString(lastSeen, remainingChargeTimeMins)}`, { align: 'left' }))
     } else {
@@ -261,7 +274,7 @@ const pageIcons = connect(
           P(updatingActions && updatingActions.climate ? updatingActions.climate.text : conditioningText, {
             align: 'left',
             width: '70%',
-            ...(updatingActions && updatingActions.climate && { color: Color.yellow() }),
+            ...(updatingActions && updatingActions.climate && { color: Color.orange() }),
           }),
         ],
         {
@@ -332,7 +345,7 @@ const pageIcons = connect(
           P(updatingActions && updatingActions.lock ? updatingActions.lock.text : lockedText, {
             align: 'left',
             width: '70%',
-            ...(updatingActions && updatingActions.lock && { color: Color.yellow() }),
+            ...(updatingActions && updatingActions.lock && { color: Color.orange() }),
           }),
         ],
         {
@@ -379,7 +392,7 @@ const pageIcons = connect(
             {
               align: 'left',
               width: '70%',
-              ...(updatingActions && updatingActions.status && { color: Color.yellow() }),
+              ...(updatingActions && updatingActions.status && { color: Color.orange() }),
             },
           ),
         ],
@@ -453,7 +466,11 @@ async function doAsyncUpdate(props: doAsyncUpdateProps) {
         updatingActions: {
           [props.actionKey]: {
             image: didSucceed
-              ? await getAngledTintedIconAsync('checkmark.arrow.trianglehead.counterclockwise', Color.green(), 0)
+              ? await getAngledTintedIconAsync(
+                  'checkmark.arrow.trianglehead.counterclockwise',
+                  darkMode ? Color.green() : Color.green(),
+                  0,
+                )
               : await getAngledTintedIconAsync(
                   'exclamationmark.arrow.trianglehead.2.clockwise.rotate.90',
                   Color.red(),
@@ -491,7 +508,7 @@ async function doAsyncUpdate(props: doAsyncUpdateProps) {
       setState({
         updatingActions: {
           [props.actionKey]: {
-            image: await getAngledTintedIconAsync('arrow.trianglehead.clockwise', Color.yellow(), updatingIconAngle),
+            image: await getAngledTintedIconAsync('arrow.trianglehead.clockwise', Color.orange(), updatingIconAngle),
             text: props.updatingText,
           },
         },

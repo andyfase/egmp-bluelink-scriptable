@@ -12,9 +12,10 @@ export interface Auth {
 }
 
 export interface Config {
-  manufacturer: string | undefined
+  manufacturer: string
   auth: Auth
   tempType: 'C' | 'F'
+  distanceUnit: 'km' | 'mi'
   climateTempWarm: number
   climateTempCold: number
   allowWidgetRemoteRefresh: boolean
@@ -44,12 +45,13 @@ export interface CustomClimateConfig {
 }
 
 export interface FlattenedConfig {
-  manufacturer: string | undefined
+  manufacturer: string
   username: string
   password: string
   pin: string
   region: string
   tempType: 'C' | 'F'
+  distanceUnit: 'km' | 'mi'
   climateTempWarm: number
   climateTempCold: number
   allowWidgetRemoteRefresh: boolean
@@ -60,9 +62,8 @@ export interface FlattenedConfig {
 }
 
 // const SUPPORTED_REGIONS = ['canada']
-const SUPPORTED_REGIONS = ['canada', 'usa']
+const SUPPORTED_REGIONS = ['canada', 'usa', 'europe']
 const SUPPORTED_MANUFACTURERS = ['Hyundai', 'Kia']
-
 const DEFAULT_TEMPS = {
   C: {
     cold: 19,
@@ -83,11 +84,12 @@ const DEFAULT_CONFIG = {
     region: '',
   },
   tempType: 'C',
+  distanceUnit: 'km',
   climateTempCold: DEFAULT_TEMPS.C.cold,
   climateTempWarm: DEFAULT_TEMPS.C.warm,
   debugLogging: false,
   allowWidgetRemoteRefresh: false,
-  manufacturer: undefined,
+  manufacturer: 'hyundai',
   customClimates: [],
   widgetConfig: {
     standardPollPeriod: 1,
@@ -149,6 +151,7 @@ export async function loadConfigScreen() {
       region,
       pin,
       tempType,
+      distanceUnit,
       climateTempWarm,
       climateTempCold,
       debugLogging,
@@ -168,6 +171,7 @@ export async function loadConfigScreen() {
             pin: pin,
           },
           tempType: tempType,
+          distanceUnit: distanceUnit,
           climateTempCold: climateTempCold,
           climateTempWarm: climateTempWarm,
           allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
@@ -237,7 +241,7 @@ export async function loadConfigScreen() {
         label: 'Choose your Car Manufacturer',
         options: SUPPORTED_MANUFACTURERS,
         allowCustom: false,
-        isRequired: false,
+        isRequired: true,
       },
       vin: {
         type: 'textInput',
@@ -248,6 +252,13 @@ export async function loadConfigScreen() {
         type: 'dropdown',
         label: 'Choose your preferred temperature scale',
         options: ['C', 'F'],
+        allowCustom: false,
+        isRequired: true,
+      },
+      distanceUnit: {
+        type: 'dropdown',
+        label: 'Choose your preferred distance unit',
+        options: ['km', 'mi'],
         allowCustom: false,
         isRequired: true,
       },

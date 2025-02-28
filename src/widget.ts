@@ -202,7 +202,7 @@ export async function createWidget(config: Config, bl: Bluelink) {
   const isPluggedIn = status.status.isPluggedIn
   const batteryPercent = status.status.soc
   const remainingChargingTime = status.status.remainingChargeTimeMins
-  const chargingKw = status.status.chargingPower.toString()
+  const chargingKw = status.status.chargingPower > 0 ? `${status.status.chargingPower.toString()} kW` : '-'
   const odometer = status.status.odometer > 0 ? status.status.odometer : status.car.odometer ? status.car.odometer : 0
   const lastSeen = new Date(status.status.lastRemoteStatusCheck)
 
@@ -232,7 +232,7 @@ export async function createWidget(config: Config, bl: Bluelink) {
     batteryChargingTimeStack.addSpacer()
     // batteryChargingTimeStack.addSpacer()
 
-    const chargingSpeedElement = batteryChargingTimeStack.addText(`${chargingKw} kW`)
+    const chargingSpeedElement = batteryChargingTimeStack.addText(`${chargingKw}`)
     chargingSpeedElement.font = Font.mediumSystemFont(14)
     chargingSpeedElement.textOpacity = 0.9
     chargingSpeedElement.textColor = DARK_MODE ? Color.white() : Color.black()

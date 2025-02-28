@@ -5,6 +5,7 @@ import {
   BluelinkStatus,
   ClimateRequest,
   DEFAULT_STATUS_CHECK_INTERVAL,
+  MAX_COMPLETION_POLLS,
 } from './base'
 import { Config } from '../../config'
 
@@ -13,8 +14,6 @@ const API_DOMAINS: Record<string, string> = {
   hyundai: 'mybluelink.ca',
   kia: 'kiaconnect.ca',
 }
-
-const MAX_COMPLETION_POLLS = 20
 
 export class BluelinkCanada extends Bluelink {
   constructor(config: Config, statusCheckInterval?: number) {
@@ -31,7 +30,7 @@ export class BluelinkCanada extends Bluelink {
       client_secret: 'CLISCR01AHSPA',
       language: '0',
       brand: this.apiHost === 'mybluelink.ca' ? 'H' : 'kia',
-      offset: `-${new Date().getTimezoneOffset() / 60}`,
+      offset: this.getTimeZone().slice(0, 3),
       'User-Agent': 'MyHyundai/2.0.25 (iPhone; iOS 18.3; Scale/3.00)',
     }
     this.authHeader = 'Accesstoken'
@@ -97,9 +96,11 @@ export class BluelinkCanada extends Bluelink {
     req.headers = this.additionalHeaders
     req.method = 'GET'
     await req.load()
-    for (const cookie of req.response.cookies) {
-      if (cookie.name.toLowerCase() === 'dtcookie') {
-        return `dtCookie=${cookie.value}`
+    if (req.response.cookies) {
+      for (const cookie of req.response.cookies) {
+        if (cookie.name.toLowerCase() === 'dtcookie') {
+          return `dtCookie=${cookie.value}`
+        }
       }
     }
     return ''
@@ -214,19 +215,20 @@ export class BluelinkCanada extends Bluelink {
     // deal with charging speed - JSON response if variable / inconsistent - hence check for various objects
     let chargingPower = 0
     let isCharging = false
-    if (status.evStatus.batteryPower && status.evStatus.batteryCharge) {
-      if (status.evStatus.batteryPower.batteryFstChrgPower && status.evStatus.batteryPower.batteryFstChrgPower > 0) {
-        chargingPower = status.evStatus.batteryPower.batteryFstChrgPower
-        isCharging = true
-      } else if (
-        status.evStatus.batteryPower.batteryStndChrgPower &&
-        status.evStatus.batteryPower.batteryStndChrgPower > 0
-      ) {
-        chargingPower = status.evStatus.batteryPower.batteryStndChrgPower
-        isCharging = true
-      } else {
-        // should never get here - log failure to get charging power
-        this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)
+    if (status.evStatus.batteryCharge) {
+      isCharging = true
+      if (status.evStatus.batteryPower) {
+        if (status.evStatus.batteryPower.batteryFstChrgPower && status.evStatus.batteryPower.batteryFstChrgPower > 0) {
+          chargingPower = status.evStatus.batteryPower.batteryFstChrgPower
+        } else if (
+          status.evStatus.batteryPower.batteryStndChrgPower &&
+          status.evStatus.batteryPower.batteryStndChrgPower > 0
+        ) {
+          chargingPower = status.evStatus.batteryPower.batteryStndChrgPower
+        } else {
+          // should never get here - log failure to get charging power
+          this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)
+        }
       }
     }
 

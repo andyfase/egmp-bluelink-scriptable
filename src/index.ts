@@ -41,7 +41,7 @@ import { confirm } from './lib/scriptable-utils'
       Script.complete()
       return resp
     } catch (error) {
-      logError(JSON.stringify(error))
+      logError(`main error ${JSON.stringify(error)}`)
     }
   }
 })()
