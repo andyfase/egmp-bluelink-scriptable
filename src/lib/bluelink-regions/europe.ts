@@ -52,6 +52,7 @@ export class BluelinkEurope extends Bluelink {
   private lang = 'en' // hard-code to en as the language doesnt appear to matter from an API perspective.
   private apiConfig: APIConfig
   private controlToken: ControlToken | undefined
+  private europeccs2: number | undefined
 
   constructor(config: Config, statusCheckInterval?: number) {
     super(config)
@@ -72,12 +73,21 @@ export class BluelinkEurope extends Bluelink {
     this.authIdHeader = 'ccsp-device-id'
     this.authHeader = 'Authorization'
     this.controlToken = undefined
+    this.europeccs2 = undefined
   }
 
   static async init(config: Config, vin?: string, statusCheckInterval?: number) {
     const obj = new BluelinkEurope(config, statusCheckInterval)
     await obj.superInit(config)
     return obj
+  }
+
+  private getCCS2Header(): string {
+    return typeof this.europeccs2 !== 'undefined'
+      ? this.europeccs2.toString()
+      : this.cache.car.europeccs2
+        ? this.cache.car.europeccs2.toString()
+        : '0'
   }
 
   private requestResponseValid(
@@ -343,6 +353,7 @@ export class BluelinkEurope extends Bluelink {
         }
       }
 
+      this.europeccs2 = vehicle.ccuCCS2ProtocolSupport
       return {
         id: vehicle.vehicleId,
         vin: vehicle.vin,
@@ -352,7 +363,7 @@ export class BluelinkEurope extends Bluelink {
         odometer: 0, // not available here
         modelColour: vehicle.detailInfo.outColor,
         modelTrim: vehicle.detailInfo.saleCarmdlCd,
-        europeccs2: Boolean(vehicle.ccuCCS2ProtocolSupport),
+        europeccs2: vehicle.ccuCCS2ProtocolSupport,
       }
     }
     const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
@@ -412,7 +423,7 @@ export class BluelinkEurope extends Bluelink {
         url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus/latest`,
         headers: {
           Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-          ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
+          ccuCCS2ProtocolSupport: this.getCCS2Header(),
         },
         validResponseFunction: this.requestResponseValid,
       })
@@ -431,7 +442,7 @@ export class BluelinkEurope extends Bluelink {
       url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus`,
       headers: {
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
+        ccuCCS2ProtocolSupport: this.getCCS2Header(),
       },
       validResponseFunction: this.requestResponseValid,
     })
@@ -470,7 +481,7 @@ export class BluelinkEurope extends Bluelink {
       headers: {
         vehicleId: id,
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
+        ccuCCS2ProtocolSupport: this.getCCS2Header(),
       },
       validResponseFunction: this.requestResponseValid,
     })
@@ -497,7 +508,7 @@ export class BluelinkEurope extends Bluelink {
         url: `${this.apiDomain}/api/v1/spa/notifications/${id}/records`,
         headers: {
           Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-          ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
+          ccuCCS2ProtocolSupport: this.getCCS2Header(),
         },
         validResponseFunction: this.requestResponseValid,
       })
@@ -559,7 +570,7 @@ export class BluelinkEurope extends Bluelink {
       }),
       headers: {
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
+        ccuCCS2ProtocolSupport: this.getCCS2Header(),
       },
       authTokenOverride: await this.getAuthCode(id),
       validResponseFunction: this.requestResponseValid,
@@ -591,11 +602,11 @@ export class BluelinkEurope extends Bluelink {
       method: 'POST',
       data: JSON.stringify({
         command: shouldCharge ? 'start' : 'stop',
-        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
+        ccuCCS2ProtocolSupport: this.getCCS2Header(),
       }),
       headers: {
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
+        ccuCCS2ProtocolSupport: this.getCCS2Header(),
       },
       authTokenOverride: await this.getAuthCode(id),
       validResponseFunction: this.requestResponseValid,
@@ -637,7 +648,7 @@ export class BluelinkEurope extends Bluelink {
       data: JSON.stringify(climateRequest),
       headers: {
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-        ccuCCS2ProtocolSupport: this.cache.car.europeccs2 ? this.cache.car.europeccs2.toString() : '0',
+        ccuCCS2ProtocolSupport: this.getCCS2Header(),
       },
       authTokenOverride: await this.getAuthCode(id),
       validResponseFunction: this.requestResponseValid,
