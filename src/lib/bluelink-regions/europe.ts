@@ -52,8 +52,7 @@ const API_CONFIG: Record<string, APIConfig> = {
     ccspServiceId: 'fdc85c00-0a2f-4c64-bcb4-2cfb1500730a',
     appId: 'a2b8469b-30a3-4361-8e13-6fceea8fbe74',
     authCfb: b64decode('wLTVxwidmH8CfJYBWSnHD6E0huk0ozdiuygB4hLkM5XCgzAL1Dk5sE36d/bx5PFMbZs='),
-    authBasic:
-      'Basic ZmRjODVjMDAtMGEyZi00YzY0LWJjYjQtMmNmYjE1MDA3MzBhOnNlY3JldA==',
+    authBasic: 'Basic ZmRjODVjMDAtMGEyZi00YzY0LWJjYjQtMmNmYjE1MDA3MzBhOnNlY3JldA==',
     authHost: 'eu-account.hyundai.com',
     clientId: 'fdc85c00-0a2f-4c64-bcb4-2cfb1500730a',
     authClientID: '572e0304-5f8d-4b4c-9dd5-41aa84eed160',
