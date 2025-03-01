@@ -7,7 +7,7 @@ nav_order: 5
 # Automations
 {: .fs-9 }
 
-Using IOS Shortcuts it is possible to configure a number if automations. A automation is a combination of a defined shortcut and then an automation that will trigger that shortcut [based on a IOS supported event](https://support.apple.com/en-ca/guide/shortcuts/apd932ff833f/ios). Both the shortcut itself and the automation are created within the Shortcuts app.
+Using IOS Shortcuts it is possible to configure a number of automations. A automation is a combination of a defined shortcut and then an IOS automation that will trigger that shortcut [based on a IOS supported event](https://support.apple.com/en-ca/guide/shortcuts/apd932ff833f/ios). Both the shortcut itself and the automation are created within the Shortcuts app.
 {: .fs-5 .fw-300 }
 
 Any shortcut automation will need to invoke the app with a given command - as a text string. The list of commands are described on the [Siri](./siri.md) page.

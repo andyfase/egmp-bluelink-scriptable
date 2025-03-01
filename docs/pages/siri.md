@@ -7,7 +7,7 @@ nav_order: 4
 # Siri Support
 {: .fs-9 }
 
-The app supports direct Siri interaction via the "Shortcuts" IOS app. A Shortcut donwload link is provided below that will install a shortcut called "Ask the Car"
+The app supports direct Siri interaction via the "Shortcuts" IOS app. A Shortcut download link is provided below that will install a shortcut called "Ask the Car"
 {: .fs-5 .fw-300 }
 
 [Install "Ask the Car" Shortcut](https://www.icloud.com/shortcuts/b3bd704fa2bf4c6dabceec096c291342)
@@ -88,6 +88,14 @@ This will issue a remote command to stop the climate controls in the car.
 
 Example: "Turn the **climate off** please"
 {: .fs-5 .fw-400 }
+
+### Custom Climate Start
+
+this will issue a remote command to start the climate controls based on your confiured custom climate configuration (created within the settings screens). This option is triggered based on the word "climate" plus the name of the custom climate configuration. 
+
+As an example, given a custom climate configuration named "Super Hot" you would say:
+
+Example "Turn on **climate super hot** please"
 
 ### Start charging
 
