@@ -35,7 +35,6 @@ interface updatingActions {
 
 let isUpdating = false
 let updatingIconAngle = 0
-const darkMode = Device.isUsingDarkAppearance()
 
 const { present, connect, setState } = getTable<{
   name: string
@@ -59,7 +58,7 @@ const { present, connect, setState } = getTable<{
 const MIN_API_REFRESH_TIME = 900000 // 15 minutes
 
 export async function createApp(config: Config, bl: Bluelink) {
-  await loadTintedIcons(darkMode)
+  await loadTintedIcons()
 
   // not blocking call - render UI with last cache and then update from a non forced remote call (i.e. to server but not to car)
   // if its been at least MIN_API_REFRESH_TIME milliseconds
@@ -466,11 +465,7 @@ async function doAsyncUpdate(props: doAsyncUpdateProps) {
         updatingActions: {
           [props.actionKey]: {
             image: didSucceed
-              ? await getAngledTintedIconAsync(
-                  'checkmark.arrow.trianglehead.counterclockwise',
-                  darkMode ? Color.green() : Color.green(),
-                  0,
-                )
+              ? await getAngledTintedIconAsync('checkmark.arrow.trianglehead.counterclockwise', Color.green(), 0)
               : await getAngledTintedIconAsync(
                   'exclamationmark.arrow.trianglehead.2.clockwise.rotate.90',
                   Color.red(),

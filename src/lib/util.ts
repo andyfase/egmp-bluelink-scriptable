@@ -1,89 +1,72 @@
 interface icon {
   iconName: string
-  colorDark: Color
-  colorLight: Color
+  color: Color
   image?: Image
 }
 const icons: Record<string, icon> = {
   'battery.0': {
     iconName: 'battery.0percent',
-    colorDark: Color.red(),
-    colorLight: Color.red(),
+    color: Color.red(),
   },
   'battery.25': {
     iconName: 'battery.25percent',
-    colorDark: Color.red(),
-    colorLight: Color.red(),
+    color: Color.red(),
   },
   'battery.50': {
     iconName: 'battery.50percent',
-    colorDark: Color.orange(),
-    colorLight: Color.orange(),
+    color: Color.orange(),
   },
   'battery.75': {
     iconName: 'battery.75percent',
-    colorDark: Color.green(),
-    colorLight: Color.green(),
+    color: Color.green(),
   },
   'battery.100': {
     iconName: 'battery.100percent',
-    colorDark: Color.green(),
-    colorLight: Color.green(),
+    color: Color.green(),
   },
   charging: {
     iconName: 'bolt.fill',
-    colorDark: Color.green(),
-    colorLight: Color.green(),
+    color: Color.green(),
   },
   'charging-complete': {
     iconName: 'clock',
-    colorDark: Color.white(),
-    colorLight: Color.black(),
+    color: Color.dynamic(Color.black(), Color.white()),
   },
   plugged: {
     iconName: 'powerplug.portrait',
-    colorDark: Color.white(),
-    colorLight: Color.black(),
+    color: Color.dynamic(Color.black(), Color.white()),
   },
   'not-charging': {
     iconName: 'bolt',
-    colorDark: Color.white(),
-    colorLight: Color.black(),
+    color: Color.dynamic(Color.black(), Color.white()),
   },
   'climate-on': {
     iconName: 'fan',
-    colorDark: Color.green(),
-    colorLight: Color.green(),
+    color: Color.green(),
   },
   'climate-off': {
     iconName: 'fan',
-    colorDark: Color.white(),
-    colorLight: Color.black(),
+    color: Color.dynamic(Color.black(), Color.white()),
   },
   locked: {
     iconName: 'lock',
-    colorDark: Color.green(),
-    colorLight: Color.green(),
+    color: Color.green(),
   },
   unlocked: {
     iconName: 'lock.open',
-    colorDark: Color.red(),
-    colorLight: Color.red(),
+    color: Color.red(),
   },
   status: {
     iconName: 'clock.arrow.trianglehead.2.counterclockwise.rotate.90',
-    colorDark: Color.white(),
-    colorLight: Color.black(),
+    color: Color.dynamic(Color.black(), Color.white()),
   },
   settings: {
     iconName: 'gear',
-    colorDark: Color.white(),
-    colorLight: Color.black(),
+    color: Color.dynamic(Color.black(), Color.white()),
   },
   'twelve-volt': {
     iconName: 'minus.plus.batteryblock',
-    colorDark: Color.white(),
-    colorLight: Color.black(),
+    color: Color.dynamic(Color.black(), Color.white()),
   },
 }
 
@@ -125,10 +108,10 @@ export function getBatteryPercentColor(batteryPercent: number): Color {
   return Color.red()
 }
 
-export async function loadTintedIcons(darkMode: boolean = true): Promise<void> {
+export async function loadTintedIcons(): Promise<void> {
   const loading: Promise<{ name: string; image: Image }>[] = []
   for (const [key, value] of Object.entries(icons)) {
-    loading.push(tintSFSymbol(key, SFSymbol.named(value.iconName).image, darkMode ? value.colorDark : value.colorLight))
+    loading.push(tintSFSymbol(key, SFSymbol.named(value.iconName).image, value.color))
   }
 
   await Promise.all(loading).then((values) => {
@@ -151,7 +134,7 @@ export function getTintedIcon(name: string): Image {
   return SFSymbol.named('questionmark.app').image
 }
 
-export async function getTintedIconAsync(name: string, darkMode: boolean = true): Promise<Image> {
+export async function getTintedIconAsync(name: string): Promise<Image> {
   if (name in icons && icons[name]?.image) {
     return icons[name].image
   }
@@ -160,7 +143,7 @@ export async function getTintedIconAsync(name: string, darkMode: boolean = true)
       await tintSFSymbol(
         icons[name]?.iconName,
         SFSymbol.named(icons[name].iconName).image,
-        darkMode ? icons[name].colorDark : icons[name].colorLight || Color.white(),
+        icons[name].color || Color.white(),
       )
     ).image
   }
