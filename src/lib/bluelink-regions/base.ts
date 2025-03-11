@@ -192,9 +192,9 @@ export class Bluelink {
   }
 
   protected getTimeZone(): string {
-    const offset = new Date().getTimezoneOffset(),
-      o = Math.abs(offset)
-    return (offset < 0 ? '+' : '-') + ('00' + Math.floor(o / 60)).slice(-2) + ':' + ('00' + (o % 60)).slice(-2)
+    const offset = new Date().getTimezoneOffset()
+    const o = Math.abs(offset)
+    return (offset < 0 ? '+' : '-') + ('0' + Math.floor(o / 60)).slice(-1)
   }
 
   protected getApiDomain(lookup: string, domains: Record<string, string>, _default: string): string {

@@ -2,6 +2,7 @@ import { Bluelink } from './bluelink-regions/base'
 import { Config } from 'config'
 import { BluelinkCanada } from './bluelink-regions/canada'
 import { BluelinkUSA } from './bluelink-regions/usa'
+import { BluelinkUSAKia } from './bluelink-regions/usa-kia'
 import { BluelinkEurope } from './bluelink-regions/europe'
 
 export async function initRegionalBluelink(config: Config): Promise<BluelinkCanada | Bluelink | undefined> {
@@ -9,7 +10,7 @@ export async function initRegionalBluelink(config: Config): Promise<BluelinkCana
     case 'canada':
       return await BluelinkCanada.init(config)
     case 'usa':
-      return await BluelinkUSA.init(config)
+      return config.manufacturer === 'hyundai' ? await BluelinkUSA.init(config) : await BluelinkUSAKia.init(config)
     case 'europe':
       return await BluelinkEurope.init(config)
     default:
