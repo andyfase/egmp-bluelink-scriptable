@@ -169,8 +169,10 @@ export class Bluelink {
       if (!tokens) this.loginFailure = true
       else {
         this.tokens = tokens as BluelinkTokens
-        this.cache.token = this.tokens
-        this.saveCache()
+        if (this.cache) {
+          this.cache.token = this.tokens
+          this.saveCache()
+        }
       }
     }
   }

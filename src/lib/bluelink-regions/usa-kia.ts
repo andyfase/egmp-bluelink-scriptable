@@ -5,7 +5,7 @@ import {
   BluelinkStatus,
   // ClimateRequest,
   DEFAULT_STATUS_CHECK_INTERVAL,
-  // MAX_COMPLETION_POLLS,
+  MAX_COMPLETION_POLLS,
 } from './base'
 import { Config } from '../../config'
 
@@ -13,8 +13,6 @@ const DEFAULT_API_DOMAIN = 'api.owners.kia.com'
 const LOGIN_EXPIRY = 24 * 60 * 60 * 1000
 
 export class BluelinkUSAKia extends Bluelink {
-  private carVin: string | undefined
-
   constructor(config: Config, statusCheckInterval?: number) {
     super(config)
     this.distanceUnit = 'mi'
@@ -63,13 +61,6 @@ export class BluelinkUSAKia extends Bluelink {
       .replace(' at', '')
   }
 
-  private carHeaders(): Record<string, string> {
-    return {
-      // on first load cache is not populated - hence default to optional local vars set when fetching the car.
-      vinkey: this.cache ? this.cache.car.vin : this.carVin!,
-    }
-  }
-
   private requestResponseValid(
     resp: Record<string, any>,
     data: Record<string, any>,
@@ -101,12 +92,19 @@ export class BluelinkUSAKia extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return {
+      // update tokens used in this session as we may need to call getCar before we write the new tokens to cache
+      this.tokens = {
         accessToken: this.caseInsensitiveParamExtraction('sid', resp.resp.headers) || '',
         refreshToken: '', // seemingly KIA us doesnt support refresh?
         expiry: Math.floor(Date.now() / 1000) + Number(LOGIN_EXPIRY), // we also dont get an expiry?
         authCookie: undefined,
       }
+      // check if cache is present (hence this is a re-auth) if so we need to re-save the car status as the car ID changes per session
+      if (this.cache && this.cache.car) {
+        this.cache.car = await this.getCar(true)
+        this.saveCache()
+      }
+      return this.tokens
     }
 
     const error = `Login Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
@@ -114,7 +112,7 @@ export class BluelinkUSAKia extends Bluelink {
     return undefined
   }
 
-  protected async getCar(): Promise<BluelinkCar> {
+  protected async getCar(noRetry = false): Promise<BluelinkCar> {
     let vin = this.vin
     if (!vin && this.cache) {
       vin = this.cache.car.vin
@@ -126,6 +124,7 @@ export class BluelinkUSAKia extends Bluelink {
         date: this.getDateString(),
         'Content-Type': 'application/json', // mandatory Content-Type on GET calls is mind-blowing bad!!!
       },
+      noRetry: noRetry,
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.payload.vehicleSummary.length > 0) {
@@ -139,17 +138,15 @@ export class BluelinkUSAKia extends Bluelink {
         }
       }
 
-      this.carVin = vehicle.key
       return {
-        id: vehicle.vehicleIdentifier,
-        vin: vehicle.key,
+        id: vehicle.vehicleKey,
+        vin: vehicle.vin,
         nickName: vehicle.nickName,
-        modelName: vehicle.modelCode,
+        modelName: vehicle.modelName,
         modelYear: vehicle.modelYear,
-        odometer: vehicle.odometer ? vehicle.odometer : 0,
-        // colour and trim dont exist in US implementation
-        // modelColour: vehicle.exteriorColor,
-        // modelTrim: vehicle.trim,
+        odometer: vehicle.mileage,
+        modelColour: vehicle.colorName,
+        modelTrim: vehicle.trim,
       }
     }
     const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
@@ -157,33 +154,20 @@ export class BluelinkUSAKia extends Bluelink {
     throw Error(error)
   }
 
-  // This is a straight copy from Hyndai USA and needs to be refactored
-  protected returnCarStatus(status: any, forceUpdate: boolean): BluelinkStatus {
-    // format "2025-01-30T00:38:15Z" - which is standard
-    const lastRemoteCheck = new Date(status.dateTime)
-
-    // deal with charging speed - JSON response if variable / inconsistent - hence check for various objects
-    let chargingPower = 0
-    let isCharging = false
-    if (status.evStatus.batteryCharge) {
-      isCharging = true
-      if (status.evStatus.batteryFstChrgPower && status.evStatus.batteryFstChrgPower > 0) {
-        chargingPower = status.evStatus.batteryFstChrgPower
-      } else if (status.evStatus.batteryStndChrgPower && status.evStatus.batteryStndChrgPower > 0) {
-        chargingPower = status.evStatus.batteryStndChrgPower
-      } else {
-        // should never get here - log failure to get charging power
-        this.logger.log(`Failed to get charging power - ${JSON.stringify(status.evStatus.batteryPower)}`)
-      }
-    }
+  protected returnCarStatus(status: any): BluelinkStatus {
+    const lastRemoteCheckString = status.syncDate.utc + 'Z'
+    const df = new DateFormatter()
+    df.dateFormat = 'yyyyMMddHHmmssZ'
+    const lastRemoteCheck = df.date(lastRemoteCheckString)
 
     return {
       lastStatusCheck: Date.now(),
-      lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
-      isCharging: isCharging,
-      isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
-      chargingPower: chargingPower,
-      remainingChargeTimeMins: status.evStatus.remainTime2.atc.value,
+      lastRemoteStatusCheck: lastRemoteCheck.getTime(),
+      isCharging: status.evStatus.batteryCharge,
+      isPluggedIn: status.evStatus.pluggedInState > 0 ? true : false,
+      chargingPower:
+        status.evStatus.pluggedInState > 0 && status.evStatus.batteryCharge ? status.evStatus.realTimePower : 0,
+      remainingChargeTimeMins: status.evStatus.remainChargeTime[0].timeInterval.value,
       // sometimes range back as zero? if so ignore and use cache
       range:
         status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value > 0
@@ -192,31 +176,155 @@ export class BluelinkUSAKia extends Bluelink {
             ? this.cache.status.range
             : 0,
       locked: status.doorLock,
-      climate: status.airCtrlOn,
+      climate: status.climate.airCtrl,
       soc: status.evStatus.batteryStatus,
-      twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
-      odometer: status.odometer ? status.odometer : 0,
+      twelveSoc: status.batteryStatus.stateOfCharge ? status.batteryStatus.stateOfCharge : 0,
+      odometer: 0, // not given in status
     }
   }
 
   protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
-    const api = 'rems/rvs'
+    if (!forceUpdate) {
+      const resp = await this.request({
+        url: this.apiDomain + 'cmm/gvi',
+        data: JSON.stringify({
+          vehicleConfigReq: {
+            airTempRange: '0',
+            maintenance: '0',
+            seatHeatCoolOption: '0',
+            vehicle: '1',
+            vehicleFeature: '0',
+          },
+          vehicleInfoReq: {
+            drivingActivty: '0',
+            dtc: '1',
+            enrollment: '0',
+            functionalCards: '0',
+            location: '0',
+            vehicleStatus: '1',
+            weather: '0',
+          },
+          vinKey: [id],
+        }),
+        headers: {
+          date: this.getDateString(),
+          vinkey: id,
+        },
+        validResponseFunction: this.requestResponseValid,
+      })
+
+      if (this.requestResponseValid(resp.resp, resp.json).valid) {
+        return this.returnCarStatus(resp.json.payload.vehicleInfoList[0].lastVehicleInfo.vehicleStatusRpt.vehicleStatus)
+      }
+      const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+
+    // force update seems to return cached data initially hence we ignore the response and poll until the cached data is updated
+    const currentTime = Date.now()
+
     const resp = await this.request({
-      url: this.apiDomain + api,
+      url: this.apiDomain + 'rems/rvs',
       data: JSON.stringify({
-        requestType: forceUpdate ? 0 : 1,
+        requestType: 0,
       }),
       headers: {
-        ...this.carHeaders(),
+        date: this.getDateString(),
+        vinkey: id,
       },
       validResponseFunction: this.requestResponseValid,
     })
 
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return this.returnCarStatus(resp.json.vehicleStatus, forceUpdate)
+      // poll cached status API until the date is above currentTime
+      let attempts = 0
+      let resp = undefined
+      while (attempts <= MAX_COMPLETION_POLLS) {
+        attempts += 1
+        await this.sleep(2000)
+        resp = await this.getCarStatus(id, false)
+        if (currentTime < resp.lastRemoteStatusCheck) {
+          return resp
+        }
+      }
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async pollForCommandCompletion(
+    id: string,
+    transactionId: string,
+  ): Promise<{ isSuccess: boolean; data: any }> {
+    let attempts = 0
+    while (attempts <= 5) {
+      const resp = await this.request({
+        url: this.apiDomain + 'cmm/gts',
+        data: JSON.stringify({
+          xid: transactionId,
+        }),
+        headers: {
+          date: this.getDateString(),
+          vinkey: id,
+        },
+        validResponseFunction: this.requestResponseValid,
+      })
+
+      if (!this.requestResponseValid(resp.resp, resp.json).valid) {
+        const error = `Failed to poll for command completion: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+        if (this.config.debugLogging) this.logger.log(error)
+        throw Error(error)
+      }
+
+      // iterate over all actions and ensure they are all zero?
+      // this doesnt detect failure and will just timeout - so this makes not a lot of sense, wait to refactor until we get logs
+      for (const record of resp.json.payload) {
+        if (record === 0) {
+          return {
+            isSuccess: true,
+            data: (await this.getStatus(false, true)).status,
+          }
+        }
+      }
+      attempts += 1
+      await this.sleep(2000)
+    }
+    return {
+      isSuccess: false,
+      data: undefined,
+    }
+  }
+
+  protected async lock(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.lockUnlock(id, true)
+  }
+
+  protected async unlock(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.lockUnlock(id, false)
+  }
+
+  protected async lockUnlock(id: string, shouldLock: boolean): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const api = shouldLock ? 'rems/door/lock' : 'rems/door/unlock'
+
+    const resp = await this.request({
+      url: this.apiDomain + api,
+      method: 'GET',
+      headers: {
+        date: this.getDateString(),
+        vinkey: id,
+        'Content-Type': 'application/json', // mandatory Content-Type on GET calls is mind-blowing bad!!!
+      },
+      notJSON: true,
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
+    }
+    const error = `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
