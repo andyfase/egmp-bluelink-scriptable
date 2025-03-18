@@ -3,7 +3,7 @@ import {
   BluelinkTokens,
   BluelinkCar,
   BluelinkStatus,
-  // ClimateRequest,
+  ClimateRequest,
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
 } from './base'
@@ -37,6 +37,7 @@ export class BluelinkUSAKia extends Bluelink {
     }
 
     this.authHeader = 'sid'
+    this.authIdHeader = 'vinkey'
   }
 
   static async init(config: Config, vin?: string, statusCheckInterval?: number) {
@@ -92,18 +93,13 @@ export class BluelinkUSAKia extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      // update tokens used in this session as we may need to call getCar before we write the new tokens to cache
+      // update tokens used in this session as we call getCar before we write the new tokens to cache
       this.tokens = {
         accessToken: this.caseInsensitiveParamExtraction('sid', resp.resp.headers) || '',
         refreshToken: '', // seemingly KIA us doesnt support refresh?
         expiry: Math.floor(Date.now() / 1000) + Number(LOGIN_EXPIRY), // we also dont get an expiry?
-        authCookie: undefined,
       }
-      // check if cache is present (hence this is a re-auth) if so we need to re-save the car status as the car ID changes per session
-      if (this.cache && this.cache.car) {
-        this.cache.car = await this.getCar(true)
-        this.saveCache()
-      }
+      this.tokens.authId = (await this.getCar(true)).id
       return this.tokens
     }
 
@@ -171,7 +167,7 @@ export class BluelinkUSAKia extends Bluelink {
       // sometimes range back as zero? if so ignore and use cache
       range:
         status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value > 0
-          ? status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value
+          ? Math.floor(status.evStatus.drvDistance[0].rangeByFuel.evModeRange.value)
           : this.cache
             ? this.cache.status.range
             : 0,
@@ -183,10 +179,12 @@ export class BluelinkUSAKia extends Bluelink {
     }
   }
 
-  protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
+  protected async getCarStatus(_id: string, forceUpdate: boolean, retry = true): Promise<BluelinkStatus> {
     if (!forceUpdate) {
+      // as the request payload contains the authId - which is a auth param we disable retry and manage retry ourselves
       const resp = await this.request({
         url: this.apiDomain + 'cmm/gvi',
+        noRetry: true,
         data: JSON.stringify({
           vehicleConfigReq: {
             airTempRange: '0',
@@ -204,25 +202,26 @@ export class BluelinkUSAKia extends Bluelink {
             vehicleStatus: '1',
             weather: '0',
           },
-          vinKey: [id],
+          // handle cache existing or not - this is normally hidden in base class but need to hanle here as auth param used in payload
+          vinKey: [this.tokens ? this.tokens.authId : this.cache.token.authId],
         }),
         headers: {
           date: this.getDateString(),
-          vinkey: id,
         },
         validResponseFunction: this.requestResponseValid,
       })
 
       if (this.requestResponseValid(resp.resp, resp.json).valid) {
         return this.returnCarStatus(resp.json.payload.vehicleInfoList[0].lastVehicleInfo.vehicleStatusRpt.vehicleStatus)
+      } else if (retry) {
+        // manage retry ourselves - just assume we need to re-auth
+        await this.refreshLogin(true)
+        return await this.getCarStatus(_id, forceUpdate, false)
       }
       const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
-
-    // force update seems to return cached data initially hence we ignore the response and poll until the cached data is updated
-    const currentTime = Date.now()
 
     const resp = await this.request({
       url: this.apiDomain + 'rems/rvs',
@@ -231,23 +230,12 @@ export class BluelinkUSAKia extends Bluelink {
       }),
       headers: {
         date: this.getDateString(),
-        vinkey: id,
       },
       validResponseFunction: this.requestResponseValid,
     })
 
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      // poll cached status API until the date is above currentTime
-      let attempts = 0
-      let resp = undefined
-      while (attempts <= MAX_COMPLETION_POLLS) {
-        attempts += 1
-        await this.sleep(2000)
-        resp = await this.getCarStatus(id, false)
-        if (currentTime < resp.lastRemoteStatusCheck) {
-          return resp
-        }
-      }
+      return this.returnCarStatus(resp.json.payload.vehicleStatusRpt.vehicleStatus)
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
@@ -260,7 +248,7 @@ export class BluelinkUSAKia extends Bluelink {
     transactionId: string,
   ): Promise<{ isSuccess: boolean; data: any }> {
     let attempts = 0
-    while (attempts <= 5) {
+    while (attempts <= MAX_COMPLETION_POLLS) {
       const resp = await this.request({
         url: this.apiDomain + 'cmm/gts',
         data: JSON.stringify({
@@ -268,7 +256,6 @@ export class BluelinkUSAKia extends Bluelink {
         }),
         headers: {
           date: this.getDateString(),
-          vinkey: id,
         },
         validResponseFunction: this.requestResponseValid,
       })
@@ -279,14 +266,32 @@ export class BluelinkUSAKia extends Bluelink {
         throw Error(error)
       }
 
-      // iterate over all actions and ensure they are all zero?
-      // this doesnt detect failure and will just timeout - so this makes not a lot of sense, wait to refactor until we get logs
-      for (const record of resp.json.payload) {
-        if (record === 0) {
+      // JSON payload looks like the below
+      // Assumption is the command completed successfully if everything is zero, 1 means still going and 2 means failure?
+      // At this point thats just a wild guess
+      //
+      // "payload": {
+      //   "remoteStatus": 1,
+      //   "calSyncStatus": 0,
+      //   "alertStatus": 0,
+      //   "locationStatus": 0,
+      //   "evStatus": 0
+      // }
+      let complete = true
+      for (const [k, v] of Object.entries(resp.json.payload)) {
+        if (Number(v) === 1) {
+          complete = false
+        } else if (Number(v) > 1) {
           return {
-            isSuccess: true,
-            data: (await this.getStatus(false, true)).status,
+            isSuccess: false,
+            data: `${k} returned above 1 status: ${v}`,
           }
+        }
+      }
+      if (complete) {
+        return {
+          isSuccess: true,
+          data: (await this.getStatus(true, true)).status, // do force update to get latest data after command success
         }
       }
       attempts += 1
@@ -294,7 +299,7 @@ export class BluelinkUSAKia extends Bluelink {
     }
     return {
       isSuccess: false,
-      data: undefined,
+      data: 'timeout on command completion',
     }
   }
 
@@ -314,10 +319,8 @@ export class BluelinkUSAKia extends Bluelink {
       method: 'GET',
       headers: {
         date: this.getDateString(),
-        vinkey: id,
         'Content-Type': 'application/json', // mandatory Content-Type on GET calls is mind-blowing bad!!!
       },
-      notJSON: true,
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
@@ -325,6 +328,99 @@ export class BluelinkUSAKia extends Bluelink {
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     }
     const error = `Failed to send lockUnlock command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async startCharge(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.chargeStopCharge(id, true)
+  }
+
+  protected async stopCharge(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    return await this.chargeStopCharge(id, false)
+  }
+
+  protected async chargeStopCharge(
+    id: string,
+    shouldCharge: boolean,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const api = shouldCharge ? 'evc/charge' : 'evc/cancel'
+    const resp = await this.request({
+      url: this.apiDomain + api,
+      method: 'GET',
+      ...(shouldCharge && {
+        data: JSON.stringify({
+          chargeRatio: 100,
+        }),
+      }),
+      headers: {
+        date: this.getDateString(),
+        ...(!shouldCharge && {
+          'Content-Type': 'application/json', // mandatory Content-Type on GET calls is mind-blowing bad!!!
+        }),
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
+    }
+    const error = `Failed to send chargeStartStop command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async climateOn(id: string, config: ClimateRequest): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const api = 'rems/start'
+    const resp = await this.request({
+      url: this.apiDomain + api,
+      data: JSON.stringify({
+        remoteClimate: {
+          airCtrl: true,
+          defrost: config.frontDefrost,
+          airTemp: {
+            value: config.temp.toString(),
+            unit: this.config.tempType === 'F' ? 1 : 0,
+          },
+          ignitionOnDuration: {
+            unit: 4,
+            value: config.durationMinutes,
+          },
+          heatingAccessory: {
+            steeringWheel: Number(config.steering),
+            rearWindow: Number(config.rearDefrost),
+            sideMirror: Number(config.rearDefrost),
+          },
+        },
+      }),
+      headers: {
+        date: this.getDateString(),
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
+    }
+    const error = `Failed to send climateOn command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async climateOff(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const resp = await this.request({
+      url: this.apiDomain + 'rems/stop',
+      headers: {
+        date: this.getDateString(),
+        'Content-Type': 'application/json', // mandatory Content-Type on GET calls is mind-blowing bad!!!
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
+    }
+    const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }
