@@ -127,7 +127,7 @@ export class BluelinkUSAKia extends Bluelink {
       let vehicle = resp.json.payload.vehicleSummary[0]
       if (vin) {
         for (const v of resp.json.payload.vehicleSummary) {
-          if (v.key === vin) {
+          if (v.vin === vin) {
             vehicle = v
             break
           }
