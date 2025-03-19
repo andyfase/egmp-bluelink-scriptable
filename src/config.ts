@@ -177,7 +177,7 @@ export async function loadConfigScreen() {
           allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
           debugLogging: debugLogging,
           manufacturer: manufacturer?.toLowerCase(),
-          vin: vin ? vin.toUpperCase() : undefined,
+          vin: vin ? vin.toUpperCase().trim() : undefined,
         },
       } as Config)
     },
