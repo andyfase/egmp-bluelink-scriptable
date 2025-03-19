@@ -48,7 +48,7 @@ If you can confirm support for any un-tested regions (Noted via question-mark ic
 </tr>
 <tr>
 <td>US</td>
-<td><img src="../images/cross.png" width="30"/></td>
+<td><img src="../images/checkmark.png" width="30"/></td>
 </tr>
 <tr>
 <td>Europe</td>
