@@ -58,7 +58,7 @@ If you can confirm support for any un-tested regions (Noted via question-mark ic
 </tbody>
 </table>
 
-I am actively looking for a willing Kia US owner that could temporarily invite me / provide access to their car on bluelink so I can obtain network traces to support this region. If your willing please [DM me on reddit](https://www.reddit.com/user/andyfase/).
+If your region is not supported and your willing to provide secondary driver access to your bluelink account, so I can obtain network traces to support your region please [DM me on reddit](https://www.reddit.com/user/andyfase/). As I am much more likely to work on the support of your region If I have access to the APIs and offical app to trace and test with.
 {: .fs-3 .fw-300 }
 
 ----
