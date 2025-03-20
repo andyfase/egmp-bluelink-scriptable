@@ -54,7 +54,7 @@ These widgets can be added to your lockscreen. [See the apple instructions on ho
 <p><b>Large Size</b></p>
 <p>Will display "battery circle" to reflect battery capacity. Plus display available range, exact percentage of battery capacity and, if charging, when charging will complete.</p>
 
-<p>Note the car image will change detect if charging or not.</p>
+<p>Note the car image will change based on if the car is charging or not.</p>
 </td>
 </tr>
 <tr>
@@ -64,7 +64,7 @@ These widgets can be added to your lockscreen. [See the apple instructions on ho
 <td>
 <p><b>Small Size</b></p>
 <p>Will display just the "battery circle" to reflect battery capacity.</p>
-<p>Note the car image will change detect if charging or not.</p>
+<p>Note the car image will change based on if the car is charging or not.</p>
 </td>
 
 </tr>
