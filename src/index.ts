@@ -1,5 +1,10 @@
 import { initRegionalBluelink } from 'lib/bluelink'
-import { createWidget, createHomeScreenCircleWidget, createHomeScreenRectangleWidget } from 'widget'
+import {
+  createSmallWidget,
+  createMediumWidget,
+  createHomeScreenCircleWidget,
+  createHomeScreenRectangleWidget,
+} from 'widget'
 import { createApp } from 'app'
 import { processSiriRequest } from 'siri'
 import { getConfig, loadConfigScreen, configExists } from 'config'
@@ -35,8 +40,11 @@ import { confirm } from './lib/scriptable-utils'
       case 'accessoryRectangular':
         widget = await createHomeScreenRectangleWidget(blConfig, bl)
         break
+      case 'small':
+        widget = await createSmallWidget(blConfig, bl)
+        break
       default:
-        widget = await createWidget(blConfig, bl)
+        widget = await createMediumWidget(blConfig, bl)
         break
     }
     Script.setWidget(widget)

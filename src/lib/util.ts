@@ -28,9 +28,17 @@ const icons: Record<string, icon> = {
     iconName: 'bolt.fill',
     color: Color.green(),
   },
+  'charging-complete-widget': {
+    iconName: 'clock',
+    color: Color.white(),
+  },
   'charging-complete': {
     iconName: 'clock',
     color: Color.dynamic(Color.black(), Color.white()),
+  },
+  'plugged-widget': {
+    iconName: 'powerplug.portrait',
+    color: Color.white(),
   },
   plugged: {
     iconName: 'powerplug.portrait',
@@ -127,13 +135,6 @@ export async function loadTintedIcons(): Promise<void> {
   })
 }
 
-export function getIconSymbolName(name: string): string {
-  if (name in icons) {
-    return icons[name]!.iconName
-  }
-  return 'questionmark.app'
-}
-
 export function getTintedIcon(name: string): Image {
   if (name in icons && icons[name]?.image) {
     return icons[name].image
@@ -164,8 +165,8 @@ export async function getAngledTintedIconAsync(name: string, color: Color, angle
   return (await tintSFSymbol(name, SFSymbol.named(name).image, color, angle)).image
 }
 
-export function getChargingIcon(isCharging: boolean, isPluggedIn: boolean): string | undefined {
-  return isCharging ? 'charging' : isPluggedIn ? 'plugged' : undefined
+export function getChargingIcon(isCharging: boolean, isPluggedIn: boolean, isWidget = false): string | undefined {
+  return isCharging ? 'charging' : isPluggedIn ? (isWidget ? 'plugged-widget' : 'plugged') : undefined
 }
 
 export function calculateBatteryIcon(batteryPercent: number): string {

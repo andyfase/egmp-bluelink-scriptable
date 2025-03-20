@@ -6,7 +6,6 @@ import {
   dateStringOptions,
   getChargeCompletionString,
   sleep,
-  getIconSymbolName,
 } from './lib/util'
 import { Bluelink, Status } from './lib/bluelink-regions/base'
 import { Config } from 'config'
@@ -146,7 +145,7 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
   }
 }
 
-export async function createWidget(config: Config, bl: Bluelink) {
+export async function createMediumWidget(config: Config, bl: Bluelink) {
   const refresh = await refreshDataForWidget(bl, config)
   const status = refresh.status
 
@@ -173,9 +172,12 @@ export async function createWidget(config: Config, bl: Bluelink) {
   titleElement.font = Font.mediumSystemFont(25)
   titleStack.addSpacer()
   const appIconElement = titleStack.addImage(appIcon)
-  appIconElement.imageSize = new Size(30, 30)
+  appIconElement.imageSize = new Size(40, 40 / (appIcon.size.width / appIcon.size.height))
   appIconElement.cornerRadius = 4
   mainStack.addSpacer()
+
+  // space
+  if (!status.status.isCharging) mainStack.addSpacer()
 
   // Center Stack
   const contentStack = mainStack.addStack()
@@ -214,7 +216,7 @@ export async function createWidget(config: Config, bl: Bluelink) {
   const image = await getTintedIconAsync(calculateBatteryIcon(batteryPercent))
   const batterySymbolElement = batteryPercentStack.addImage(image)
   batterySymbolElement.imageSize = new Size(40, 40)
-  const chargingIcon = getChargingIcon(isCharging, isPluggedIn)
+  const chargingIcon = getChargingIcon(isCharging, isPluggedIn, true)
   if (chargingIcon) {
     const chargingElement = batteryPercentStack.addImage(await getTintedIconAsync(chargingIcon))
     chargingElement.imageSize = new Size(25, 25)
@@ -240,7 +242,9 @@ export async function createWidget(config: Config, bl: Bluelink) {
     chargingSpeedElement.rightAlignText()
     batteryChargingTimeStack.addSpacer(3)
 
-    const chargingTimeIconElement = batteryChargingTimeStack.addImage(await getTintedIconAsync('charging-complete'))
+    const chargingTimeIconElement = batteryChargingTimeStack.addImage(
+      await getTintedIconAsync('charging-complete-widget'),
+    )
     chargingTimeIconElement.imageSize = new Size(15, 15)
     batteryChargingTimeStack.addSpacer(3)
 
@@ -274,6 +278,119 @@ export async function createWidget(config: Config, bl: Bluelink) {
   lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()
   lastSeenElement.minimumScaleFactor = 0.5
   lastSeenElement.rightAlignText()
+
+  mainStack.addSpacer()
+
+  return widget
+}
+
+export async function createSmallWidget(config: Config, bl: Bluelink) {
+  const refresh = await refreshDataForWidget(bl, config)
+  const status = refresh.status
+
+  // Prepare image
+  const appIcon = await bl.getCarImage()
+  // define widget and set date for when the next refresh should not occur before.
+  const widget = new ListWidget()
+  widget.refreshAfterDate = refresh.nextRefresh
+
+  const mainStack = widget.addStack()
+  mainStack.layoutVertically()
+  mainStack.addSpacer()
+
+  // Add background color
+  widget.backgroundColor = DARK_MODE ? new Color(DARK_BG_COLOR) : new Color(LIGHT_BG_COLOR)
+
+  // Show app icon and title
+  const titleStack = mainStack.addStack()
+  const appIconElement = titleStack.addImage(appIcon)
+  appIconElement.imageSize = new Size(80, 80 / (appIcon.size.width / appIcon.size.height))
+  // appIconElement.cornerRadius = 4
+
+  // space
+  if (!status.status.isCharging) mainStack.addSpacer()
+
+  // Battery Info
+  const batteryInfoStack = mainStack.addStack()
+  batteryInfoStack.layoutVertically()
+  batteryInfoStack.addSpacer()
+
+  // Range
+  const rangeStack = batteryInfoStack.addStack()
+  rangeStack.addSpacer()
+  const rangeText = `${status.status.range} ${bl.getDistanceUnit()}`
+  const rangeElement = rangeStack.addText(rangeText)
+  rangeElement.font = Font.mediumSystemFont(20)
+  rangeElement.textColor = DARK_MODE ? Color.white() : Color.black()
+  rangeElement.rightAlignText()
+  // batteryInfoStack.addSpacer()
+
+  // set status from BL status response
+  const isCharging = status.status.isCharging
+  const isPluggedIn = status.status.isPluggedIn
+  const batteryPercent = status.status.soc
+  const remainingChargingTime = status.status.remainingChargeTimeMins
+  const chargingKw = status.status.chargingPower > 0 ? `${status.status.chargingPower.toFixed(1).toString()} kW` : '-'
+  const lastSeen = new Date(status.status.lastRemoteStatusCheck)
+
+  // Battery Percent Value
+  const batteryPercentStack = batteryInfoStack.addStack()
+  batteryPercentStack.addSpacer()
+  batteryPercentStack.centerAlignContent()
+  const image = await getTintedIconAsync(calculateBatteryIcon(batteryPercent))
+  const batterySymbolElement = batteryPercentStack.addImage(image)
+  batterySymbolElement.imageSize = new Size(40, 40)
+  const chargingIcon = getChargingIcon(isCharging, isPluggedIn, true)
+  if (chargingIcon) {
+    const chargingElement = batteryPercentStack.addImage(await getTintedIconAsync(chargingIcon))
+    chargingElement.imageSize = new Size(25, 25)
+  }
+
+  batteryPercentStack.addSpacer(5)
+
+  const batteryPercentText = batteryPercentStack.addText(`${batteryPercent.toString()}%`)
+  batteryPercentText.textColor = getBatteryPercentColor(status.status.soc)
+  batteryPercentText.font = Font.mediumSystemFont(20)
+
+  if (isCharging) {
+    const chargeComplete = getChargeCompletionString(lastSeen, remainingChargingTime, 'short', true)
+    const batteryChargingTimeStack = mainStack.addStack()
+    batteryChargingTimeStack.layoutHorizontally()
+    // batteryChargingTimeStack.addSpacer()
+    batteryChargingTimeStack.addSpacer()
+
+    const chargingSpeedElement = batteryChargingTimeStack.addText(`${chargingKw}`)
+    chargingSpeedElement.font = Font.mediumSystemFont(12)
+    chargingSpeedElement.textOpacity = 0.9
+    chargingSpeedElement.textColor = DARK_MODE ? Color.white() : Color.black()
+    chargingSpeedElement.leftAlignText()
+    batteryChargingTimeStack.addSpacer(3)
+
+    const chargingTimeIconElement = batteryChargingTimeStack.addImage(
+      await getTintedIconAsync('charging-complete-widget'),
+    )
+    chargingTimeIconElement.imageSize = new Size(15, 15)
+    batteryChargingTimeStack.addSpacer(3)
+
+    const chargingTimeElement = batteryChargingTimeStack.addText(`${chargeComplete}`)
+    chargingTimeElement.font = Font.mediumSystemFont(12)
+    chargingTimeElement.textOpacity = 0.9
+    chargingTimeElement.textColor = DARK_MODE ? Color.white() : Color.black()
+    chargingTimeElement.rightAlignText()
+  }
+  mainStack.addSpacer()
+
+  // Footer
+  const footerStack = mainStack.addStack()
+  // footerStack.addSpacer()
+
+  // Add last seen indicator
+  const lastSeenElement = footerStack.addText(lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown')
+  lastSeenElement.font = Font.mediumSystemFont(11)
+  lastSeenElement.textOpacity = 0.5
+  lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()
+  lastSeenElement.minimumScaleFactor = 0.5
+  lastSeenElement.leftAlignText()
 
   mainStack.addSpacer()
 
@@ -338,9 +455,9 @@ export async function createHomeScreenRectangleWidget(config: Config, bl: Blueli
   // Battery Percent Value
   const batteryPercentStack = batteryInfoStack.addStack()
   batteryPercentStack.addSpacer()
-  const chargingIcon = getChargingIcon(isCharging, isPluggedIn)
+  const chargingIcon = getChargingIcon(isCharging, isPluggedIn, true)
   if (chargingIcon) {
-    const chargingElement = batteryPercentStack.addImage(SFSymbol.named(getIconSymbolName(chargingIcon)).image)
+    const chargingElement = batteryPercentStack.addImage(await getTintedIconAsync(chargingIcon))
     chargingElement.tintColor = new Color('#ffffff')
     chargingElement.imageSize = new Size(15, 15)
   }
