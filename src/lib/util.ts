@@ -82,6 +82,7 @@ export function getChargeCompletionString(
   dateFrom: Date,
   minutes: number,
   dayFormat: 'short' | 'long' = 'short',
+  nextDayNoMinute = false,
 ): string {
   // dateFrom passed by references - hence clone it
   const date = new Date(dateFrom.getTime())
@@ -90,7 +91,9 @@ export function getChargeCompletionString(
     return date.toLocaleString(undefined, {
       weekday: dayFormat,
       hour: 'numeric',
-      minute: 'numeric',
+      ...(!nextDayNoMinute && {
+        minute: 'numeric',
+      }),
     })
   }
   return date.toLocaleString(undefined, {
@@ -122,6 +125,13 @@ export async function loadTintedIcons(): Promise<void> {
       }
     }
   })
+}
+
+export function getIconSymbolName(name: string): string {
+  if (name in icons) {
+    return icons[name]!.iconName
+  }
+  return 'questionmark.app'
 }
 
 export function getTintedIcon(name: string): Image {

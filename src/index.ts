@@ -1,5 +1,5 @@
 import { initRegionalBluelink } from 'lib/bluelink'
-import { createWidget } from 'widget'
+import { createWidget, createHomeScreenCircleWidget, createHomeScreenRectangleWidget } from 'widget'
 import { createApp } from 'app'
 import { processSiriRequest } from 'siri'
 import { getConfig, loadConfigScreen, configExists } from 'config'
@@ -27,7 +27,18 @@ import { confirm } from './lib/scriptable-utils'
   }
 
   if (config.runsInWidget) {
-    const widget = await createWidget(blConfig, bl)
+    let widget = undefined
+    switch (config.widgetFamily) {
+      case 'accessoryCircular':
+        widget = await createHomeScreenCircleWidget(blConfig, bl)
+        break
+      case 'accessoryRectangular':
+        widget = await createHomeScreenRectangleWidget(blConfig, bl)
+        break
+      default:
+        widget = await createWidget(blConfig, bl)
+        break
+    }
     Script.setWidget(widget)
     Script.complete()
   } else if (config.runsWithSiri) {

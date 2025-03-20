@@ -6,6 +6,7 @@ import {
   dateStringOptions,
   getChargeCompletionString,
   sleep,
+  getIconSymbolName,
 } from './lib/util'
 import { Bluelink, Status } from './lib/bluelink-regions/base'
 import { Config } from 'config'
@@ -179,7 +180,7 @@ export async function createWidget(config: Config, bl: Bluelink) {
   // Center Stack
   const contentStack = mainStack.addStack()
   const carImageElement = contentStack.addImage(appIcon)
-  carImageElement.imageSize = new Size(170, 70)
+  carImageElement.imageSize = new Size(170, 170 / (appIcon.size.width / appIcon.size.height))
   // contentStack.addSpacer()
 
   // Battery Info
@@ -222,7 +223,7 @@ export async function createWidget(config: Config, bl: Bluelink) {
   batteryPercentStack.addSpacer(5)
 
   const batteryPercentText = batteryPercentStack.addText(`${batteryPercent.toString()}%`)
-  batteryPercentText.textColor = getBatteryPercentColor(50)
+  batteryPercentText.textColor = getBatteryPercentColor(status.status.soc)
   batteryPercentText.font = Font.mediumSystemFont(20)
 
   if (isCharging) {
@@ -277,4 +278,157 @@ export async function createWidget(config: Config, bl: Bluelink) {
   mainStack.addSpacer()
 
   return widget
+}
+
+export async function createHomeScreenCircleWidget(config: Config, bl: Bluelink) {
+  const refresh = await refreshDataForWidget(bl, config)
+  const status = refresh.status
+
+  const widget = new ListWidget()
+  widget.refreshAfterDate = refresh.nextRefresh
+
+  const progressStack = await progressCircle(widget, status.status.soc)
+  const mainIcon = status.status.isCharging ? SFSymbol.named('bolt.car') : SFSymbol.named('car.fill')
+  const wmainIcon = progressStack.addImage(mainIcon.image)
+  wmainIcon.imageSize = new Size(36, 36)
+  wmainIcon.tintColor = new Color('#ffffff')
+
+  return widget
+}
+
+export async function createHomeScreenRectangleWidget(config: Config, bl: Bluelink) {
+  const refresh = await refreshDataForWidget(bl, config)
+  const status = refresh.status
+
+  const widget = new ListWidget()
+  widget.refreshAfterDate = refresh.nextRefresh
+
+  const widgetStack = widget.addStack()
+  // widgetStack.addSpacer(5)
+  widgetStack.layoutVertically()
+  const mainStack = widgetStack.addStack()
+
+  const iconStack = await progressCircle(mainStack, status.status.soc)
+  const mainIcon = status.status.isCharging ? SFSymbol.named('bolt.car') : SFSymbol.named('car.fill')
+  const wmainIcon = iconStack.addImage(mainIcon.image)
+  wmainIcon.imageSize = new Size(36, 36)
+  wmainIcon.tintColor = new Color('#ffffff')
+
+  // Battery Info
+  const batteryInfoStack = mainStack.addStack()
+  batteryInfoStack.layoutVertically()
+  batteryInfoStack.addSpacer(5)
+
+  // Range
+  const rangeStack = batteryInfoStack.addStack()
+  rangeStack.addSpacer()
+  const rangeText = `${status.status.range} ${bl.getDistanceUnit()}`
+  const rangeElement = rangeStack.addText(rangeText)
+  rangeElement.font = Font.boldSystemFont(15)
+  rangeElement.textColor = Color.white()
+  rangeElement.rightAlignText()
+
+  // set status from BL status response
+  const isCharging = status.status.isCharging
+  const isPluggedIn = status.status.isPluggedIn
+  const batteryPercent = status.status.soc
+  const remainingChargingTime = status.status.remainingChargeTimeMins
+  const lastSeen = new Date(status.status.lastRemoteStatusCheck)
+
+  // Battery Percent Value
+  const batteryPercentStack = batteryInfoStack.addStack()
+  batteryPercentStack.addSpacer()
+  const chargingIcon = getChargingIcon(isCharging, isPluggedIn)
+  if (chargingIcon) {
+    const chargingElement = batteryPercentStack.addImage(SFSymbol.named(getIconSymbolName(chargingIcon)).image)
+    chargingElement.tintColor = new Color('#ffffff')
+    chargingElement.imageSize = new Size(15, 15)
+  }
+
+  batteryPercentStack.addSpacer(5)
+  const batteryPercentText = batteryPercentStack.addText(`${batteryPercent.toString()}%`)
+  batteryPercentText.textColor = getBatteryPercentColor(status.status.soc)
+  batteryPercentText.font = Font.boldSystemFont(15)
+
+  if (isCharging) {
+    const chargeComplete = getChargeCompletionString(lastSeen, remainingChargingTime, 'short', true)
+    const batteryChargingTimeStack = batteryInfoStack.addStack()
+    batteryChargingTimeStack.addSpacer()
+
+    const chargingTimeIconElement = batteryChargingTimeStack.addImage(SFSymbol.named('clock.fill').image)
+    chargingTimeIconElement.tintColor = new Color('#ffffff')
+    chargingTimeIconElement.imageSize = new Size(15, 15)
+    batteryChargingTimeStack.addSpacer(3)
+
+    const chargingTimeElement = batteryChargingTimeStack.addText(`${chargeComplete}`)
+    chargingTimeElement.font = Font.mediumSystemFont(12)
+    chargingTimeElement.textOpacity = 0.9
+    chargingTimeElement.textColor = Color.white()
+    chargingTimeElement.rightAlignText()
+  }
+
+  return widget
+}
+
+async function progressCircle(
+  on: ListWidget | WidgetStack,
+  value = 50,
+  colour = 'hsl(0, 0%, 100%)',
+  background = 'hsl(0, 0%, 10%)',
+  size = 60,
+  barWidth = 5,
+) {
+  if (value > 1) {
+    value /= 100
+  }
+  if (value < 0) {
+    value = 0
+  }
+  if (value > 1) {
+    value = 1
+  }
+
+  const w = new WebView()
+  await w.loadHTML('<canvas id="c"></canvas>')
+
+  const base64 = await w.evaluateJavaScript(
+    `
+  let colour = "${colour}",
+    background = "${background}",
+    size = ${size}*3,
+    lineWidth = ${barWidth}*3,
+    percent = ${value * 100}
+      
+  let canvas = document.getElementById('c'),
+    c = canvas.getContext('2d')
+  canvas.width = size
+  canvas.height = size
+  let posX = canvas.width / 2,
+    posY = canvas.height / 2,
+    onePercent = 360 / 100,
+    result = onePercent * percent
+  c.lineCap = 'round'
+  c.beginPath()
+  c.arc( posX, posY, (size-lineWidth-1)/2, (Math.PI/180) * 270, (Math.PI/180) * (270 + 360) )
+  c.strokeStyle = background
+  c.lineWidth = lineWidth 
+  c.stroke()
+  c.beginPath()
+  c.strokeStyle = colour
+  c.lineWidth = lineWidth
+  c.arc( posX, posY, (size-lineWidth-1)/2, (Math.PI/180) * 270, (Math.PI/180) * (270 + result) )
+  c.stroke()
+  completion(canvas.toDataURL().replace("data:image/png;base64,",""))`,
+    true,
+  )
+  const image = Image.fromData(Data.fromBase64String(base64))
+
+  const stack = on.addStack()
+  stack.size = new Size(size, size)
+  stack.backgroundImage = image
+  stack.centerAlignContent()
+  const padding = barWidth * 2
+  stack.setPadding(padding, padding, padding, padding)
+
+  return stack
 }
