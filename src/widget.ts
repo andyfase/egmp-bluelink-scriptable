@@ -382,7 +382,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
 
   // Footer
   const footerStack = mainStack.addStack()
-  // footerStack.addSpacer()
+  footerStack.addSpacer()
 
   // Add last seen indicator
   const lastSeenElement = footerStack.addText(lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown')
