@@ -27,6 +27,7 @@ interface APIConfig {
   authCfb: string
   authBasic: string
   authHost: string
+  authParam: string
   clientId: string
   authClientID: string
   pushType: string
@@ -42,6 +43,7 @@ const API_CONFIG: Record<string, APIConfig> = {
     authBasic:
       'Basic NmQ0NzdjMzgtM2NhNC00Y2YzLTk1NTctMmExOTI5YTk0NjU0OktVeTQ5WHhQekxwTHVvSzB4aEJDNzdXNlZYaG10UVI5aVFobUlGampvWTRJcHhzVg==',
     authHost: 'eu-account.hyundai.com',
+    authParam: 'euhyundaiidm',
     clientId: '6d477c38-3ca4-4cf3-9557-2a1929a94654',
     authClientID: '64621b96-0f0d-11ec-82a8-0242ac130003',
     pushType: 'GCM',
@@ -54,6 +56,7 @@ const API_CONFIG: Record<string, APIConfig> = {
     authCfb: b64decode('wLTVxwidmH8CfJYBWSnHD6E0huk0ozdiuygB4hLkM5XCgzAL1Dk5sE36d/bx5PFMbZs='),
     authBasic: 'Basic ZmRjODVjMDAtMGEyZi00YzY0LWJjYjQtMmNmYjE1MDA3MzBhOnNlY3JldA==',
     authHost: 'eu-account.kia.com',
+    authParam: 'eukiaidm',
     clientId: 'fdc85c00-0a2f-4c64-bcb4-2cfb1500730a',
     authClientID: '572e0304-5f8d-4b4c-9dd5-41aa84eed160',
     pushType: 'APNS',
@@ -151,7 +154,7 @@ export class BluelinkEurope extends Bluelink {
     // start login - this could auto redirect and auto login based on previous state
     // or could send back form to process actual login - so need to handle both
     const respLoginForm = await this.request({
-      url: `https://${this.apiConfig.authHost}/auth/realms/euhyundaiidm/protocol/openid-connect/auth?client_id=${this.apiConfig.authClientID}&scope=openid%20profile%20email%20phone&response_type=code&hkid_session_reset=true&redirect_uri=${this.apiDomain}/api/v1/user/integration/redirect/login&ui_locales=${this.lang}&state=${serviceId}:${userId}`,
+      url: `https://${this.apiConfig.authHost}/auth/realms/${this.apiConfig.authParam}/protocol/openid-connect/auth?client_id=${this.apiConfig.authClientID}&scope=openid%20profile%20email%20phone&response_type=code&hkid_session_reset=true&redirect_uri=${this.apiDomain}/api/v1/user/integration/redirect/login&ui_locales=${this.lang}&state=${serviceId}:${userId}`,
       noAuth: true,
       notJSON: true,
       validResponseFunction: this.requestResponseValid,
