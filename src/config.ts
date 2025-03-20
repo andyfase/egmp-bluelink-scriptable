@@ -274,7 +274,7 @@ export async function loadConfigScreen() {
       },
       allowWidgetRemoteRefresh: {
         type: 'checkbox',
-        label: 'Enable background remote refresh',
+        label: 'Enable widget remote refresh',
         isRequired: false,
       },
       debugLogging: {

@@ -1,7 +1,7 @@
 ---
 title: Region / Brand Support
 layout: home
-nav_order: 1
+nav_order: 2
 ---
 
 # Region and Brand Support

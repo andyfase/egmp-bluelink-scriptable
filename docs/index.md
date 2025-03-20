@@ -62,7 +62,8 @@ function lightbox_close() {
 Features Include:
 {: .fs-6 .fw-300 }
 
-- Auto Updating Widget
+- Homescreen and Lockscreen Widgets
+- Optional background auto-updating of widget data
 - Fresh and more responsive app UI
 - Siri voice support "Hey Siri, ask the car", "Warm the car"
 - Automations via IOS Shortcuts like walk-away lock and auto warm the car on a schedule
