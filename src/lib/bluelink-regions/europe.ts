@@ -191,7 +191,7 @@ export class BluelinkEurope extends Bluelink {
       // now actually login
       const loginData = `username=${encodeURIComponent(this.config.auth.username)}&password=${encodeURIComponent(this.config.auth.password)}&credentialId=&rememberMe=on`
       const respLogin = await this.request({
-        url: `https://${this.apiConfig.authHost}/auth/realms/euhyundaiidm/login-actions/authenticate?session_code=${sessionCode}&execution=${executionId}&client_id=${this.apiConfig.authClientID}&tab_id=${tabId}`,
+        url: `https://${this.apiConfig.authHost}/auth/realms/${this.apiConfig.authParam}/login-actions/authenticate?session_code=${sessionCode}&execution=${executionId}&client_id=${this.apiConfig.authClientID}&tab_id=${tabId}`,
         noAuth: true,
         notJSON: true,
         validResponseFunction: this.requestResponseValid,
