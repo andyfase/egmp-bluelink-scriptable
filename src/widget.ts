@@ -382,14 +382,14 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
 
   // Footer
   const footerStack = mainStack.addStack()
-  footerStack.addSpacer(5)
+  // footerStack.addSpacer()
 
   // Add last seen indicator
   const lastSeenElement = footerStack.addText(lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown')
   lastSeenElement.font = Font.mediumSystemFont(11)
   lastSeenElement.textOpacity = 0.5
   lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()
-  lastSeenElement.rightAlignText()
+  // lastSeenElement.rightAlignText()
 
   mainStack.addSpacer()
 
