@@ -14,26 +14,26 @@ As such, installation is a little more than just "install an app" but honestly n
 
 Step 1: [Install the scriptable app](https://apps.apple.com/us/app/scriptable/id1405459188?uo=4)
 and open it.
-{: .fs-6 .fw-300 } 
+{: .fs-4 .fw-300 } 
 
 Step 2: [Download the latest egmp-bluelink.js file](https://github.com/andyfase/egmp-bluelink-scriptable/releases) using your iPhone.
-{: .fs-6 .fw-300 }
+{: .fs-4 .fw-300 }
 
 ![image](../images/download.png)
 
 Step 3: Using the IOS **Apple Files** app, move the `egmp-bluelink.js` file from the Downloads directory into the "iCloud Drive" -> "Scriptable" directory.
-{: .fs-6 .fw-300 }
+{: .fs-4 .fw-300 }
 
 Step 4: Open the scriptable app and choose "egmp-bluelink". This launches the app for the first time and a settings screen will popup asking you to fill in your Bluelink login credentials, and set your preferences. 
-{: .fs-6 .fw-300 }
+{: .fs-4 .fw-300 }
 
 > Note: Your Bluelink credentials are securely kept on your IOS keychain, the bluelink scriptable app never sends your credentials to anywhere except the Bluelink API, just like the offical app.
 
 Step 5: Once you enter your credentials and press "Save" the app will close. Click on "egmp-bluelink" again and the app will open and be available for use.
-{: .fs-6 .fw-300 }
+{: .fs-5 .fw-300 }
 
-Step 6: Create a new widget on your homescreen of choice. [See the apple guide if you need help](https://support.apple.com/en-ca/118610). 
-{: .fs-6 .fw-300 }
+Step 6: Create a new widget on your homescreen or lockscrren . [See the apple guide if you need help](https://support.apple.com/en-ca/118610). The [Widget Page](./widgets.md) shows the available widgets to choose from 
+{: .fs-5 .fw-300 }
 
 When configuring the widget, make sure you:
 {: .fs-5 .fw-300 }
@@ -44,7 +44,10 @@ When configuring the widget, make sure you:
 - For **"Script"** choose **egmp-scriptable**
 - For **"When Interacting"** choose **Run Script**
 
+Step 7: (Optional but Recommended) Continue to install the [Siri IOS Shortcuts](./siri.md) and the [Control Center controls](./control-center.md)
+{: .fs-5 .fw-300 }
+
 Thats it your done. Enjoy bluelink-scriptable!
-{: .fs-6 .fw-300 }
+{: .fs-5 .fw-300 }
 
 ----

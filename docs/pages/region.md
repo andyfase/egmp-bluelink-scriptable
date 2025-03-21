@@ -52,7 +52,7 @@ If you can confirm support for any un-tested regions (Noted via question-mark ic
 </tr>
 <tr>
 <td>Europe</td>
-<td><img src="../images/checkmark.png" width="30" title="Not Confirmed/Tested"/><img src="../images/question.png" width="32" title="Not Confirmed/Tested"/>
+<td><img src="../images/checkmark.png" width="30"/>
 </td>
 </tr>
 </tbody>

@@ -1,15 +1,38 @@
 ---
-title: Siri Setup
+title: Siri / Shortcuts
 layout: home
 nav_order: 5
 ---
 
-# Siri Support
+# Siri Shortcuts Support
 {: .fs-9 }
 
-The app supports direct Siri interaction via the "Shortcuts" IOS app. A Shortcut download link is provided below that will install a shortcut called "Ask the Car"
+The app supports direct Siri interaction via the "Shortcuts" IOS app. A collection of Shortcut download link are provided below. These can be used both while talking to Siri, or through interaction through the [IOS control center](./control-center.md).
 {: .fs-5 .fw-300 }
 
+## Common Commmands Shortcuts
+
+These shortcuts can be used via Siri or through [Control Center](./control-center.md).
+
+### Lock the Car - "Hey Siri, Lock the car"
+[Install "Lock Car" Shortcut](https://www.icloud.com/shortcuts/d38a927b5de54a2ca46999beacb95b9d)
+{: .fs-5 .fw-300 }
+
+### UnLock the Car - "Hey Siri, Unlock the car"
+[Install "Unlock the Car" Shortcut](https://www.icloud.com/shortcuts/aba2db0d48d2420884fdcf205bf16022)
+{: .fs-5 .fw-300 }
+
+### Warm the Car - "Hey Siri, warm the car"
+[Install "Warm the Car" Shortcut](https://www.icloud.com/shortcuts/700dc3f758124786a2c9b5bac9b004c4)
+{: .fs-5 .fw-300 }
+
+### Cool the Car - "Hey Siri, Cool the car"
+[Install "Cool the Car" Shortcut](https://www.icloud.com/shortcuts/b2a392c34e58493da2422bee5e26676e)
+{: .fs-5 .fw-300 }
+
+
+
+## Ask the Car Shortcut
 [Install "Ask the Car" Shortcut](https://www.icloud.com/shortcuts/b3bd704fa2bf4c6dabceec096c291342)
 {: .fs-5 .fw-300 }
 
