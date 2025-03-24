@@ -292,12 +292,12 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
   const appIcon = await bl.getCarImage()
   // define widget and set date for when the next refresh should not occur before.
   const widget = new ListWidget()
-  widget.setPadding(10, 10, 15, 15)
+  widget.setPadding(20, 10, 15, 15)
   widget.refreshAfterDate = refresh.nextRefresh
 
   const mainStack = widget.addStack()
   mainStack.layoutVertically()
-  mainStack.addSpacer()
+  // mainStack.addSpacer()
 
   // Add background color
   widget.backgroundColor = DARK_MODE ? new Color(DARK_BG_COLOR) : new Color(LIGHT_BG_COLOR)
@@ -383,7 +383,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
 
   // Footer
   const footerStack = mainStack.addStack()
-  footerStack.addSpacer()
+  footerStack.addSpacer(5) // hack - dynamic spacing doesnt seem to work that well here
 
   // Add last seen indicator
   const lastSeenElement = footerStack.addText(lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown')
@@ -392,7 +392,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
   lastSeenElement.textOpacity = 0.5
   lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()
 
-  mainStack.addSpacer()
+  // mainStack.addSpacer()
 
   return widget
 }

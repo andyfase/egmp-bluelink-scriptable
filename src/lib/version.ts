@@ -5,6 +5,7 @@ export interface GithubRelease {
   name: string
   date: string
   url: string
+  notes: string
 }
 
 export class Version {
@@ -21,10 +22,14 @@ export class Version {
     this.githubLatestRelease = undefined
   }
 
+  private versionToNumber(version: string): number {
+    return Number(version.replace('v', '').replace(/\./g, ''))
+  }
+
   public async promptForUpdate(): Promise<boolean> {
     const latestRelease = await this.getLatestGithubRelease()
-    // releases are in the format v0.7.0 we prompt for update is a minor version behind i.e. 0.1
-    return Number(latestRelease.version.replace('v', '')) - Number(this.currentVersion.replace('v', '')) >= 0.1
+    // releases are in the format v1.7.0 converted to number this ends up as 170. Hence we check for >= 10 (which corrolates to 0.1 or more)
+    return this.versionToNumber(latestRelease.version) - this.versionToNumber(this.currentVersion) >= 10
   }
 
   public async getReleaseVersion(): Promise<string> {
@@ -65,6 +70,7 @@ export class Version {
       name: response.name,
       date: response.published_at,
       url: asseturl,
+      notes: response.body,
     }
     return this.githubLatestRelease
   }
