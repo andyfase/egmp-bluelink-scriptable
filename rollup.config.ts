@@ -2,6 +2,7 @@ import typescript from '@rollup/plugin-typescript'
 import { nodeResolve } from '@rollup/plugin-node-resolve'
 import nodePolyfills from 'rollup-plugin-polyfill-node'
 import terser from '@rollup/plugin-terser'
+import json from '@rollup/plugin-json'
 
 import addFileIconSettings from './rollup-plugin-add-file-icon-settings'
 
@@ -24,7 +25,7 @@ const config = {
       addFileIconSettings(),
     ],
   },
-  plugins: [typescript(), nodeResolve(), nodePolyfills(/* options */)],
+  plugins: [typescript(), json(), nodeResolve(), nodePolyfills(/* options */)],
   watch: {
     include: 'src/**',
   },

@@ -72,6 +72,10 @@ const icons: Record<string, icon> = {
     iconName: 'gear',
     color: Color.dynamic(Color.black(), Color.white()),
   },
+  about: {
+    iconName: 'info.circle',
+    color: Color.dynamic(Color.black(), Color.white()),
+  },
   'twelve-volt': {
     iconName: 'minus.plus.batteryblock',
     color: Color.dynamic(Color.black(), Color.white()),
@@ -81,8 +85,8 @@ const icons: Record<string, icon> = {
 export const dateStringOptions = {
   weekday: 'short',
   month: 'short',
-  day: '2-digit',
-  hour: '2-digit',
+  day: 'numeric',
+  hour: 'numeric',
   minute: '2-digit',
 } as Intl.DateTimeFormatOptions
 

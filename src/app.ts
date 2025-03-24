@@ -2,6 +2,7 @@ import { Config, getConfig, STANDARD_CLIMATE_OPTIONS } from 'config'
 import { Bluelink, Status, ClimateRequest } from './lib/bluelink-regions/base'
 import { getTable, Div, P, Img, quickOptions, DivChild, Spacer, destructiveConfirm } from 'lib/scriptable-utils'
 import { loadConfigScreen, deleteConfig } from 'config'
+import { loadAboutScreen } from 'about'
 import { deleteWidgetCache } from 'widget'
 import {
   sleep,
@@ -101,25 +102,34 @@ export async function createApp(config: Config, bl: Bluelink) {
 }
 
 const pageTitle = connect(({ state: { name } }) => {
-  return Div([
-    P(name, {
-      font: (n) => Font.boldSystemFont(n),
-      fontSize: 35,
-      align: 'left',
-    }),
-  ])
+  return Div(
+    [
+      P(name, {
+        font: (n) => Font.boldSystemFont(n),
+        fontSize: 35,
+        align: 'left',
+        width: '90%',
+      }),
+      Img(getTintedIcon('about'), { align: 'right' }),
+    ],
+    {
+      onTap: () => {
+        loadAboutScreen()
+      },
+    },
+  )
 })
 
 const settings = (bl: Bluelink) => {
   return Div(
     [
+      Img(getTintedIcon('settings'), { align: 'left' }),
       P('Settings', {
         font: (n) => Font.boldSystemFont(n),
         fontSize: 20,
-        align: 'right',
+        align: 'left',
         width: '90%',
       }),
-      Img(getTintedIcon('settings'), { align: 'right' }),
     ],
     {
       onTap: () => {
