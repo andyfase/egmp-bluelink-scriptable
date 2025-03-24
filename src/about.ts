@@ -137,13 +137,13 @@ const upgradeNotes = connect(({ state: { currentVersion, release } }) => {
 
   return Div(
     [
-      P(`Release Notes:\n\n ${release.notes}`, {
+      P(`Release Details:\n\n ${release.name}:\n\n ${release.notes}`, {
         font: (n) => Font.mediumRoundedSystemFont(n),
-        fontSize: 18,
+        fontSize: 17,
         align: 'left',
       }),
     ],
-    { height: 200 },
+    { height: 300 },
   )
 })
 
