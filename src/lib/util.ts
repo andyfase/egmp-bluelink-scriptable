@@ -94,6 +94,14 @@ export const dateStringOptions = {
   minute: '2-digit',
 } as Intl.DateTimeFormatOptions
 
+export const dateStringAlways2DigitOptions = {
+  weekday: 'short',
+  month: 'short',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+} as Intl.DateTimeFormatOptions
+
 export function getChargeCompletionString(
   dateFrom: Date,
   minutes: number,
