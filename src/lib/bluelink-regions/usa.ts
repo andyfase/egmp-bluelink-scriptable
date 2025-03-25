@@ -4,6 +4,7 @@ import {
   BluelinkCar,
   BluelinkStatus,
   ClimateRequest,
+  ChargeLimitRequest,
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
 } from './base'
@@ -391,6 +392,41 @@ export class BluelinkUSA extends Bluelink {
       if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async setChargeLimit(
+    _id: string,
+    config: ChargeLimitRequest,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const api = 'evc/charge/targetsoc/set'
+    const resp = await this.request({
+      url: this.apiDomain + api,
+      method: 'POST',
+      data: JSON.stringify({
+        targetSOClist: [
+          {
+            plugType: 0,
+            targetSOClevel: config.dcPercent,
+          },
+          {
+            plugType: 1,
+            targetSOClevel: config.acPercent,
+          },
+        ],
+      }),
+      notJSON: true,
+      headers: {
+        ...this.carHeaders(),
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
+    }
+    const error = `Failed to send chargeLimit command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }

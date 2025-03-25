@@ -11,6 +11,22 @@ export interface Auth {
   region: string
 }
 
+export interface CustomClimateConfig {
+  name: string
+  tempType: 'C' | 'F'
+  temp: number
+  frontDefrost: boolean
+  rearDefrost: boolean
+  steering: boolean
+  durationMinutes: number
+}
+
+export interface ChargeLimitConfig {
+  name: string
+  acPercent: number
+  dcPercent: number
+}
+
 export interface Config {
   manufacturer: string
   auth: Auth
@@ -24,6 +40,7 @@ export interface Config {
   vin: string | undefined
   widgetConfig: WidgetConfig
   customClimates: CustomClimateConfig[]
+  chargeLimits: ChargeLimitConfig[]
 }
 
 export interface WidgetConfig {
@@ -33,16 +50,6 @@ export interface WidgetConfig {
   nightStandardPollPeriod: number
   nightRemotePollPeriod: number
   nightChargingRemotePollPeriod: number
-}
-
-export interface CustomClimateConfig {
-  name: string
-  tempType: 'C' | 'F'
-  temp: number
-  frontDefrost: boolean
-  rearDefrost: boolean
-  steering: boolean
-  durationMinutes: number
 }
 
 export interface FlattenedConfig {
@@ -61,6 +68,7 @@ export interface FlattenedConfig {
   vin: string | undefined
   widgetConfig: WidgetConfig
   customClimates: CustomClimateConfig[]
+  chargeLimits: ChargeLimitConfig[]
 }
 
 // const SUPPORTED_REGIONS = ['canada']
@@ -94,6 +102,18 @@ const DEFAULT_CONFIG = {
   allowWidgetRemoteRefresh: false,
   manufacturer: 'hyundai',
   customClimates: [],
+  chargeLimits: [
+    {
+      name: 'Home',
+      acPercent: 80,
+      dcPercent: 80,
+    },
+    {
+      name: 'RoadTrip',
+      acPercent: 100,
+      dcPercent: 90,
+    },
+  ],
   widgetConfig: {
     standardPollPeriod: 1,
     remotePollPeriod: 4,
@@ -298,6 +318,24 @@ export async function loadConfigScreen() {
         customIcon: 'gear',
         faded: true,
         onClickFunction: loadWidgetConfigScreen,
+      },
+      chargeLimits: {
+        type: 'clickable',
+        label: 'Charge Limit Profiles',
+        customIcon: 'climate',
+        faded: true,
+        onClickFunction: () => {
+          const config = getConfig()
+          const chargeLimitNames = Object.values(config.chargeLimits).map((x) => x.name)
+          quickOptions(['New'].concat(chargeLimitNames), {
+            title: 'Create New Custom Climate or Edit Existing',
+            onOptionSelect: (opt) => {
+              loadChargeLimitConfig(
+                opt !== 'New' ? Object.values(config.chargeLimits).filter((x) => x.name === opt)[0] : undefined,
+              )
+            },
+          })
+        },
       },
       customClimates: {
         type: 'clickable',
@@ -527,4 +565,86 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
       },
     },
   })(climateConfig)
+}
+
+export async function loadChargeLimitConfig(chargeLimit: ChargeLimitConfig | undefined) {
+  const previousName = chargeLimit ? chargeLimit.name : undefined
+  if (!chargeLimit) {
+    chargeLimit = {
+      name: '',
+      acPercent: 80,
+      dcPercent: 80,
+    } as ChargeLimitConfig
+  }
+
+  return await form<ChargeLimitConfig & { delete: boolean }>({
+    title: 'Charge Limit Configuration',
+    subtitle: previousName ? `Editing configuration: ${previousName}` : 'Create new configuration',
+    onSubmit: ({ name, acPercent, dcPercent }) => {
+      const config = getConfig()
+      const newConfig = {
+        name: name,
+        acPercent: acPercent,
+        dcPercent: dcPercent,
+      } as ChargeLimitConfig
+      if (previousName) {
+        const index = config.chargeLimits.findIndex((x) => x.name === previousName)
+        config.chargeLimits[index] = newConfig
+      } else {
+        config.chargeLimits.push(newConfig)
+      }
+      setConfig(config)
+    },
+    isFormValid: ({ name, acPercent, dcPercent }) => {
+      if (!name || !acPercent || !dcPercent) return false
+      if (acPercent < 0 || acPercent > 100) return false
+      if (dcPercent < 0 || dcPercent > 100) return false
+      if (!(acPercent % 10 === 0)) return false
+      if (!(dcPercent % 10 === 0)) return false
+
+      // check for name collision on other custom options
+      const config = getConfig()
+      const chargeLimitNames = Object.values(config.chargeLimits).map((x) => x.name)
+      if (previousName) chargeLimitNames.splice(chargeLimitNames.indexOf(previousName), 1)
+      if (chargeLimitNames.includes(name)) return false
+      return true
+    },
+    submitButtonText: 'Save',
+    fields: {
+      name: {
+        type: 'textInput',
+        label: 'Name',
+        isRequired: true,
+      },
+      acPercent: {
+        type: 'numberValue',
+        label: 'Desired AC (Slow) charge limit (0-100 in 10% increments)',
+        isRequired: true,
+      },
+      dcPercent: {
+        type: 'numberValue',
+        label: 'Desired DC (Fast) charge limit (0-100 in 10% increments)',
+        isRequired: true,
+      },
+      delete: {
+        type: 'clickable',
+        label: 'Delete Charge Limit Configuration',
+        customIcon: 'delete',
+        faded: true,
+        dismissOnTap: true,
+        onClickFunction: () => {
+          if (!previousName) return
+          destructiveConfirm(`Delete Charge Limit ${previousName}?`, {
+            onConfirm: () => {
+              const config = getConfig()
+              const chargeLimitNames = Object.values(config.chargeLimits).map((x) => x.name)
+              const index = chargeLimitNames.indexOf(previousName)
+              config.chargeLimits.splice(index, 1)
+              setConfig(config)
+            },
+          })
+        },
+      },
+    },
+  })(chargeLimit)
 }

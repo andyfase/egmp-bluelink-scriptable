@@ -80,6 +80,10 @@ const icons: Record<string, icon> = {
     iconName: 'minus.plus.batteryblock',
     color: Color.dynamic(Color.black(), Color.white()),
   },
+  'charge-limit': {
+    iconName: 'bolt.brakesignal',
+    color: Color.dynamic(Color.black(), Color.white()),
+  },
 }
 
 export const dateStringOptions = {
