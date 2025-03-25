@@ -1,7 +1,9 @@
 import { Config, getConfig, STANDARD_CLIMATE_OPTIONS } from 'config'
 import { Bluelink, Status, ClimateRequest } from './lib/bluelink-regions/base'
 import { getTable, Div, P, Img, quickOptions, DivChild, Spacer, destructiveConfirm } from 'lib/scriptable-utils'
-import { loadConfigScreen, deleteConfig } from 'config'
+import { loadConfigScreen, deleteConfig, setConfig } from 'config'
+import { Version } from 'lib/version'
+import { loadAboutScreen } from 'about'
 import { deleteWidgetCache } from 'widget'
 import {
   sleep,
@@ -64,13 +66,33 @@ export async function createApp(config: Config, bl: Bluelink) {
   // if its been at least MIN_API_REFRESH_TIME milliseconds
   const cachedStatus = bl.getCachedStatus()
   if (!cachedStatus || cachedStatus.status.lastStatusCheck < Date.now() + MIN_API_REFRESH_TIME) {
-    bl.getStatus(false, true).then(async (status) => {
-      updateStatus(status)
-    })
+    // bl.getStatus(false, true).then(async (status) => {
+    //   updateStatus(status)
+    // })
   }
 
   // fetch app icon
   const appIcon = await bl.getCarImage()
+
+  // async check if prompt for update is required
+  if (config.promptForUpdate) {
+    const version = new Version('andyfase', 'egmp-bluelink-scriptable')
+    version.promptForUpdate().then((updateRequired: boolean) => {
+      if (updateRequired) {
+        quickOptions(['See Details', 'Cancel', 'Never Ask Again'], {
+          title: 'Update Available',
+          onOptionSelect: (opt) => {
+            if (opt === 'See Details') {
+              loadAboutScreen()
+            } else if (opt === 'Never Ask Again') {
+              config.promptForUpdate = false
+              setConfig(config)
+            }
+          },
+        })
+      }
+    })
+  }
 
   return present({
     defaultState: {
@@ -101,25 +123,34 @@ export async function createApp(config: Config, bl: Bluelink) {
 }
 
 const pageTitle = connect(({ state: { name } }) => {
-  return Div([
-    P(name, {
-      font: (n) => Font.boldSystemFont(n),
-      fontSize: 35,
-      align: 'left',
-    }),
-  ])
+  return Div(
+    [
+      P(name, {
+        font: (n) => Font.boldSystemFont(n),
+        fontSize: 35,
+        align: 'left',
+        width: '90%',
+      }),
+      Img(getTintedIcon('about'), { align: 'right' }),
+    ],
+    {
+      onTap: () => {
+        loadAboutScreen()
+      },
+    },
+  )
 })
 
 const settings = (bl: Bluelink) => {
   return Div(
     [
+      Img(getTintedIcon('settings'), { align: 'left' }),
       P('Settings', {
         font: (n) => Font.boldSystemFont(n),
         fontSize: 20,
-        align: 'right',
+        align: 'left',
         width: '90%',
       }),
-      Img(getTintedIcon('settings'), { align: 'right' }),
     ],
     {
       onTap: () => {

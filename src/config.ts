@@ -20,6 +20,7 @@ export interface Config {
   climateTempCold: number
   allowWidgetRemoteRefresh: boolean
   debugLogging: boolean
+  promptForUpdate: boolean
   vin: string | undefined
   widgetConfig: WidgetConfig
   customClimates: CustomClimateConfig[]
@@ -56,6 +57,7 @@ export interface FlattenedConfig {
   climateTempCold: number
   allowWidgetRemoteRefresh: boolean
   debugLogging: boolean
+  promptForUpdate: boolean
   vin: string | undefined
   widgetConfig: WidgetConfig
   customClimates: CustomClimateConfig[]
@@ -88,6 +90,7 @@ const DEFAULT_CONFIG = {
   climateTempCold: DEFAULT_TEMPS.C.cold,
   climateTempWarm: DEFAULT_TEMPS.C.warm,
   debugLogging: false,
+  promptForUpdate: true,
   allowWidgetRemoteRefresh: false,
   manufacturer: 'hyundai',
   customClimates: [],
@@ -155,6 +158,7 @@ export async function loadConfigScreen() {
       climateTempWarm,
       climateTempCold,
       debugLogging,
+      promptForUpdate,
       allowWidgetRemoteRefresh,
       manufacturer: manufacturer,
       vin: vin,
@@ -176,6 +180,7 @@ export async function loadConfigScreen() {
           climateTempWarm: climateTempWarm,
           allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
           debugLogging: debugLogging,
+          promptForUpdate: promptForUpdate,
           manufacturer: manufacturer?.toLowerCase(),
           vin: vin ? vin.toUpperCase().trim() : undefined,
         },
@@ -280,6 +285,11 @@ export async function loadConfigScreen() {
       debugLogging: {
         type: 'checkbox',
         label: 'Enable debug logging',
+        isRequired: false,
+      },
+      promptForUpdate: {
+        type: 'checkbox',
+        label: 'Enable prompting for app updates',
         isRequired: false,
       },
       widgetConfig: {

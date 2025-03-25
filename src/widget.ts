@@ -292,11 +292,12 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
   const appIcon = await bl.getCarImage()
   // define widget and set date for when the next refresh should not occur before.
   const widget = new ListWidget()
+  widget.setPadding(20, 10, 15, 15)
   widget.refreshAfterDate = refresh.nextRefresh
 
   const mainStack = widget.addStack()
   mainStack.layoutVertically()
-  mainStack.addSpacer()
+  // mainStack.addSpacer()
 
   // Add background color
   widget.backgroundColor = DARK_MODE ? new Color(DARK_BG_COLOR) : new Color(LIGHT_BG_COLOR)
@@ -346,7 +347,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
     chargingElement.imageSize = new Size(25, 25)
   }
 
-  batteryPercentStack.addSpacer(5)
+  // batteryPercentStack.addSpacer(5)
 
   const batteryPercentText = batteryPercentStack.addText(`${batteryPercent.toString()}%`)
   batteryPercentText.textColor = getBatteryPercentColor(status.status.soc)
@@ -360,7 +361,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
     batteryChargingTimeStack.addSpacer()
 
     const chargingSpeedElement = batteryChargingTimeStack.addText(`${chargingKw}`)
-    chargingSpeedElement.font = Font.mediumSystemFont(12)
+    chargingSpeedElement.font = Font.mediumSystemFont(13)
     chargingSpeedElement.textOpacity = 0.9
     chargingSpeedElement.textColor = DARK_MODE ? Color.white() : Color.black()
     chargingSpeedElement.leftAlignText()
@@ -382,16 +383,16 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
 
   // Footer
   const footerStack = mainStack.addStack()
-  // footerStack.addSpacer()
+  footerStack.addSpacer(5) // hack - dynamic spacing doesnt seem to work that well here
 
   // Add last seen indicator
   const lastSeenElement = footerStack.addText(lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown')
+  lastSeenElement.lineLimit = 1
   lastSeenElement.font = Font.mediumSystemFont(11)
   lastSeenElement.textOpacity = 0.5
   lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()
-  // lastSeenElement.rightAlignText()
 
-  mainStack.addSpacer()
+  // mainStack.addSpacer()
 
   return widget
 }

@@ -14,7 +14,8 @@
     "noImplicitReturns": false,
     "strictFunctionTypes": true,
     "noErrorTruncation": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
   },
   "include": ["src/**/*.ts", "./*.ts"],
   "exclude": ["node_modules"]
