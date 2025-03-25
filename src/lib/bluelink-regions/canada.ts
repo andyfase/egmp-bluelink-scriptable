@@ -4,6 +4,7 @@ import {
   BluelinkCar,
   BluelinkStatus,
   ClimateRequest,
+  ChargeLimitRequest,
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
 } from './base'
@@ -477,6 +478,43 @@ export class BluelinkCanada extends Bluelink {
       if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
+  }
+
+  protected async setChargeLimit(
+    id: string,
+    config: ChargeLimitRequest,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const authCode = await this.getAuthCode()
+    const api = 'evc/setsoc'
+    const resp = await this.request({
+      url: this.apiDomain + api,
+      method: 'POST',
+      data: JSON.stringify({
+        pin: this.config.auth.pin,
+        tsoc: [
+          {
+            plugType: 0,
+            level: config.dcPercent,
+          },
+          {
+            plugType: 1,
+            level: config.acPercent,
+          },
+        ],
+      }),
+      headers: {
+        Vehicleid: id,
+        Pauth: authCode,
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
+      if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
+    }
+    const error = `Failed to send chargeLimit command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
   }

@@ -33,6 +33,10 @@ interface updatingActions {
     image: Image
     text: string
   }
+  chargeLimit?: {
+    image: Image
+    text: string
+  }
 }
 
 let isUpdating = false
@@ -116,7 +120,7 @@ export async function createApp(config: Config, bl: Bluelink) {
       batteryStatus(bl),
       pageImage(),
       pageIcons(bl),
-      Spacer({ rowHeight: 200 }),
+      Spacer({ rowHeight: 150 }),
       settings(bl),
     ],
   })
@@ -444,6 +448,58 @@ const pageIcons = connect(
                 },
               })
             }
+          },
+        },
+      ),
+      Div(
+        [
+          Img(
+            updatingActions && updatingActions.chargeLimit
+              ? updatingActions.chargeLimit.image
+              : getTintedIcon('charge-limit'),
+            {
+              align: 'center',
+            },
+          ),
+          P(updatingActions && updatingActions.chargeLimit ? updatingActions.chargeLimit.text : 'Set Charge Limit', {
+            align: 'left',
+            width: '70%',
+            ...(updatingActions && updatingActions.chargeLimit && { color: Color.orange() }),
+          }),
+        ],
+        {
+          onTap() {
+            if (isUpdating) {
+              return
+            }
+            const config = getConfig() // always re-read in case config has been mutated by config screens, and app page is not refreshed
+            const chargeLimits = Object.values(config.chargeLimits).map((x) => x.name)
+            quickOptions(chargeLimits.concat(['Cancel']), {
+              title: 'Confirm charge limit to set',
+              onOptionSelect: (opt) => {
+                if (opt === 'Cancel') return
+                const payload = Object.values(config.chargeLimits).filter((x) => x.name === opt)[0]
+                if (!payload) return
+                doAsyncUpdate({
+                  command: 'chargeLimit',
+                  bl: bl,
+                  payload: payload,
+                  actions: updatingActions,
+                  actionKey: 'chargeLimit',
+                  updatingText: `Setting charge limit ...`,
+                  successText: `Charge limit ${payload.name} set!`,
+                  failureText: `Failed to set charge limit!!!`,
+                  successCallback: (data) => {
+                    updateStatus({
+                      ...bl.getCachedStatus(),
+                      status: {
+                        ...data,
+                      },
+                    } as Status)
+                  },
+                })
+              },
+            })
           },
         },
       ),

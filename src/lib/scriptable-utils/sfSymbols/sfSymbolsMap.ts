@@ -105,6 +105,7 @@ export default {
   lock: 'lock',
   megaphone: 'megaphone',
   gear: 'gear',
+  climate: 'bolt.brakesignal',
   merge: 'arrow.triangle.merge',
   milestone: 'flag.circle',
   money: 'dollarsign.square',

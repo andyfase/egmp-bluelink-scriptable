@@ -90,6 +90,11 @@ export interface ClimateRequest {
   durationMinutes: number
 }
 
+export interface ChargeLimitRequest {
+  acPercent: number
+  dcPercent: number
+}
+
 const carImageHttpURL = 'https://bluelink.andyfase.com/app-assets/car-images/'
 const carImageMap: Record<string, string> = {
   'ioniq 5 n': 'ioniq5n.png',
@@ -272,6 +277,14 @@ export class Bluelink {
       case 'stopCharge':
         promise = this.stopCharge(this.cache.car.id)
         break
+      case 'chargeLimit': {
+        if (!input) {
+          throw Error('Must provide valid input for charge limit request!')
+        }
+        const inputChargeLimit = input as ChargeLimitRequest
+        promise = this.setChargeLimit(this.cache.car.id, inputChargeLimit)
+        break
+      }
       case 'climate': {
         if (!input) {
           throw Error('Must provide valid input for climate request!')
@@ -541,6 +554,14 @@ export class Bluelink {
   }
 
   protected async climateOff(_id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    // implemented in country specific sub-class
+    throw Error('Not Implemented')
+  }
+
+  protected async setChargeLimit(
+    _id: string,
+    _config: ChargeLimitRequest,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')
   }
