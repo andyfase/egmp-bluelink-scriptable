@@ -109,7 +109,7 @@ const latestVersion = connect(({ state: { currentVersion, release } }) => {
       font: (n) => Font.boldRoundedSystemFont(n),
       fontSize: 20,
       align: 'right',
-      color: currentVersion === release.version ? Color.green() : Color.red(),
+      color: currentVersion === release.version ? Color.green() : Color.blue(),
     }),
   ])
 })
