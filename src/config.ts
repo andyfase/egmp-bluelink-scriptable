@@ -599,6 +599,8 @@ export async function loadChargeLimitConfig(chargeLimit: ChargeLimitConfig | und
       if (!name || !acPercent || !dcPercent) return false
       if (acPercent < 0 || acPercent > 100) return false
       if (dcPercent < 0 || dcPercent > 100) return false
+      if (!(acPercent % 10 === 0)) return false
+      if (!(dcPercent % 10 === 0)) return false
 
       // check for name collision on other custom options
       const config = getConfig()
@@ -616,12 +618,12 @@ export async function loadChargeLimitConfig(chargeLimit: ChargeLimitConfig | und
       },
       acPercent: {
         type: 'numberValue',
-        label: 'Desired AC (Slow) charge limit (0-100)',
+        label: 'Desired AC (Slow) charge limit (0-100 in 10% increments)',
         isRequired: true,
       },
       dcPercent: {
         type: 'numberValue',
-        label: 'Desired DC (Fast) charge limit (0-100)',
+        label: 'Desired DC (Fast) charge limit (0-100 in 10% increments)',
         isRequired: true,
       },
       delete: {
