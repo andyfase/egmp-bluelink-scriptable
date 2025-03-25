@@ -1,10 +1,13 @@
 import version from '../version.json'
 
+const ASSET_BINARY = 'egmp-bluelink.js'
+
 export interface GithubRelease {
   version: string
   name: string
   date: string
   url: string
+  assetName: string
   notes: string
 }
 
@@ -60,7 +63,7 @@ export class Version {
     let asseturl = ''
     const response = await request.loadJSON()
     for (const asset of response.assets) {
-      if (asset.name === 'egmp-bluelink.js') {
+      if (asset.name === ASSET_BINARY) {
         asseturl = asset.browser_download_url
       }
     }
@@ -70,6 +73,7 @@ export class Version {
       name: response.name,
       date: response.published_at,
       url: asseturl,
+      assetName: ASSET_BINARY,
       notes: response.body,
     }
     return this.githubLatestRelease

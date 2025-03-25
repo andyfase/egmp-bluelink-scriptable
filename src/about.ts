@@ -1,5 +1,7 @@
-import { getTable, Div, P, Img, Spacer } from 'lib/scriptable-utils'
+import { getTable, Div, P, Img, Spacer, quickOptions, OK } from 'lib/scriptable-utils'
 import { GithubRelease, Version } from 'lib/version'
+
+const SCRIPTABLE_DIR = '/var/mobile/Library/Mobile Documents/iCloud~dk~simonbs~Scriptable/Documents'
 
 const { present, connect, setState } = getTable<{
   release: GithubRelease | undefined
@@ -117,16 +119,32 @@ const upgrade = connect(({ state: { currentVersion, release } }) => {
 
   return Div(
     [
-      P(`Click to Download version ${release.version}`, {
+      P(`Click to Auto Install ${release.version}`, {
         font: (n) => Font.mediumRoundedSystemFont(n),
         fontSize: 20,
         color: Color.blue(),
-        align: 'left',
+        align: 'center',
       }),
     ],
     {
-      onTap() {
-        Safari.open(release.url)
+      onTap: async () => {
+        quickOptions(['Install', 'Cancel'], {
+          title: 'Confirm Install - App will update and auto-close',
+          onOptionSelect: async (opt) => {
+            if (opt === 'Install') {
+              const req = new Request(release.url)
+              const data = await req.load()
+              if (req.response.statusCode === 200) {
+                const fm = FileManager.iCloud()
+                fm.write(`${SCRIPTABLE_DIR}/${release.assetName}`, data)
+                // @ts-ignore - undocumented api
+                App.close() // add this back after dev
+              } else {
+                OK('Download Error', { message: `Failed to download release: ${req.response.statusCode}` })
+              }
+            }
+          },
+        })
       },
     },
   )
