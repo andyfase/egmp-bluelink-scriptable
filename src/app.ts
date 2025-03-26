@@ -5,6 +5,8 @@ import { loadConfigScreen, deleteConfig, setConfig } from 'config'
 import { Version } from 'lib/version'
 import { loadAboutScreen } from 'about'
 import { deleteWidgetCache } from 'widget'
+import { Logger } from './lib/logger'
+import { APP_LOG_FILE } from './lib/util'
 import {
   sleep,
   loadTintedIcons,
@@ -41,6 +43,7 @@ interface updatingActions {
 
 let isUpdating = false
 let updatingIconAngle = 0
+const logger = new Logger(APP_LOG_FILE, 100)
 
 const { present, connect, setState } = getTable<{
   name: string
@@ -598,7 +601,7 @@ async function doAsyncUpdate(props: doAsyncUpdateProps) {
 
       // log error on failure
       if (!didSucceed) {
-        logError(JSON.stringify(data))
+        logger.log(`Failed to complete request ${JSON.stringify(data)}`)
       }
     } else {
       // continue to rotate icon indicating ongoing update

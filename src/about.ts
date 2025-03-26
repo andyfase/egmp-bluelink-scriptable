@@ -1,7 +1,10 @@
 import { getTable, Div, P, Img, Spacer, quickOptions, OK } from 'lib/scriptable-utils'
 import { GithubRelease, Version } from 'lib/version'
+import { Logger } from './lib/logger'
+import { APP_LOG_FILE } from './lib/util'
 
 const SCRIPTABLE_DIR = '/var/mobile/Library/Mobile Documents/iCloud~dk~simonbs~Scriptable/Documents'
+const logger = new Logger(APP_LOG_FILE, 100)
 
 const { present, connect, setState } = getTable<{
   release: GithubRelease | undefined
@@ -136,9 +139,16 @@ const upgrade = connect(({ state: { currentVersion, release } }) => {
               const data = await req.load()
               if (req.response.statusCode === 200) {
                 const fm = FileManager.iCloud()
+                // try to backup current script - log errors, script could have been renamed for example
+                try {
+                  fm.move(`${SCRIPTABLE_DIR}/${release.assetName}`, `${SCRIPTABLE_DIR}/${release.assetName}.backup`)
+                } catch (e) {
+                  logger.log(`Failed to backup current script: ${e}`)
+                }
                 fm.write(`${SCRIPTABLE_DIR}/${release.assetName}`, data)
+                Script.complete()
                 // @ts-ignore - undocumented api
-                App.close() // add this back after dev
+                App.close()
               } else {
                 OK('Download Error', { message: `Failed to download release: ${req.response.statusCode}` })
               }

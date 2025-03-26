@@ -4,7 +4,6 @@ import {
   calculateBatteryIcon,
   getChargingIcon,
   dateStringOptions,
-  dateStringAlways2DigitOptions,
   getChargeCompletionString,
   sleep,
 } from './lib/util'
@@ -386,15 +385,13 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
 
   // Footer
   const footerStack = mainStack.addStack()
-  footerStack.addSpacer(5) // hack - dynamic spacing doesnt seem to work that well here
+  footerStack.addSpacer() // hack - dynamic spacing doesnt seem to work that well here
 
   // Add last seen indicator - use consistent date format as spacing is hard coded, hence we need to control the length
-  const lastSeenElement = footerStack.addText(
-    lastSeen.toLocaleString(undefined, dateStringAlways2DigitOptions) || 'unknown',
-  )
+  const lastSeenElement = footerStack.addText(lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown')
   lastSeenElement.lineLimit = 1
-  lastSeenElement.font = Font.mediumSystemFont(11)
-  lastSeenElement.textOpacity = 0.5
+  lastSeenElement.font = Font.thinSystemFont(11)
+  // lastSeenElement.textOpacity = 0.5
   lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()
 
   // mainStack.addSpacer()
