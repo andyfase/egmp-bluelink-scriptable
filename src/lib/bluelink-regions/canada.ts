@@ -4,7 +4,7 @@ import {
   BluelinkCar,
   BluelinkStatus,
   ClimateRequest,
-  ChargeLimitRequest,
+  ChargeLimit,
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
 } from './base'
@@ -188,7 +188,12 @@ export class BluelinkCanada extends Bluelink {
     throw Error(error)
   }
 
-  protected returnCarStatus(status: any, forceUpdate: boolean, odometer?: number): BluelinkStatus {
+  protected returnCarStatus(
+    status: any,
+    forceUpdate: boolean,
+    odometer?: number,
+    chargeLimit?: ChargeLimit,
+  ): BluelinkStatus {
     const lastRemoteCheckString = status.lastStatusDate + 'Z'
     const df = new DateFormatter()
     df.dateFormat = 'yyyyMMddHHmmssZ'
@@ -210,6 +215,12 @@ export class BluelinkCanada extends Bluelink {
         climate: status.airCtrlOn,
         twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
         odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
+        chargeLimit:
+          chargeLimit && chargeLimit.acPercent > 0
+            ? chargeLimit
+            : this.cache
+              ? this.cache.status.chargeLimit
+              : undefined,
       }
     }
 
@@ -252,6 +263,8 @@ export class BluelinkCanada extends Bluelink {
       soc: status.evStatus.batteryStatus,
       twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
       odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
+      chargeLimit:
+        chargeLimit && chargeLimit.acPercent > 0 ? chargeLimit : this.cache ? this.cache.status.chargeLimit : undefined,
     }
   }
 
@@ -271,9 +284,14 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
 
+    let chargeLimit = undefined
+    if (forceUpdate) {
+      chargeLimit = await this.getChargeLimit(id)
+    }
+
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
       return forceUpdate
-        ? this.returnCarStatus(resp.json.result.status, forceUpdate, resp.json.result.status.odometer)
+        ? this.returnCarStatus(resp.json.result.status, forceUpdate, resp.json.result.status.odometer, chargeLimit)
         : this.returnCarStatus(resp.json.result.status, forceUpdate, resp.json.result.vehicle.odometer)
     }
 
@@ -305,6 +323,7 @@ export class BluelinkCanada extends Bluelink {
     id: string,
     authCode: string,
     transactionId: string,
+    chargeLimit?: ChargeLimit,
   ): Promise<{ isSuccess: boolean; data: any }> {
     const api = 'rmtsts'
     let attempts = 0
@@ -329,7 +348,7 @@ export class BluelinkCanada extends Bluelink {
       if (resp.json.result.transaction.apiResult === 'C') {
         // update saved cache status
         if (resp.json.result.vehicle) {
-          this.cache.status = this.returnCarStatus(resp.json.result.vehicle, true)
+          this.cache.status = this.returnCarStatus(resp.json.result.vehicle, true, undefined, chargeLimit)
           this.saveCache()
         }
         return {
@@ -482,9 +501,36 @@ export class BluelinkCanada extends Bluelink {
     throw Error(error)
   }
 
+  protected async getChargeLimit(id: string): Promise<ChargeLimit> {
+    const api = 'evc/selsoc'
+    const resp = await this.request({
+      method: 'POST',
+      url: this.apiDomain + api,
+      headers: {
+        Vehicleid: id,
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    const chargeLimit = {
+      dcPercent: 0,
+      acPercent: 0,
+    }
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.result) {
+      for (const soc of resp.json.result) {
+        if (soc.plugType === 0) {
+          chargeLimit.dcPercent = soc.level
+        } else if (soc.plugType === 1) {
+          chargeLimit.acPercent = soc.level
+        }
+      }
+    }
+    // default to zero if we cant extract
+    return chargeLimit
+  }
+
   protected async setChargeLimit(
     id: string,
-    config: ChargeLimitRequest,
+    config: ChargeLimit,
   ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const authCode = await this.getAuthCode()
     const api = 'evc/setsoc'
@@ -512,7 +558,7 @@ export class BluelinkCanada extends Bluelink {
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
       const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
-      if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
+      if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId, config)
     }
     const error = `Failed to send chargeLimit command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)

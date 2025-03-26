@@ -6,7 +6,7 @@ import {
   ClimateRequest,
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
-  ChargeLimitRequest,
+  ChargeLimit,
 } from './base'
 import { Config } from '../../config'
 
@@ -157,6 +157,21 @@ export class BluelinkUSAKia extends Bluelink {
     df.dateFormat = 'yyyyMMddHHmmssZ'
     const lastRemoteCheck = df.date(lastRemoteCheckString)
 
+    // check for charge limits
+    const chargeLimit: ChargeLimit = {
+      dcPercent: 0,
+      acPercent: 0,
+    }
+    if (status.evStatus.targetSOC) {
+      for (const limit of status.evStatus.targetSOC) {
+        if (limit.plugType === 0) {
+          chargeLimit.dcPercent = limit.targetSOClevel
+        } else if (limit.plugType === 1) {
+          chargeLimit.acPercent = limit.targetSOClevel
+        }
+      }
+    }
+
     return {
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: lastRemoteCheck.getTime(),
@@ -177,6 +192,8 @@ export class BluelinkUSAKia extends Bluelink {
       soc: status.evStatus.batteryStatus,
       twelveSoc: status.batteryStatus.stateOfCharge ? status.batteryStatus.stateOfCharge : 0,
       odometer: 0, // not given in status
+      chargeLimit:
+        chargeLimit && chargeLimit.acPercent > 0 ? chargeLimit : this.cache ? this.cache.status.chargeLimit : undefined,
     }
   }
 
@@ -428,7 +445,7 @@ export class BluelinkUSAKia extends Bluelink {
 
   protected async setChargeLimit(
     id: string,
-    config: ChargeLimitRequest,
+    config: ChargeLimit,
   ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const api = 'evc/sts'
     const resp = await this.request({

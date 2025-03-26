@@ -4,7 +4,7 @@ import {
   BluelinkCar,
   BluelinkStatus,
   ClimateRequest,
-  ChargeLimitRequest,
+  ChargeLimit,
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
 } from './base'
@@ -408,6 +408,16 @@ export class BluelinkEurope extends Bluelink {
       chargingPower = status.Green.Electric.SmartGrid.RealTimePower
     }
 
+    // check for charge limits
+    const chargeLimit: ChargeLimit = {
+      dcPercent: 0,
+      acPercent: 0,
+    }
+    if (status.Green.ChargingInformation && status.Green.ChargingInformation.TargetSoC) {
+      chargeLimit.acPercent = status.Green.ChargingInformation.TargetSoC.Standard
+      chargeLimit.dcPercent = status.Green.ChargingInformation.TargetSoC.Quick
+    }
+
     return {
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: Number(updateTime),
@@ -432,6 +442,8 @@ export class BluelinkEurope extends Bluelink {
       soc: status.Green.BatteryManagement.BatteryRemain.Ratio,
       twelveSoc: status.Electronics.Battery.Level ? status.Electronics.Battery.Level : 0,
       odometer: newOdometer ? newOdometer : this.cache ? this.cache.status.odometer : 0,
+      chargeLimit:
+        chargeLimit && chargeLimit.acPercent > 0 ? chargeLimit : this.cache ? this.cache.status.chargeLimit : undefined,
     }
   }
 
@@ -683,7 +695,7 @@ export class BluelinkEurope extends Bluelink {
 
   protected async setChargeLimit(
     id: string,
-    config: ChargeLimitRequest,
+    config: ChargeLimit,
   ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const resp = await this.request({
       // use v1 for now - need a trace to see if v2 available or not

@@ -4,7 +4,7 @@ import {
   BluelinkCar,
   BluelinkStatus,
   ClimateRequest,
-  ChargeLimitRequest,
+  ChargeLimit,
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
 } from './base'
@@ -180,6 +180,21 @@ export class BluelinkUSA extends Bluelink {
       }
     }
 
+    // check for charge limits
+    const chargeLimit: ChargeLimit = {
+      dcPercent: 0,
+      acPercent: 0,
+    }
+    if (status.evStatus.reservChargeInfos && status.evStatus.reservChargeInfos.targetSOClist) {
+      for (const limit of status.evStatus.reservChargeInfos.targetSOClist) {
+        if (limit.plugType === 0) {
+          chargeLimit.dcPercent = limit.targetSOClevel
+        } else if (limit.plugType === 1) {
+          chargeLimit.acPercent = limit.targetSOClevel
+        }
+      }
+    }
+
     return {
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
@@ -199,6 +214,8 @@ export class BluelinkUSA extends Bluelink {
       soc: status.evStatus.batteryStatus,
       twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
       odometer: status.odometer ? status.odometer : 0,
+      chargeLimit:
+        chargeLimit && chargeLimit.acPercent > 0 ? chargeLimit : this.cache ? this.cache.status.chargeLimit : undefined,
     }
   }
 
@@ -398,7 +415,7 @@ export class BluelinkUSA extends Bluelink {
 
   protected async setChargeLimit(
     _id: string,
-    config: ChargeLimitRequest,
+    config: ChargeLimit,
   ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const api = 'evc/charge/targetsoc/set'
     const resp = await this.request({

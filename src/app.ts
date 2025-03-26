@@ -1,5 +1,5 @@
 import { Config, getConfig, STANDARD_CLIMATE_OPTIONS } from 'config'
-import { Bluelink, Status, ClimateRequest } from './lib/bluelink-regions/base'
+import { Bluelink, Status, ClimateRequest, ChargeLimit } from './lib/bluelink-regions/base'
 import { getTable, Div, P, Img, quickOptions, DivChild, Spacer, destructiveConfirm } from 'lib/scriptable-utils'
 import { loadConfigScreen, deleteConfig, setConfig } from 'config'
 import { Version } from 'lib/version'
@@ -57,6 +57,7 @@ const { present, connect, setState } = getTable<{
   twelveSoc: number
   updatingActions: updatingActions | undefined
   appIcon: Image
+  chargeLimit: ChargeLimit | undefined
 }>({
   name: 'Testing',
 })
@@ -70,9 +71,9 @@ export async function createApp(config: Config, bl: Bluelink) {
   // if its been at least MIN_API_REFRESH_TIME milliseconds
   const cachedStatus = bl.getCachedStatus()
   if (!cachedStatus || cachedStatus.status.lastStatusCheck < Date.now() + MIN_API_REFRESH_TIME) {
-    // bl.getStatus(false, true).then(async (status) => {
-    //   updateStatus(status)
-    // })
+    bl.getStatus(false, true).then(async (status) => {
+      updateStatus(status)
+    })
   }
 
   // fetch app icon
@@ -114,6 +115,7 @@ export async function createApp(config: Config, bl: Bluelink) {
       updatingActions: undefined,
       twelveSoc: cachedStatus.status.twelveSoc,
       appIcon: appIcon,
+      chargeLimit: cachedStatus.status.chargeLimit,
     },
     render: () => [
       pageTitle(),
@@ -215,6 +217,7 @@ const pageIcons = connect(
         locked,
         updatingActions,
         twelveSoc,
+        chargeLimit,
       },
     },
     bl: Bluelink,
@@ -253,6 +256,22 @@ const pageIcons = connect(
     const lockedIcon = locked ? 'locked' : 'unlocked'
 
     const twelveSocText = twelveSoc > 0 ? `12v battery at ${twelveSoc}%` : '12v battery status unknown'
+
+    // find charge limit name based on current values
+    let chargeLimitName = undefined
+    const config = getConfig()
+    if (chargeLimit && config.chargeLimits) {
+      const matchedLimits = Object.values(config.chargeLimits).filter(
+        (x) => x.acPercent === chargeLimit.acPercent && x.dcPercent === chargeLimit.dcPercent,
+      )
+      if (matchedLimits.length > 0) chargeLimitName = matchedLimits[0]?.name || undefined
+    }
+    const chargeLimitPercentText = chargeLimit ? `${chargeLimit.acPercent}% / ${chargeLimit.dcPercent}%` : undefined
+    const chargeLimitText = chargeLimitPercentText
+      ? chargeLimitName
+        ? `${chargeLimitName} Charge Limit`
+        : `Charge Limit: ${chargeLimitPercentText}`
+      : 'Set Charge Limit'
 
     return Div([
       Div(
@@ -416,43 +435,6 @@ const pageIcons = connect(
       ),
       Div(
         [
-          Img(updatingActions && updatingActions.status ? updatingActions.status.image : getTintedIcon('status'), {
-            align: 'center',
-          }),
-          P(
-            updatingActions && updatingActions.status
-              ? updatingActions.status.text
-              : `${lastSeen.toLocaleString(undefined, dateStringOptions)}`,
-            {
-              align: 'left',
-              width: '70%',
-              ...(updatingActions && updatingActions.status && { color: Color.orange() }),
-            },
-          ),
-        ],
-        {
-          onTap() {
-            if (!isUpdating) {
-              doAsyncUpdate({
-                command: 'status',
-                bl: bl,
-                actions: updatingActions,
-                actionKey: 'status',
-                updatingText: 'Updating Status...',
-                successText: 'Status Updated!',
-                failureText: 'Status Failed to Update!!!',
-                successCallback: (data) => {
-                  updateStatus({
-                    ...data,
-                  } as Status)
-                },
-              })
-            }
-          },
-        },
-      ),
-      Div(
-        [
           Img(
             updatingActions && updatingActions.chargeLimit
               ? updatingActions.chargeLimit.image
@@ -461,7 +443,7 @@ const pageIcons = connect(
               align: 'center',
             },
           ),
-          P(updatingActions && updatingActions.chargeLimit ? updatingActions.chargeLimit.text : 'Set Charge Limit', {
+          P(updatingActions && updatingActions.chargeLimit ? updatingActions.chargeLimit.text : chargeLimitText, {
             align: 'left',
             width: '70%',
             ...(updatingActions && updatingActions.chargeLimit && { color: Color.orange() }),
@@ -503,6 +485,43 @@ const pageIcons = connect(
           },
         },
       ),
+      Div(
+        [
+          Img(updatingActions && updatingActions.status ? updatingActions.status.image : getTintedIcon('status'), {
+            align: 'center',
+          }),
+          P(
+            updatingActions && updatingActions.status
+              ? updatingActions.status.text
+              : `${lastSeen.toLocaleString(undefined, dateStringOptions)}`,
+            {
+              align: 'left',
+              width: '70%',
+              ...(updatingActions && updatingActions.status && { color: Color.orange() }),
+            },
+          ),
+        ],
+        {
+          onTap() {
+            if (!isUpdating) {
+              doAsyncUpdate({
+                command: 'status',
+                bl: bl,
+                actions: updatingActions,
+                actionKey: 'status',
+                updatingText: 'Updating Status...',
+                successText: 'Status Updated!',
+                failureText: 'Status Failed to Update!!!',
+                successCallback: (data) => {
+                  updateStatus({
+                    ...data,
+                  } as Status)
+                },
+              })
+            }
+          },
+        },
+      ),
       Div([Img(getTintedIcon('twelve-volt'), { align: 'center' }), P(twelveSocText, { align: 'left', width: '70%' })]),
     ])
   },
@@ -527,6 +546,7 @@ function updateStatus(status: Status) {
     isClimateOn: status.status.climate,
     chargingPower: status.status.chargingPower,
     lastUpdated: status.status.lastRemoteStatusCheck,
+    chargeLimit: status.status.chargeLimit || undefined,
   })
 }
 

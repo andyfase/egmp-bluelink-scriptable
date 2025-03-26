@@ -109,7 +109,7 @@ const DEFAULT_CONFIG = {
       dcPercent: 80,
     },
     {
-      name: 'RoadTrip',
+      name: 'Road Trip',
       acPercent: 100,
       dcPercent: 90,
     },

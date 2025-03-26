@@ -42,6 +42,7 @@ export interface BluelinkStatus {
   soc: number
   twelveSoc: number
   odometer: number
+  chargeLimit?: ChargeLimit
 }
 
 export interface Status {
@@ -90,7 +91,7 @@ export interface ClimateRequest {
   durationMinutes: number
 }
 
-export interface ChargeLimitRequest {
+export interface ChargeLimit {
   acPercent: number
   dcPercent: number
 }
@@ -281,7 +282,7 @@ export class Bluelink {
         if (!input) {
           throw Error('Must provide valid input for charge limit request!')
         }
-        const inputChargeLimit = input as ChargeLimitRequest
+        const inputChargeLimit = input as ChargeLimit
         promise = this.setChargeLimit(this.cache.car.id, inputChargeLimit)
         break
       }
@@ -560,7 +561,7 @@ export class Bluelink {
 
   protected async setChargeLimit(
     _id: string,
-    _config: ChargeLimitRequest,
+    _config: ChargeLimit,
   ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')

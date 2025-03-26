@@ -45,6 +45,8 @@ export function deleteWidgetCache() {
 async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<WidgetRefresh> {
   const logger = new Logger(WIDGET_LOG_FILE, 100)
 
+  const MIN_API_REFRESH_TIME = 300000 // 5 minutes
+
   // Day Intervals - day lasts for 16 days - in milliseconds
   const DEFAULT_STATUS_CHECK_INTERVAL_DAY = 3600 * config.widgetConfig.standardPollPeriod * 1000
   const DEFAULT_REMOTE_REFRESH_INTERVAL_DAY = 3600 * config.widgetConfig.remotePollPeriod * 1000
@@ -125,7 +127,7 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
       sleep(500) // wait for API request to be actually sent in background
       cache.lastRemoteRefresh = currentTimestamp
       nextRefresh = new Date(Date.now() + 5 * 60 * 1000)
-    } else {
+    } else if (currentTimestamp > status.status.lastStatusCheck + MIN_API_REFRESH_TIME) {
       if (config.debugLogging) logger.log('Doing API Refresh')
       status = await bl.getStatus(false, true)
     }
