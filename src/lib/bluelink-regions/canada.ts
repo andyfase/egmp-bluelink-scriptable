@@ -348,6 +348,7 @@ export class BluelinkCanada extends Bluelink {
       if (resp.json.result.transaction.apiResult === 'C') {
         // update saved cache status
         if (resp.json.result.vehicle) {
+          if (!chargeLimit) chargeLimit = await this.getChargeLimit(id)
           this.cache.status = this.returnCarStatus(resp.json.result.vehicle, true, undefined, chargeLimit)
           this.saveCache()
         }

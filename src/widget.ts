@@ -390,7 +390,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
   // Add last seen indicator - use consistent date format as spacing is hard coded, hence we need to control the length
   const lastSeenElement = footerStack.addText(lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown')
   lastSeenElement.lineLimit = 1
-  lastSeenElement.font = Font.thinSystemFont(11)
+  lastSeenElement.font = Font.lightSystemFont(11)
   // lastSeenElement.textOpacity = 0.5
   lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()
 
