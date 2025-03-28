@@ -35,6 +35,7 @@ export interface Config {
   climateTempWarm: number
   climateTempCold: number
   allowWidgetRemoteRefresh: boolean
+  carColor: string
   debugLogging: boolean
   promptForUpdate: boolean
   vin: string | undefined
@@ -63,6 +64,7 @@ export interface FlattenedConfig {
   climateTempWarm: number
   climateTempCold: number
   allowWidgetRemoteRefresh: boolean
+  carColor: string
   debugLogging: boolean
   promptForUpdate: boolean
   vin: string | undefined
@@ -74,6 +76,7 @@ export interface FlattenedConfig {
 // const SUPPORTED_REGIONS = ['canada']
 const SUPPORTED_REGIONS = ['canada', 'usa', 'europe']
 const SUPPORTED_MANUFACTURERS = ['Hyundai', 'Kia']
+const CAR_COLORS = ['White', 'Black', 'Grey', 'Matte-Grey', 'Metallic-Grey', 'Silver', 'Red', 'Orange', 'Blue', 'Green']
 const DEFAULT_TEMPS = {
   C: {
     cold: 19,
@@ -100,6 +103,7 @@ const DEFAULT_CONFIG = {
   debugLogging: false,
   promptForUpdate: true,
   allowWidgetRemoteRefresh: false,
+  carColor: 'white',
   manufacturer: 'hyundai',
   customClimates: [],
   chargeLimits: [
@@ -180,6 +184,7 @@ export async function loadConfigScreen() {
       debugLogging,
       promptForUpdate,
       allowWidgetRemoteRefresh,
+      carColor,
       manufacturer: manufacturer,
       vin: vin,
     }) => {
@@ -199,6 +204,7 @@ export async function loadConfigScreen() {
           climateTempCold: climateTempCold,
           climateTempWarm: climateTempWarm,
           allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
+          carColor: carColor ? carColor.toLocaleLowerCase() : 'white',
           debugLogging: debugLogging,
           promptForUpdate: promptForUpdate,
           manufacturer: manufacturer?.toLowerCase(),
@@ -295,6 +301,13 @@ export async function loadConfigScreen() {
       climateTempCold: {
         type: 'numberValue',
         label: 'Climate temp when pre-cooling (whole number or .5)',
+        isRequired: true,
+      },
+      carColor: {
+        type: 'dropdown',
+        label: 'Car Color (Will default to white if not available)',
+        options: CAR_COLORS,
+        allowCustom: false,
         isRequired: true,
       },
       allowWidgetRemoteRefresh: {

@@ -152,7 +152,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
   const status = refresh.status
 
   // Prepare image
-  const appIcon = await bl.getCarImage()
+  const appIcon = await bl.getCarImage(config.carColor)
   const title = status.car.nickName || `${status.car.modelYear} ${status.car.modelName}`
 
   // define widget and set date for when the next refresh should not occur before.
@@ -266,7 +266,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
   const odometerElement = footerStack.addText(odometerText)
   odometerElement.font = Font.mediumSystemFont(12)
   odometerElement.textColor = DARK_MODE ? Color.white() : Color.black()
-  odometerElement.textOpacity = 0.5
+  odometerElement.textOpacity = 0.6
   odometerElement.minimumScaleFactor = 0.5
   odometerElement.leftAlignText()
   footerStack.addSpacer()
@@ -276,7 +276,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
     'Last Updated: ' + lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown',
   )
   lastSeenElement.font = Font.mediumSystemFont(12)
-  lastSeenElement.textOpacity = 0.5
+  lastSeenElement.textOpacity = 0.6
   lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()
   lastSeenElement.minimumScaleFactor = 0.5
   lastSeenElement.rightAlignText()
@@ -291,7 +291,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
   const status = refresh.status
 
   // Prepare image
-  const appIcon = await bl.getCarImage()
+  const appIcon = await bl.getCarImage(config.carColor)
   // define widget and set date for when the next refresh should not occur before.
   const widget = new ListWidget()
   widget.setPadding(20, 10, 15, 15)

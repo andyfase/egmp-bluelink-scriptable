@@ -98,13 +98,13 @@ export interface ChargeLimit {
 
 const carImageHttpURL = 'https://bluelink.andyfase.com/app-assets/car-images/'
 const carImageMap: Record<string, string> = {
-  'ioniq 5 n': 'ioniq5n.png',
-  'ioniq 5': 'ioniq5.png',
-  'ioniq 6': 'ioniq6.png',
-  ev6: 'ev6.png',
-  ev9: 'ev9.png',
-  kona: 'kona.png',
-  default: 'ioniq5.png',
+  'ioniq 5 n': 'ioniq5n',
+  'ioniq 5': 'ioniq5',
+  'ioniq 6': 'ioniq6',
+  ev6: 'ev6',
+  ev9: 'ev9',
+  kona: 'kona',
+  default: 'ioniq5',
 }
 
 export class Bluelink {
@@ -464,24 +464,28 @@ export class Bluelink {
     }
   }
 
-  public async getCarImage(): Promise<Image> {
-    let carFileName = ''
+  public async getCarImage(
+    carColour: string = 'white',
+    forceRefresh = false,
+    retryDefaultOnFail = true,
+  ): Promise<Image> {
+    let carFilePrefix = ''
     for (const [name, fileName] of Object.entries(carImageMap)) {
       if (this.cache.car.modelName.toLocaleLowerCase().includes(name)) {
-        carFileName = fileName
+        carFilePrefix = fileName
         break
       }
     }
-    if (!carFileName) carFileName = carImageMap['default']!
+    if (!carFilePrefix) carFilePrefix = carImageMap['default']!
 
     const fs = FileManager.local()
-    const localFilePath = `${fs.libraryDirectory()}/${carFileName}`
-    if (fs.fileExists(localFilePath)) {
+    const localFilePath = `${fs.libraryDirectory()}/${carFilePrefix}_${carColour}.png`
+    if (!forceRefresh && fs.fileExists(localFilePath)) {
       return fs.readImage(localFilePath)
     }
 
     // download and store image
-    const req = new Request(`${carImageHttpURL}/${carFileName}`)
+    const req = new Request(`${carImageHttpURL}/${carFilePrefix}/${carColour}.png`)
     req.method = 'GET'
 
     try {
@@ -490,6 +494,7 @@ export class Bluelink {
       return image
     } catch (_error) {
       // failed download - return low quality local default image which is base64 encoded
+      if (retryDefaultOnFail) return await this.getCarImage('white', false, false)
       return Image.fromData(Data.fromBase64String(defaultImage))
     }
   }

@@ -180,7 +180,7 @@ async function blRequest(bl: Bluelink, type: string, message: string, payload?: 
     counter += 1
   }
   const duration = Date.now() - start
-  if (duration < 3000) { 
+  if (duration < 3000) {
     // sleep until 3 seconds have passed to allow for any re-auth etc commands to complete
     await sleep(3000 - duration)
   }
