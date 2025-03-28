@@ -25,14 +25,14 @@ export class Version {
     this.githubLatestRelease = undefined
   }
 
-  private versionToNumber(version: string): number {
+  public static versionToNumber(version: string): number {
     return Number(version.replace('v', '').replace(/\./g, ''))
   }
 
   public async promptForUpdate(): Promise<boolean> {
     const latestRelease = await this.getLatestGithubRelease()
     // releases are in the format v1.7.0 converted to number this ends up as 170. Hence we check for >= 10 (which corrolates to 0.1 or more)
-    return this.versionToNumber(latestRelease.version) - this.versionToNumber(this.currentVersion) >= 10
+    return Version.versionToNumber(latestRelease.version) - Version.versionToNumber(this.currentVersion) >= 10
   }
 
   public async getReleaseVersion(): Promise<string> {

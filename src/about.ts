@@ -112,13 +112,16 @@ const latestVersion = connect(({ state: { currentVersion, release } }) => {
       font: (n) => Font.boldRoundedSystemFont(n),
       fontSize: 20,
       align: 'right',
-      color: currentVersion === release.version ? Color.green() : Color.blue(),
+      color:
+        Version.versionToNumber(currentVersion) >= Version.versionToNumber(release.version)
+          ? Color.green()
+          : Color.blue(),
     }),
   ])
 })
 
 const upgrade = connect(({ state: { currentVersion, release } }) => {
-  if (!release || currentVersion === release.version) return Spacer()
+  if (!release || Version.versionToNumber(currentVersion) >= Version.versionToNumber(release.version)) return Spacer()
 
   return Div(
     [
@@ -161,7 +164,7 @@ const upgrade = connect(({ state: { currentVersion, release } }) => {
 })
 
 const upgradeNotes = connect(({ state: { currentVersion, release } }) => {
-  if (!release || currentVersion === release.version) return Spacer()
+  if (!release || Version.versionToNumber(currentVersion) >= Version.versionToNumber(release.version)) return Spacer()
 
   return Div(
     [

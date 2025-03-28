@@ -126,6 +126,7 @@ export class Bluelink {
   protected logger: any
   protected loginFailure: boolean
   protected distanceUnit: string
+  protected lastCommandSent: number | undefined
 
   constructor(config: Config, vin?: string) {
     this.config = config
@@ -224,8 +225,16 @@ export class Bluelink {
     return 0 // default
   }
 
+  protected setLastCommandSent() {
+    this.lastCommandSent = Date.now()
+  }
+
   public getDistanceUnit(): string {
     return this.distanceUnit
+  }
+
+  public getLastCommandSent(): number | undefined {
+    return this.lastCommandSent
   }
 
   public loginFailed(): boolean {

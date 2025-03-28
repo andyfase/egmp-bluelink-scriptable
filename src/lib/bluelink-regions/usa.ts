@@ -317,6 +317,7 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     }
@@ -352,6 +353,7 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     }
@@ -385,6 +387,7 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     }
@@ -405,6 +408,7 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     }
@@ -440,6 +444,7 @@ export class BluelinkUSA extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     }

@@ -608,6 +608,7 @@ export class BluelinkEurope extends Bluelink {
       noRetry: true,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = resp.json.msgId // SID or msgId
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     }
@@ -643,6 +644,7 @@ export class BluelinkEurope extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = resp.json.msgId // SID or msgId
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     }
@@ -685,6 +687,7 @@ export class BluelinkEurope extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = resp.json.msgId // SID or msgId
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     }
@@ -721,6 +724,7 @@ export class BluelinkEurope extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = resp.json.msgId // SID or msgId
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     }

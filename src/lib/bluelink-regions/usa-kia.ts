@@ -342,6 +342,7 @@ export class BluelinkUSAKia extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     }
@@ -380,6 +381,7 @@ export class BluelinkUSAKia extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     }
@@ -417,6 +419,7 @@ export class BluelinkUSAKia extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     }
@@ -435,6 +438,7 @@ export class BluelinkUSAKia extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     }
@@ -468,6 +472,7 @@ export class BluelinkUSAKia extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     }

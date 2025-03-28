@@ -169,20 +169,16 @@ async function stopCharge(bl: Bluelink): Promise<string> {
 }
 
 async function blRequest(bl: Bluelink, type: string, message: string, payload?: any): Promise<string> {
-  let gotFirstCallback = false
+  const startTime = Date.now()
+  let commandSent = false
   let counter = 1
-  const start = Date.now()
   bl.processRequest(type, payload, async (_isComplete, _didSucceed, _data) => {
-    gotFirstCallback = true
+    const lastCommand = bl.getLastCommandSent()
+    if (lastCommand && lastCommand > startTime) commandSent = true
   })
-  while (!gotFirstCallback && counter < 10) {
+  while (!commandSent && counter < 10) {
     await sleep(500)
     counter += 1
-  }
-  const duration = Date.now() - start
-  if (duration < 3000) {
-    // sleep until 3 seconds have passed to allow for any re-auth etc commands to complete
-    await sleep(3000 - duration)
   }
   return message
 }

@@ -390,6 +390,7 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
@@ -425,6 +426,7 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
@@ -470,6 +472,7 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
@@ -494,6 +497,7 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId)
     }
@@ -558,6 +562,7 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('transactionid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, authCode, transactionId, config)
     }

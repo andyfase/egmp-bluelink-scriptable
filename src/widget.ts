@@ -157,6 +157,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
 
   // define widget and set date for when the next refresh should not occur before.
   const widget = new ListWidget()
+  widget.setPadding(20, 10, 20, 15)
   widget.refreshAfterDate = refresh.nextRefresh
 
   const mainStack = widget.addStack()
@@ -168,6 +169,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
   // Show app icon and title
   mainStack.addSpacer()
   const titleStack = mainStack.addStack()
+  titleStack.addSpacer(10)
   const titleElement = titleStack.addText(title)
   titleElement.textColor = DARK_MODE ? Color.white() : Color.black()
   titleElement.textOpacity = 0.7
@@ -175,7 +177,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
   titleStack.addSpacer()
   const appIconElement = titleStack.addImage(appIcon)
   appIconElement.imageSize = new Size(40, 40 / (appIcon.size.width / appIcon.size.height))
-  appIconElement.cornerRadius = 4
+  appIconElement.centerAlignImage()
   mainStack.addSpacer()
 
   // space
@@ -184,7 +186,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
   // Center Stack
   const contentStack = mainStack.addStack()
   const carImageElement = contentStack.addImage(appIcon)
-  carImageElement.imageSize = new Size(170, 170 / (appIcon.size.width / appIcon.size.height))
+  carImageElement.imageSize = new Size(180, 180 / (appIcon.size.width / appIcon.size.height))
   // contentStack.addSpacer()
 
   // Battery Info
@@ -260,6 +262,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
 
   // Footer
   const footerStack = mainStack.addStack()
+  footerStack.addSpacer(10)
 
   // Add odometer
   const odometerText = `${Math.floor(Number(odometer)).toString()} ${bl.getDistanceUnit()}`
@@ -307,7 +310,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
   // Show app icon and title
   const titleStack = mainStack.addStack()
   const appIconElement = titleStack.addImage(appIcon)
-  appIconElement.imageSize = new Size(80, 80 / (appIcon.size.width / appIcon.size.height))
+  appIconElement.imageSize = new Size(90, 90 / (appIcon.size.width / appIcon.size.height))
   // appIconElement.cornerRadius = 4
 
   // space
@@ -391,7 +394,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
   const lastSeenElement = footerStack.addText(lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown')
   lastSeenElement.lineLimit = 1
   lastSeenElement.font = Font.lightSystemFont(11)
-  // lastSeenElement.textOpacity = 0.5
+  lastSeenElement.textOpacity = 0.6
   lastSeenElement.textColor = DARK_MODE ? Color.white() : Color.black()
 
   // mainStack.addSpacer()
