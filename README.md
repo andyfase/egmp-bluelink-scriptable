@@ -15,7 +15,7 @@ An alternative Bluelink app to use on Hyundai / Kia E-GMP Electric Cars. Its a [
 
 ## In-use
 
-![e-gmp scriptable in use](./docs/images/egmp-scriptable-in-use.mp4)
+https://github.com/andyfase/egmp-bluelink-scriptable/raw/refs/heads/main/docs/images/egmp-scriptable-in-use.mp4
 
 ## Docs
 
