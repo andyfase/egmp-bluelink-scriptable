@@ -7,10 +7,13 @@ nav_order: 4
 # Install Guide
 {: .fs-9 }
 
-Bluelink Scriptable is a "scriptable app". Its written in Javascript and runs within the scriptable IOS app. Using scriptable meant a vastly reduced amount of development time was required, and no pesky app store rejections (due to the use of the Bluelink API, technically this is against the terms and conditions of Bluelink) 
+Bluelink Scriptable is a "scriptable app". Its written in Javascript and runs within the [scriptable IOS app](https://scriptable.app/). Using scriptable meant a vastly reduced amount of development time was required, and no pesky app store rejections
 {: .fs-5 .fw-300 }
 
-As such, installation is a little more than just "install an app" but honestly not that much more:
+As such, installation is a couple more test than just "install an app". However once installed the app will prompt and auto-install new versions as they are released!.
+{: .fs-5 .fw-300 } 
+
+## Install Steps
 
 Step 1: [Install the scriptable app](https://apps.apple.com/us/app/scriptable/id1405459188?uo=4)
 and open it.

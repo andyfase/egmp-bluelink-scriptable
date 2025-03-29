@@ -62,11 +62,10 @@ function lightbox_close() {
 Features Include:
 {: .fs-6 .fw-300 }
 
-- Homescreen and Lockscreen Widgets
-- Optional background auto-updating of widget data
-- One Click Control Center icons for common commands
-- Siri voice support "Hey Siri, Warm the car"
+- Auto-Updating Homescreen and Lockscreen Widgets
 - Fresh and more responsive app UI
-- Automations via IOS Shortcuts like walk-away lock and auto warm the car on a schedule
+- Single click options for common commands (lock, warm, charge etc) in both app and in IOS Control Center
+- Siri voice support "Hey Siri, Warm the car"
+- Automations via IOS Shortcuts like walk-away lock
 - Unlimited Custom Climate configurations 
 {: .fs-6 .fw-300 }

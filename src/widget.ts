@@ -157,7 +157,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
 
   // define widget and set date for when the next refresh should not occur before.
   const widget = new ListWidget()
-  widget.setPadding(20, 10, 20, 15)
+  widget.setPadding(20, 5, 20, 15)
   widget.refreshAfterDate = refresh.nextRefresh
 
   const mainStack = widget.addStack()

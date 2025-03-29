@@ -144,6 +144,9 @@ const upgrade = connect(({ state: { currentVersion, release } }) => {
                 const fm = FileManager.iCloud()
                 // try to backup current script - log errors, script could have been renamed for example
                 try {
+                  if (fm.fileExists(`${SCRIPTABLE_DIR}/${release.assetName}.backup`)) {
+                    fm.remove(`${SCRIPTABLE_DIR}/${release.assetName}.backup`)
+                  }
                   fm.move(`${SCRIPTABLE_DIR}/${release.assetName}`, `${SCRIPTABLE_DIR}/${release.assetName}.backup`)
                 } catch (e) {
                   logger.log(`Failed to backup current script: ${e}`)
