@@ -13,15 +13,14 @@ An alternative Bluelink app to use on Hyundai / Kia E-GMP Electric Cars. Its a [
 * Automations via IOS Shortcuts like walk-away lock
 * Unlimited Custom Climate configurations 
 
-## In-use
-
-https://github.com/andyfase/egmp-bluelink-scriptable/raw/refs/heads/main/docs/images/egmp-scriptable-in-use.mp4
-
 ## Docs
 
 See [https://bluelink.andyfase.com](https://bluelink.andyfase.com) for all documentation on feature set, installation instructions and usgae of the app.
 
-These docs are hosted on Github Pages from the `/docs` folder in this repo
+## In-use
+
+[<img src="./docs/images/widget_charging.png" width="400px"/>](https://bluelink.andyfase.com/images/egmp-scriptable-in-use.mp4)
+<center>(click to view video)</center>
 
 ## Dev Instructions
 
