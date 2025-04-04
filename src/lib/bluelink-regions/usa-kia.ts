@@ -172,20 +172,12 @@ export class BluelinkUSAKia extends Bluelink {
       }
     }
 
-    let chargingPower = 0
-    let isCharging = false
-
-    if (status.evStatus.batteryCharge) {
-      isCharging = true
-      chargingPower = status.evStatus.realTimePower
-    }
-
     return {
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: lastRemoteCheck.getTime(),
-      isCharging: isCharging,
-      isPluggedIn: status.evStatus.pluggedInState > 0 ? true : false,
-      chargingPower: chargingPower,
+      isCharging: status.evStatus.batteryCharge,
+      isPluggedIn: status.evStatus.batteryPlugin > 0 ? true : false,
+      chargingPower: status.evStatus.batteryCharge ? status.evStatus.realTimePower : 0,
       remainingChargeTimeMins: status.evStatus.remainChargeTime[0].timeInterval.value,
       // sometimes range back as zero? if so ignore and use cache
       range:
