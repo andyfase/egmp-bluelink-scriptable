@@ -556,6 +556,7 @@ function updateStatus(status: Status) {
     chargingPower: status.status.chargingPower,
     lastUpdated: status.status.lastRemoteStatusCheck,
     chargeLimit: status.status.chargeLimit || undefined,
+    twelveSoc: status.status.twelveSoc
   })
 }
 
