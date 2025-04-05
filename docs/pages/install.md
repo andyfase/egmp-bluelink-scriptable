@@ -44,7 +44,7 @@ When configuring the widget, make sure you:
 - Choose **"Scriptable"** from the list of widgets
 - Choose the medium size (the only one supported)
 - Click on the widget on your homescreen to configure it. 
-- For **"Script"** choose **egmp-scriptable**
+- For **"Script"** choose **egmp-bluelink**
 - For **"When Interacting"** choose **Run Script**
 
 Step 7: (Optional but Recommended) Continue to install the [Siri IOS Shortcuts](./siri.md) and the [Control Center controls](./control-center.md)

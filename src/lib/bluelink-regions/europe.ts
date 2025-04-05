@@ -720,13 +720,15 @@ export class BluelinkEurope extends Bluelink {
         Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
         ccuCCS2ProtocolSupport: this.getCCS2Header(),
       },
-      authTokenOverride: await this.getAuthCode(id),
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
       this.setLastCommandSent()
-      const transactionId = resp.json.msgId // SID or msgId
-      if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
+      // polling seemingly not an option for Europe - return the result of a force update (which itself can poll)
+      return {
+        isSuccess: true,
+        data: await this.getCarStatus(id, true),
+      }
     }
     const error = `Failed to send chargeLimit command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
