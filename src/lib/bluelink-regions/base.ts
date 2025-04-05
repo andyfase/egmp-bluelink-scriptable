@@ -101,9 +101,11 @@ const carImageMap: Record<string, string> = {
   ioniq5n: 'ioniq5n',
   ioniq5: 'ioniq5',
   ioniq6: 'ioniq6',
+  ioniq: 'ioniq',
   ev6: 'ev6',
   ev9: 'ev9',
   kona: 'kona',
+  niro: 'niro',
   default: 'ioniq5',
 }
 
