@@ -477,6 +477,7 @@ export class Bluelink {
     carColour: string = 'white',
     forceRefresh = false,
     retryDefaultOnFail = true,
+    retryOriginalColour: string | undefined = undefined,
   ): Promise<Image> {
     let carFilePrefix = ''
     for (const [name, fileName] of Object.entries(carImageMap)) {
@@ -488,7 +489,9 @@ export class Bluelink {
     if (!carFilePrefix) carFilePrefix = carImageMap['default']!
 
     const fs = FileManager.local()
-    const localFilePath = `${fs.libraryDirectory()}/${carFilePrefix}_${carColour}.png`
+    const localFilePath = retryOriginalColour
+      ? `${fs.libraryDirectory()}/${carFilePrefix}_${retryOriginalColour}.png`
+      : `${fs.libraryDirectory()}/${carFilePrefix}_${carColour}.png`
     if (!forceRefresh && fs.fileExists(localFilePath)) {
       return fs.readImage(localFilePath)
     }
@@ -502,8 +505,8 @@ export class Bluelink {
       fs.writeImage(localFilePath, image)
       return image
     } catch (_error) {
-      // failed download - return low quality local default image which is base64 encoded
-      if (retryDefaultOnFail) return await this.getCarImage('white', false, false)
+      // retry with white which always exists - save as requested colour so we dont keep retrying all the time.
+      if (retryDefaultOnFail) return await this.getCarImage('white', false, false, carColour)
       return Image.fromData(Data.fromBase64String(defaultImage))
     }
   }
