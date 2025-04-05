@@ -98,9 +98,9 @@ export interface ChargeLimit {
 
 const carImageHttpURL = 'https://bluelink.andyfase.com/app-assets/car-images/'
 const carImageMap: Record<string, string> = {
-  'ioniq 5 n': 'ioniq5n',
-  'ioniq 5': 'ioniq5',
-  'ioniq 6': 'ioniq6',
+  ioniq5n: 'ioniq5n',
+  ioniq5: 'ioniq5',
+  ioniq6: 'ioniq6',
   ev6: 'ev6',
   ev9: 'ev9',
   kona: 'kona',
@@ -481,7 +481,7 @@ export class Bluelink {
   ): Promise<Image> {
     let carFilePrefix = ''
     for (const [name, fileName] of Object.entries(carImageMap)) {
-      if (this.cache.car.modelName.toLocaleLowerCase().includes(name)) {
+      if (this.cache.car.modelName.toLocaleLowerCase().replaceAll(' ', '').includes(name)) {
         carFilePrefix = fileName
         break
       }
