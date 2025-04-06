@@ -30,6 +30,7 @@ export interface BluelinkCar {
 }
 
 export interface BluelinkStatus {
+  isEV: boolean
   lastStatusCheck: number
   lastRemoteStatusCheck: number
   isCharging: boolean

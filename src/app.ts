@@ -61,6 +61,7 @@ const { present, connect, setState } = getTable<{
   updatingActions: updatingActions | undefined
   appIcon: Image
   chargeLimit: ChargeLimit | undefined
+  isEV: boolean
 }>({
   name: 'Testing',
 })
@@ -73,7 +74,7 @@ export async function createApp(config: Config, bl: Bluelink) {
   // not blocking call - render UI with last cache and then update from a non forced remote call (i.e. to server but not to car)
   // if its been at least MIN_API_REFRESH_TIME milliseconds
   const cachedStatus = bl.getCachedStatus()
-  if (!cachedStatus || cachedStatus.status.lastStatusCheck < Date.now() + MIN_API_REFRESH_TIME) {
+  if (cachedStatus.status.lastStatusCheck + MIN_API_REFRESH_TIME < Date.now()) {
     bl.getStatus(false, true).then(async (status) => {
       updateStatus(status)
     })
@@ -102,6 +103,7 @@ export async function createApp(config: Config, bl: Bluelink) {
     })
   }
 
+  const isEV = Object.hasOwn(cachedStatus.status, 'isEV') ? cachedStatus.status.isEV : true // assume EV if property not present
   return present({
     defaultState: {
       name: cachedStatus.car.nickName || `${cachedStatus.car.modelName}`,
@@ -119,13 +121,15 @@ export async function createApp(config: Config, bl: Bluelink) {
       twelveSoc: cachedStatus.status.twelveSoc,
       appIcon: appIcon,
       chargeLimit: cachedStatus.status.chargeLimit,
+      isEV: isEV,
     },
     render: () => [
       pageTitle(),
       batteryStatus(bl),
       pageImage(bl),
       pageIcons(bl),
-      Spacer({ rowHeight: 150 }),
+      Spacer({ rowHeight: 140 }),
+      notEvSpacer(),
       settings(bl),
     ],
   })
@@ -221,6 +225,7 @@ const pageIcons = connect(
         updatingActions,
         twelveSoc,
         chargeLimit,
+        isEV,
       },
     },
     bl: Bluelink,
@@ -276,49 +281,57 @@ const pageIcons = connect(
         : `Charge Limit: ${chargeLimitPercentText}`
       : 'Set Charge Limit'
 
-    return Div([
-      Div(
-        [
-          ...[
-            Img(updatingActions && updatingActions.charge ? updatingActions.charge.image : getTintedIcon(batteryIcon), {
-              align: 'center',
-              width: '30%',
-            }),
+    const iconLines = []
+    if (isEV) {
+      iconLines.push(
+        Div(
+          [
+            ...[
+              Img(
+                updatingActions && updatingActions.charge ? updatingActions.charge.image : getTintedIcon(batteryIcon),
+                {
+                  align: 'center',
+                  width: '30%',
+                },
+              ),
+            ],
+            ...chargingRow,
           ],
-          ...chargingRow,
-        ],
-        {
-          onTap() {
-            if (isUpdating) {
-              return
-            }
-            quickOptions(['Charge', 'Stop Charging', 'Cancel'], {
-              title: 'Confirm charge action',
-              onOptionSelect: (opt) => {
-                if (opt === 'Cancel') return
-                doAsyncUpdate({
-                  command: opt === 'Charge' ? 'startCharge' : 'stopCharge',
-                  bl: bl,
-                  actions: updatingActions,
-                  actionKey: 'charge',
-                  updatingText: opt === 'Charge' ? 'Starting charging ...' : 'Stoping charging ...',
-                  successText: opt === 'Charge' ? 'Car charging started!' : 'Car charging stopped!',
-                  failureText: `Failed to ${opt === 'Charge' ? 'start charging' : 'stop charging'} car!!!`,
-                  successCallback: (data) => {
-                    updateStatus({
-                      ...bl.getCachedStatus(),
-                      status: {
-                        ...data,
-                        isCharging: opt === 'Charge' ? true : false,
-                      },
-                    } as Status)
-                  },
-                })
-              },
-            })
+          {
+            onTap() {
+              if (isUpdating) {
+                return
+              }
+              quickOptions(['Charge', 'Stop Charging', 'Cancel'], {
+                title: 'Confirm charge action',
+                onOptionSelect: (opt) => {
+                  if (opt === 'Cancel') return
+                  doAsyncUpdate({
+                    command: opt === 'Charge' ? 'startCharge' : 'stopCharge',
+                    bl: bl,
+                    actions: updatingActions,
+                    actionKey: 'charge',
+                    updatingText: opt === 'Charge' ? 'Starting charging ...' : 'Stoping charging ...',
+                    successText: opt === 'Charge' ? 'Car charging started!' : 'Car charging stopped!',
+                    failureText: `Failed to ${opt === 'Charge' ? 'start charging' : 'stop charging'} car!!!`,
+                    successCallback: (data) => {
+                      updateStatus({
+                        ...bl.getCachedStatus(),
+                        status: {
+                          ...data,
+                          isCharging: opt === 'Charge' ? true : false,
+                        },
+                      } as Status)
+                    },
+                  })
+                },
+              })
+            },
           },
-        },
-      ),
+        ),
+      )
+    }
+    iconLines.push(
       Div(
         [
           Img(
@@ -393,6 +406,8 @@ const pageIcons = connect(
           },
         },
       ),
+    )
+    iconLines.push(
       Div(
         [
           Img(updatingActions && updatingActions.lock ? updatingActions.lock.image : getTintedIcon(lockedIcon), {
@@ -436,58 +451,65 @@ const pageIcons = connect(
           },
         },
       ),
-      Div(
-        [
-          Img(
-            updatingActions && updatingActions.chargeLimit
-              ? updatingActions.chargeLimit.image
-              : getTintedIcon('charge-limit'),
-            {
-              align: 'center',
-            },
-          ),
-          P(updatingActions && updatingActions.chargeLimit ? updatingActions.chargeLimit.text : chargeLimitText, {
-            align: 'left',
-            width: '70%',
-            ...(updatingActions && updatingActions.chargeLimit && { color: Color.orange() }),
-          }),
-        ],
-        {
-          onTap() {
-            if (isUpdating) {
-              return
-            }
-            const config = getConfig() // always re-read in case config has been mutated by config screens, and app page is not refreshed
-            const chargeLimits = Object.values(config.chargeLimits).map((x) => x.name)
-            quickOptions(chargeLimits.concat(['Cancel']), {
-              title: 'Confirm charge limit to set',
-              onOptionSelect: (opt) => {
-                if (opt === 'Cancel') return
-                const payload = Object.values(config.chargeLimits).filter((x) => x.name === opt)[0]
-                if (!payload) return
-                doAsyncUpdate({
-                  command: 'chargeLimit',
-                  bl: bl,
-                  payload: payload,
-                  actions: updatingActions,
-                  actionKey: 'chargeLimit',
-                  updatingText: `Setting charge limit ...`,
-                  successText: `Charge limit ${payload.name} set!`,
-                  failureText: `Failed to set charge limit!!!`,
-                  successCallback: (data) => {
-                    updateStatus({
-                      ...bl.getCachedStatus(),
-                      status: {
-                        ...data,
-                      },
-                    } as Status)
-                  },
-                })
+    )
+    if (isEV) {
+      iconLines.push(
+        Div(
+          [
+            Img(
+              updatingActions && updatingActions.chargeLimit
+                ? updatingActions.chargeLimit.image
+                : getTintedIcon('charge-limit'),
+              {
+                align: 'center',
               },
-            })
+            ),
+            P(updatingActions && updatingActions.chargeLimit ? updatingActions.chargeLimit.text : chargeLimitText, {
+              align: 'left',
+              width: '70%',
+              ...(updatingActions && updatingActions.chargeLimit && { color: Color.orange() }),
+            }),
+          ],
+          {
+            onTap() {
+              if (isUpdating) {
+                return
+              }
+              const config = getConfig() // always re-read in case config has been mutated by config screens, and app page is not refreshed
+              const chargeLimits = Object.values(config.chargeLimits).map((x) => x.name)
+              quickOptions(chargeLimits.concat(['Cancel']), {
+                title: 'Confirm charge limit to set',
+                onOptionSelect: (opt) => {
+                  if (opt === 'Cancel') return
+                  const payload = Object.values(config.chargeLimits).filter((x) => x.name === opt)[0]
+                  if (!payload) return
+                  doAsyncUpdate({
+                    command: 'chargeLimit',
+                    bl: bl,
+                    payload: payload,
+                    actions: updatingActions,
+                    actionKey: 'chargeLimit',
+                    updatingText: `Setting charge limit ...`,
+                    successText: `Charge limit ${payload.name} set!`,
+                    failureText: `Failed to set charge limit!!!`,
+                    successCallback: (data) => {
+                      updateStatus({
+                        ...bl.getCachedStatus(),
+                        status: {
+                          ...data,
+                        },
+                      } as Status)
+                    },
+                  })
+                },
+              })
+            },
           },
-        },
-      ),
+        ),
+      )
+    }
+
+    iconLines.push(
       Div(
         [
           Img(updatingActions && updatingActions.status ? updatingActions.status.image : getTintedIcon('status'), {
@@ -525,10 +547,17 @@ const pageIcons = connect(
           },
         },
       ),
+    )
+    iconLines.push(
       Div([Img(getTintedIcon('twelve-volt'), { align: 'center' }), P(twelveSocText, { align: 'left', width: '70%' })]),
-    ])
+    )
+    return Div(iconLines)
   },
 )
+
+const notEvSpacer = connect(({ state: { isEV } }) => {
+  return Spacer({ rowHeight: isEV ? 10 : 100 })
+})
 
 const pageImage = connect(({ state: { appIcon } }, bl: Bluelink) => {
   return Div([Img(appIcon)], {
@@ -557,6 +586,7 @@ function updateStatus(status: Status) {
     lastUpdated: status.status.lastRemoteStatusCheck,
     chargeLimit: status.status.chargeLimit || undefined,
     twelveSoc: status.status.twelveSoc,
+    isEV: status.status.isEV,
   })
 }
 

@@ -196,6 +196,7 @@ export class BluelinkUSA extends Bluelink {
     }
 
     return {
+      isEV: true,
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
       isCharging: isCharging,

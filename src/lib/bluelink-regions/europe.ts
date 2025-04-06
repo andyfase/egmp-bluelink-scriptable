@@ -388,6 +388,9 @@ export class BluelinkEurope extends Bluelink {
   }
 
   protected returnCarStatus(status: any, updateTime: number): BluelinkStatus {
+    // determine EV or not
+    const isEV = status.Green.ChargingInformation && status.Green.ChargingInformation.ConnectorFastening ? true : false
+
     // cached status contains a wrapped status object along with odometer info - force status does not
     // force status also does not include a time field
 
@@ -401,6 +404,7 @@ export class BluelinkEurope extends Bluelink {
     let isCharging = false
     let chargingPower = 0
     if (
+      isEV &&
       status.Green.ChargingInformation.ConnectorFastening.State &&
       status.Green.ChargingInformation.Charging.RemainTime > 0
     ) {
@@ -413,18 +417,19 @@ export class BluelinkEurope extends Bluelink {
       dcPercent: 0,
       acPercent: 0,
     }
-    if (status.Green.ChargingInformation && status.Green.ChargingInformation.TargetSoC) {
+    if (isEV && status.Green.ChargingInformation && status.Green.ChargingInformation.TargetSoC) {
       chargeLimit.acPercent = status.Green.ChargingInformation.TargetSoC.Standard
       chargeLimit.dcPercent = status.Green.ChargingInformation.TargetSoC.Quick
     }
 
     return {
+      isEV: isEV,
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: Number(updateTime),
       isCharging: isCharging,
-      isPluggedIn: status.Green.ChargingInformation.ConnectorFastening.State > 0 ? true : false,
+      isPluggedIn: isEV && status.Green.ChargingInformation.ConnectorFastening.State > 0 ? true : false,
       chargingPower: chargingPower,
-      remainingChargeTimeMins: status.Green.ChargingInformation.Charging.RemainTime,
+      remainingChargeTimeMins: isEV ? status.Green.ChargingInformation.Charging.RemainTime : 0,
       // sometimes range back as zero? if so ignore and use cache
       range:
         status.Drivetrain.FuelSystem.DTE.Total > 0
@@ -439,7 +444,7 @@ export class BluelinkEurope extends Bluelink {
         Boolean(status.Cabin.Door.Row2.Passenger.Open)
       ),
       climate: Boolean(status.Cabin.HVAC.Row1.Driver.Blower.SpeedLevel > 0),
-      soc: status.Green.BatteryManagement.BatteryRemain.Ratio,
+      soc: isEV ? status.Green.BatteryManagement.BatteryRemain.Ratio : status.Drivetrain.FuelSystem.FuelLevel,
       twelveSoc: status.Electronics.Battery.Level ? status.Electronics.Battery.Level : 0,
       odometer: newOdometer ? newOdometer : this.cache ? this.cache.status.odometer : 0,
       chargeLimit:

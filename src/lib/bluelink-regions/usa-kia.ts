@@ -173,6 +173,7 @@ export class BluelinkUSAKia extends Bluelink {
     }
 
     return {
+      isEV: true,
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: lastRemoteCheck.getTime(),
       isCharging: status.evStatus.batteryCharge,

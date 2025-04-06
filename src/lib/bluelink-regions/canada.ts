@@ -203,6 +203,7 @@ export class BluelinkCanada extends Bluelink {
     // deal with that with either cached or zero values
     if (!status.evStatus) {
       return {
+        isEV: true,
         lastStatusCheck: Date.now(),
         lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
         isCharging: this.cache ? this.cache.status.isCharging : false,
@@ -245,6 +246,7 @@ export class BluelinkCanada extends Bluelink {
     }
 
     return {
+      isEV: true,
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
       isCharging: isCharging,
