@@ -128,16 +128,23 @@ const DEFAULT_CONFIG = {
   },
 } as Config
 
-export function configExists(): boolean {
-  return Keychain.contains(KEYCHAIN_BLUELINK_CONFIG_KEY)
+function getCacheKey(write = false): string {
+  const newCacheKey = `egmp-scriptable-config-${Script.name().replaceAll(' ', '')}`
+  if (write || Keychain.contains(newCacheKey)) return newCacheKey
+  return KEYCHAIN_BLUELINK_CONFIG_KEY
 }
 
-export function deleteConfig() {
-  Keychain.remove(KEYCHAIN_BLUELINK_CONFIG_KEY)
+export function configExists(): boolean {
+  return Keychain.contains(getCacheKey())
+}
+
+export function deleteConfig(all = false) {
+  Keychain.remove(getCacheKey(true))
+  if (all) Keychain.remove(getCacheKey())
 }
 
 export function setConfig(config: Config) {
-  Keychain.set(KEYCHAIN_BLUELINK_CONFIG_KEY, JSON.stringify(config))
+  Keychain.set(getCacheKey(true), JSON.stringify(config))
 }
 
 export function getFlattenedConfig(): FlattenedConfig {

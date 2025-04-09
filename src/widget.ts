@@ -37,8 +37,14 @@ interface WidgetRefresh {
   status: Status
 }
 
+function getCacheKey(write = false): string {
+  const newCacheKey = `egmp-scriptable-widget-${Script.name().replaceAll(' ', '')}`
+  if (write || Keychain.contains(newCacheKey)) return newCacheKey
+  return KEYCHAIN_WIDGET_REFRESH_KEY
+}
+
 export function deleteWidgetCache() {
-  Keychain.remove(KEYCHAIN_WIDGET_REFRESH_KEY)
+  Keychain.remove(getCacheKey(true))
 }
 
 async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<WidgetRefresh> {
@@ -70,10 +76,10 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
     DEFAULT_REMOTE_REFRESH_INTERVAL = DEFAULT_REMOTE_REFRESH_INTERVAL_DAY
   }
 
-  if (Keychain.contains(KEYCHAIN_WIDGET_REFRESH_KEY)) {
+  if (Keychain.contains(getCacheKey())) {
     cache = {
       ...DEFAULT_WIDGET_CACHE,
-      ...JSON.parse(Keychain.get(KEYCHAIN_WIDGET_REFRESH_KEY)),
+      ...JSON.parse(Keychain.get(getCacheKey())),
     }
   }
   if (!cache) {
@@ -135,7 +141,7 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
     // we have no guarentee of network connection
   }
 
-  Keychain.set(KEYCHAIN_WIDGET_REFRESH_KEY, JSON.stringify(cache))
+  Keychain.set(getCacheKey(true), JSON.stringify(cache))
   if (config.debugLogging)
     logger.log(
       `Current time: ${new Date().toLocaleString()}. Last Remote refresh: last refresh ${new Date(status.status.lastRemoteStatusCheck).toLocaleString()} Setting next refresh to ${nextRefresh.toLocaleString()}`,

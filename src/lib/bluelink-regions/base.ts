@@ -338,22 +338,29 @@ export class Bluelink {
     }
   }
 
+  static getCacheKey(write = false): string {
+    const newCacheKey = `egmp-scriptable-bl-cache-${Script.name().replaceAll(' ', '')}`
+    if (write || Keychain.contains(newCacheKey)) return newCacheKey
+    return KEYCHAIN_CACHE_KEY
+  }
+
   public getConfig() {
     return this.config
   }
 
-  public deleteCache() {
-    Keychain.remove(KEYCHAIN_CACHE_KEY)
+  public static deleteCache(all = false) {
+    Keychain.remove(Bluelink.getCacheKey(true))
+    if (all) Keychain.remove(this.getCacheKey())
   }
 
   protected saveCache() {
-    Keychain.set(KEYCHAIN_CACHE_KEY, JSON.stringify(this.cache))
+    Keychain.set(Bluelink.getCacheKey(true), JSON.stringify(this.cache))
   }
 
   protected async loadCache(): Promise<Cache | undefined> {
     let cache: Cache | undefined = undefined
-    if (Keychain.contains(KEYCHAIN_CACHE_KEY)) {
-      cache = JSON.parse(Keychain.get(KEYCHAIN_CACHE_KEY))
+    if (Keychain.contains(Bluelink.getCacheKey())) {
+      cache = JSON.parse(Keychain.get(Bluelink.getCacheKey()))
     }
     if (!cache) {
       // initial use - load car and status

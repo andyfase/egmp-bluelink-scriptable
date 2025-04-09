@@ -1,4 +1,7 @@
 import { Spacer, getTable, Div, P, destructiveConfirm } from './lib/scriptable-utils'
+import { deleteWidgetCache } from 'widget'
+import { deleteConfig } from 'config'
+import { Bluelink } from 'lib/bluelink-regions/base'
 
 const keychain_keys = ['egmp-bluelink-config', 'egmp-bluelink-cache', 'egmp-bluelink-widget']
 
@@ -38,6 +41,9 @@ function reset() {
             for (const key of keychain_keys) {
               if (Keychain.contains(key)) Keychain.remove(key)
             }
+            deleteWidgetCache()
+            deleteConfig()
+            Bluelink.deleteCache()
           },
         })
       },

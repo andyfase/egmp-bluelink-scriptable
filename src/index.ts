@@ -19,6 +19,7 @@ import { Logger } from './lib/logger'
   }
 
   const logger = new Logger(APP_LOG_FILE, 100)
+  logger.log(`name: ${Script.name()}`)
   const blConfig = getConfig()
   const bl = await initRegionalBluelink(blConfig)
 
