@@ -338,9 +338,10 @@ export class Bluelink {
     }
   }
 
-  static getCacheKey(write = false): string {
-    const newCacheKey = `egmp-scriptable-bl-cache-${Script.name().replaceAll(' ', '')}`
-    if (write || Keychain.contains(newCacheKey)) return newCacheKey
+  protected getCacheKey(write = false): string {
+    const currentScript = Script.name().replaceAll(' ', '')
+    const newCacheKey = `egmp-scriptable-bl-cache-${currentScript}`
+    if (this.config.multiCar || write || Keychain.contains(newCacheKey)) return newCacheKey
     return KEYCHAIN_CACHE_KEY
   }
 
@@ -348,19 +349,19 @@ export class Bluelink {
     return this.config
   }
 
-  public static deleteCache(all = false) {
-    Keychain.remove(Bluelink.getCacheKey(true))
+  public deleteCache(all = false) {
+    Keychain.remove(this.getCacheKey(true))
     if (all) Keychain.remove(this.getCacheKey())
   }
 
   protected saveCache() {
-    Keychain.set(Bluelink.getCacheKey(true), JSON.stringify(this.cache))
+    Keychain.set(this.getCacheKey(true), JSON.stringify(this.cache))
   }
 
   protected async loadCache(): Promise<Cache | undefined> {
     let cache: Cache | undefined = undefined
-    if (Keychain.contains(Bluelink.getCacheKey())) {
-      cache = JSON.parse(Keychain.get(Bluelink.getCacheKey()))
+    if (Keychain.contains(this.getCacheKey())) {
+      cache = JSON.parse(Keychain.get(this.getCacheKey()))
     }
     if (!cache) {
       // initial use - load car and status

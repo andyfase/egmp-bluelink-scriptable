@@ -126,7 +126,7 @@ export async function createApp(config: Config, bl: Bluelink) {
       pageImage(bl),
       pageIcons(bl),
       Spacer({ rowHeight: 150 }),
-      settings(),
+      settings(bl),
     ],
   })
 }
@@ -150,7 +150,7 @@ const pageTitle = connect(({ state: { name } }) => {
   )
 })
 
-const settings = () => {
+const settings = (bl: Bluelink) => {
   return Div(
     [
       Img(getTintedIcon('settings'), { align: 'left' }),
@@ -163,13 +163,13 @@ const settings = () => {
     ],
     {
       onTap: () => {
-        loadConfigScreen()
+        loadConfigScreen(bl)
       },
       onTripleTap() {
         destructiveConfirm('Confirm Setting Reset - ALL settings/data will be removed', {
           confirmButtonTitle: 'Delete all Settings/Data',
           onConfirm: () => {
-            Bluelink.deleteCache()
+            bl.deleteCache()
             deleteConfig()
             deleteWidgetCache()
             // @ts-ignore - undocumented api

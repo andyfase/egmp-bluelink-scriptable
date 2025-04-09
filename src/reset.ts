@@ -1,7 +1,4 @@
-import { Spacer, getTable, Div, P, destructiveConfirm } from './lib/scriptable-utils'
-import { deleteWidgetCache } from 'widget'
-import { deleteConfig } from 'config'
-import { Bluelink } from 'lib/bluelink-regions/base'
+import { Spacer, getTable, Div, P, destructiveConfirm, textInput } from './lib/scriptable-utils'
 
 const keychain_keys = ['egmp-bluelink-config', 'egmp-bluelink-cache', 'egmp-bluelink-widget']
 
@@ -38,12 +35,21 @@ function reset() {
         destructiveConfirm('Confirm Setting Reset - ALL settings/data will be removed', {
           confirmButtonTitle: 'Delete all Settings/Data',
           onConfirm: () => {
-            for (const key of keychain_keys) {
-              if (Keychain.contains(key)) Keychain.remove(key)
-            }
-            deleteWidgetCache()
-            deleteConfig()
-            Bluelink.deleteCache()
+            textInput('Confirm script name to reset', {
+              initValue: 'egmp-bluelink',
+              submitText: 'Reset',
+              onSubmit: (name) => {
+                if (name) {
+                  name = name.replaceAll(' ', '')
+                  keychain_keys.push(`egmp-scriptable-bl-cache-${name}`)
+                  keychain_keys.push(`egmp-scriptable-config-${name}`)
+                  keychain_keys.push(`egmp-scriptable-widget-${name}`)
+                  for (const key of keychain_keys) {
+                    if (Keychain.contains(key)) Keychain.remove(key)
+                  }
+                }
+              },
+            })
           },
         })
       },
