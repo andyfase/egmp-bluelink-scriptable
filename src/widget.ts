@@ -475,7 +475,13 @@ export async function createHomeScreenRectangleWidget(config: Config, bl: Blueli
   if (isCharging) {
     const chargeComplete = getChargeCompletionString(lastSeen, remainingChargingTime, 'short', true)
     const batteryChargingTimeStack = batteryInfoStack.addStack()
-    batteryChargingTimeStack.addSpacer()
+
+    // bug in dynamic spacing means we set a small size if lenght of string is > 7
+    if (chargeComplete.length > 7) {
+      batteryChargingTimeStack.addSpacer(5)
+    } else {
+      batteryChargingTimeStack.addSpacer()
+    }
 
     const chargingTimeIconElement = batteryChargingTimeStack.addImage(SFSymbol.named('clock.fill').image)
     chargingTimeIconElement.tintColor = new Color('#ffffff')
