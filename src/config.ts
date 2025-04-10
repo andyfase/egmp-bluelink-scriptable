@@ -1,3 +1,4 @@
+import { Bluelink } from 'lib/bluelink-regions/base'
 import { form, confirm, quickOptions, destructiveConfirm } from './lib/scriptable-utils'
 
 const KEYCHAIN_BLUELINK_CONFIG_KEY = 'egmp-bluelink-config'
@@ -37,6 +38,7 @@ export interface Config {
   allowWidgetRemoteRefresh: boolean
   carColor: string
   debugLogging: boolean
+  multiCar: boolean
   promptForUpdate: boolean
   vin: string | undefined
   widgetConfig: WidgetConfig
@@ -66,6 +68,7 @@ export interface FlattenedConfig {
   allowWidgetRemoteRefresh: boolean
   carColor: string
   debugLogging: boolean
+  multiCar: boolean
   promptForUpdate: boolean
   vin: string | undefined
   widgetConfig: WidgetConfig
@@ -101,6 +104,7 @@ const DEFAULT_CONFIG = {
   climateTempCold: DEFAULT_TEMPS.C.cold,
   climateTempWarm: DEFAULT_TEMPS.C.warm,
   debugLogging: false,
+  multiCar: false,
   promptForUpdate: true,
   allowWidgetRemoteRefresh: false,
   carColor: 'white',
@@ -128,16 +132,23 @@ const DEFAULT_CONFIG = {
   },
 } as Config
 
-export function configExists(): boolean {
-  return Keychain.contains(KEYCHAIN_BLUELINK_CONFIG_KEY)
+function getCacheKey(write = false): string {
+  const newCacheKey = `egmp-scriptable-config-${Script.name().replaceAll(' ', '')}`
+  if (write || Keychain.contains(newCacheKey)) return newCacheKey
+  return KEYCHAIN_BLUELINK_CONFIG_KEY
 }
 
-export function deleteConfig() {
-  Keychain.remove(KEYCHAIN_BLUELINK_CONFIG_KEY)
+export function configExists(): boolean {
+  return Keychain.contains(getCacheKey())
+}
+
+export function deleteConfig(all = false) {
+  Keychain.remove(getCacheKey(true))
+  if (all) Keychain.remove(getCacheKey())
 }
 
 export function setConfig(config: Config) {
-  Keychain.set(KEYCHAIN_BLUELINK_CONFIG_KEY, JSON.stringify(config))
+  Keychain.set(getCacheKey(true), JSON.stringify(config))
 }
 
 export function getFlattenedConfig(): FlattenedConfig {
@@ -152,8 +163,8 @@ export function getFlattenedConfig(): FlattenedConfig {
 
 export function getConfig(): Config {
   let config: Config | undefined
-  if (Keychain.contains(KEYCHAIN_BLUELINK_CONFIG_KEY)) {
-    config = JSON.parse(Keychain.get(KEYCHAIN_BLUELINK_CONFIG_KEY))
+  if (configExists()) {
+    config = JSON.parse(Keychain.get(getCacheKey()))
   }
   if (!config || !configValid) {
     config = DEFAULT_CONFIG
@@ -164,11 +175,21 @@ export function getConfig(): Config {
   }
 }
 
+function configResetRequired(oldConfig: Config, newConfig: Config): boolean {
+  return (
+    oldConfig.manufacturer !== newConfig.manufacturer ||
+    oldConfig.vin !== newConfig.vin ||
+    oldConfig.auth.region !== newConfig.auth.region ||
+    oldConfig.auth.username !== newConfig.auth.username ||
+    oldConfig.auth.password !== newConfig.auth.password
+  )
+}
+
 function configValid(config: Config): boolean {
   return config && Object.hasOwn(config, 'auth')
 }
 
-export async function loadConfigScreen() {
+export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
   return await form<FlattenedConfig>({
     title: 'Bluelink Configuration settings',
     subtitle: 'Saved within IOS keychain and never exposed beyond your device(s)',
@@ -182,6 +203,7 @@ export async function loadConfigScreen() {
       climateTempWarm,
       climateTempCold,
       debugLogging,
+      multiCar,
       promptForUpdate,
       allowWidgetRemoteRefresh,
       carColor,
@@ -190,7 +212,7 @@ export async function loadConfigScreen() {
     }) => {
       // read and combine with current saved config as other config screens may have changed settings (custom climates etc)
       const config = getConfig()
-      setConfig({
+      const newConfig = {
         ...config,
         ...{
           auth: {
@@ -206,11 +228,16 @@ export async function loadConfigScreen() {
           allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
           carColor: carColor ? carColor.toLocaleLowerCase() : 'white',
           debugLogging: debugLogging,
+          multiCar: multiCar,
           promptForUpdate: promptForUpdate,
           manufacturer: manufacturer?.toLowerCase(),
           vin: vin ? vin.toUpperCase().trim() : undefined,
         },
-      } as Config)
+      } as Config
+      setConfig(newConfig)
+      if (bl && configResetRequired(config, newConfig)) {
+        bl.deleteCache()
+      }
     },
     onStateChange: (state, previousState): Partial<FlattenedConfig> => {
       if (state.tempType !== previousState.tempType) {
@@ -318,6 +345,11 @@ export async function loadConfigScreen() {
       debugLogging: {
         type: 'checkbox',
         label: 'Enable debug logging',
+        isRequired: false,
+      },
+      multiCar: {
+        type: 'checkbox',
+        label: 'Enable Multi Car Support (see docs at bluelink.andyfase.com',
         isRequired: false,
       },
       promptForUpdate: {

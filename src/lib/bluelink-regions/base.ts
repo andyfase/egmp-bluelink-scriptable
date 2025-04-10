@@ -5,7 +5,7 @@ import { Buffer } from 'buffer'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
 export const MAX_COMPLETION_POLLS = 20
-const BLUELINK_LOG_FILE = 'egmp-bluelink.log'
+const BLUELINK_LOG_FILE = `${Script.name().replaceAll(' ', '')}-api.log`
 const DEFAULT_API_HOST = 'mybluelink.ca'
 const DEFAULT_API_DOMAIN = `https://${DEFAULT_API_HOST}/tods/api/`
 
@@ -338,22 +338,30 @@ export class Bluelink {
     }
   }
 
+  protected getCacheKey(write = false): string {
+    const currentScript = Script.name().replaceAll(' ', '')
+    const newCacheKey = `egmp-scriptable-bl-cache-${currentScript}`
+    if (this.config.multiCar || write || Keychain.contains(newCacheKey)) return newCacheKey
+    return KEYCHAIN_CACHE_KEY
+  }
+
   public getConfig() {
     return this.config
   }
 
-  public deleteCache() {
-    Keychain.remove(KEYCHAIN_CACHE_KEY)
+  public deleteCache(all = false) {
+    Keychain.remove(this.getCacheKey(true))
+    if (all) Keychain.remove(this.getCacheKey())
   }
 
   protected saveCache() {
-    Keychain.set(KEYCHAIN_CACHE_KEY, JSON.stringify(this.cache))
+    Keychain.set(this.getCacheKey(true), JSON.stringify(this.cache))
   }
 
   protected async loadCache(): Promise<Cache | undefined> {
     let cache: Cache | undefined = undefined
-    if (Keychain.contains(KEYCHAIN_CACHE_KEY)) {
-      cache = JSON.parse(Keychain.get(KEYCHAIN_CACHE_KEY))
+    if (Keychain.contains(this.getCacheKey())) {
+      cache = JSON.parse(Keychain.get(this.getCacheKey()))
     }
     if (!cache) {
       // initial use - load car and status

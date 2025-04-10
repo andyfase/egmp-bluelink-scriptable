@@ -163,7 +163,7 @@ const settings = (bl: Bluelink) => {
     ],
     {
       onTap: () => {
-        loadConfigScreen()
+        loadConfigScreen(bl)
       },
       onTripleTap() {
         destructiveConfirm('Confirm Setting Reset - ALL settings/data will be removed', {

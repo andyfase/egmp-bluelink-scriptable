@@ -113,30 +113,30 @@ const executeTapListener = (() => {
   const clickTimer = new Timer()
   return (clickMap: ClickMap) => {
     clickTimer.timeInterval = getConfig('ON_TAP_CLICK_INTERVAL')
-    const maxClicks = Math.max(...Object.keys(clickMap).map((numStr) => Number.parseInt(numStr, 10)))
+    const configuredClicks = Object.keys(clickMap).map((numStr) => Number.parseInt(numStr, 10))
     // Every time a tap comes in, restart the timer & increment the counter
     tapCount++
     clickTimer.invalidate()
     const executeFn = async () => {
-      try {
-        const action = clickMap[tapCount]
-        if (!action) {
-          throw new ErrorWithPayload('Action at index not found', {
-            tapCount,
-            maxClicks,
-            clickKeysPassed: Object.keys(clickMap),
-          })
+      if (configuredClicks.includes(tapCount)) {
+        try {
+          const action = clickMap[tapCount]
+          if (!action) {
+            throw new ErrorWithPayload('Action at index not found', {
+              tapCount,
+              clickKeysPassed: Object.keys(clickMap),
+            })
+          }
+          await action()
+        } catch (e) {
+          warnError(e, 'table row')
         }
-        tapCount = 0
-        await action()
-      } catch (e) {
-        warnError(e, 'table row')
       }
+      tapCount = 0
     }
     // The timer callback will only ever fire if a click timer reaches its full
     // duration
-    if (maxClicks <= tapCount) executeFn()
-    else clickTimer.schedule(executeFn)
+    clickTimer.schedule(executeFn)
   }
 })()
 

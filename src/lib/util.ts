@@ -1,4 +1,4 @@
-export const APP_LOG_FILE = 'egmp-bluelink-app.log'
+export const APP_LOG_FILE = `${Script.name().replaceAll(' ', '')}-app.log`
 
 interface icon {
   iconName: string
