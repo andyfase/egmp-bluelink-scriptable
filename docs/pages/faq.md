@@ -18,6 +18,12 @@ No, this is not an app that sits in the Apple App Store. This is a [Scriptable](
 For why, a combination of it being easier to develop this way, and also not being beholden to Apple App Store rules on what is allowed. This app uses un-documentated Hyundai and Kia APIs, is it quite likely a official IOS app will be either rejected or asked to be removed from the App Store - this cannot occur via Scriptable.
 {: .fs-4 .fw-400 }
 
+### Is Android Support or planned?
+
+No, this app is IOS only and I have no ability or desire to produce a Android version. [Scriptable](https://scriptable.app/) only exists on IOS, the nearest Android equivalent is Tasker, but that lacks  the ability to actually create custom app screens and widgets from what i can tell. 
+
+Likely for this to work on Android someone would need to develop a [React Native app](https://reactnative.dev/) which would then need to be made available to side load. Obviously this codebase is open souce and available for anyone who wishes to take on this challenge :-)
+
 ### Do a require a Kia / Hyundai Bluelink subscription to use this?
 
 Yes, or likely so. This app uses the same Hyundai and Kia APIs that back the offical App Store apps, no checks are made within the code to check for accss to Bluelink, but it is assumed the APIs will not work if you do not have a valid subscription.
