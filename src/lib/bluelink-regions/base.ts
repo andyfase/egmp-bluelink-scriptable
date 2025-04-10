@@ -5,7 +5,7 @@ import { Buffer } from 'buffer'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
 export const MAX_COMPLETION_POLLS = 20
-const BLUELINK_LOG_FILE = 'egmp-bluelink.log'
+const BLUELINK_LOG_FILE = `${Script.name().replaceAll(' ', '')}-api.log`
 const DEFAULT_API_HOST = 'mybluelink.ca'
 const DEFAULT_API_DOMAIN = `https://${DEFAULT_API_HOST}/tods/api/`
 

@@ -134,8 +134,9 @@ const upgrade = connect(({ state: { currentVersion, release } }) => {
     ],
     {
       onTap: async () => {
+        const appFile = `${Script.name()}.js`
         quickOptions(['Install', 'Cancel'], {
-          title: 'Confirm Install - App will update and auto-close',
+          title: `Confirm Install - App will update "${appFile}" and auto-close`,
           onOptionSelect: async (opt) => {
             if (opt === 'Install') {
               const req = new Request(release.url)
@@ -144,14 +145,14 @@ const upgrade = connect(({ state: { currentVersion, release } }) => {
                 const fm = FileManager.iCloud()
                 // try to backup current script - log errors, script could have been renamed for example
                 try {
-                  if (fm.fileExists(`${SCRIPTABLE_DIR}/${release.assetName}.backup`)) {
-                    fm.remove(`${SCRIPTABLE_DIR}/${release.assetName}.backup`)
+                  if (fm.fileExists(`${SCRIPTABLE_DIR}/${appFile}.backup`)) {
+                    fm.remove(`${SCRIPTABLE_DIR}/${appFile}.backup`)
                   }
-                  fm.move(`${SCRIPTABLE_DIR}/${release.assetName}`, `${SCRIPTABLE_DIR}/${release.assetName}.backup`)
+                  fm.move(`${SCRIPTABLE_DIR}/${appFile}`, `${SCRIPTABLE_DIR}/${appFile}.backup`)
                 } catch (e) {
                   logger.log(`Failed to backup current script: ${e}`)
                 }
-                fm.write(`${SCRIPTABLE_DIR}/${release.assetName}`, data)
+                fm.write(`${SCRIPTABLE_DIR}/${appFile}`, data)
                 Script.complete()
                 // @ts-ignore - undocumented api
                 App.close()

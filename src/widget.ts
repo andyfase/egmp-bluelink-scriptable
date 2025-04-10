@@ -22,7 +22,7 @@ const KEYCHAIN_WIDGET_REFRESH_KEY = 'egmp-bluelink-widget'
 const NIGHT_HOUR_START = 23
 const NIGHT_HOUR_STOP = 7
 
-const WIDGET_LOG_FILE = 'egmp-bluelink-widget.log'
+const WIDGET_LOG_FILE = `${Script.name().replaceAll(' ', '')}-widget.log`
 
 interface WidgetRefreshCache {
   lastRemoteRefresh: number
