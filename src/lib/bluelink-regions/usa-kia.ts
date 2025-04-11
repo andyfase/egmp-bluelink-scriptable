@@ -264,7 +264,8 @@ export class BluelinkUSAKia extends Bluelink {
     })
 
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return this.returnCarStatus(resp.json.payload.vehicleStatusRpt.vehicleStatus)
+      // only cached data contains latest location so return cached API after remote command
+      return await this.getCarStatus(_id, false)
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
