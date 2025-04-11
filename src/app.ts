@@ -530,7 +530,7 @@ const pageIcons = connect(
   },
 )
 
-const pageImage = connect(({ state: { appIcon } }, bl: Bluelink) => {
+const pageImage = connect(({ state: { appIcon, updatingActions } }, bl: Bluelink) => {
   return Div([Img(appIcon)], {
     height: 150,
     onTripleTap: async () => {
@@ -538,6 +538,33 @@ const pageImage = connect(({ state: { appIcon } }, bl: Bluelink) => {
       setState({
         appIcon: image,
       })
+    },
+    onTap() {
+      if (!isUpdating) {
+        quickOptions(['On Google Maps', 'On Apple Maps', 'Cancel'], {
+          title: 'Get Location of Car?',
+          onOptionSelect: (opt) => {
+            if (opt === 'Cancel') return
+            doAsyncUpdate({
+              command: 'status',
+              bl: bl,
+              actions: updatingActions,
+              actionKey: 'status',
+              updatingText: 'Getting Location...',
+              successText: 'Got Location!',
+              failureText: 'Failed to get location!!!',
+              successCallback: (status: Status) => {
+                updateStatus(status)
+                if (status.status.location) {
+                  const maps = new CallbackURL(opt === 'On Google Maps' ? 'comgooglemaps://' : 'http://maps.apple.com/')
+                  maps.addParameter('q', `${status.status.location.latitude},${status.status.location.longitude}`)
+                  maps.open()
+                }
+              },
+            })
+          },
+        })
+      }
     },
   })
 })

@@ -7,6 +7,7 @@ import {
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
   ChargeLimit,
+  Location,
 } from './base'
 import { Config } from '../../config'
 
@@ -151,7 +152,7 @@ export class BluelinkUSAKia extends Bluelink {
     throw Error(error)
   }
 
-  protected returnCarStatus(status: any): BluelinkStatus {
+  protected returnCarStatus(status: any, location?: Location): BluelinkStatus {
     const lastRemoteCheckString = status.syncDate.utc + 'Z'
     const df = new DateFormatter()
     df.dateFormat = 'yyyyMMddHHmmssZ'
@@ -191,6 +192,7 @@ export class BluelinkUSAKia extends Bluelink {
       soc: status.evStatus.batteryStatus,
       twelveSoc: status.batteryStatus.stateOfCharge ? status.batteryStatus.stateOfCharge : 0,
       odometer: 0, // not given in status
+      location: location ? location : this.cache ? this.cache.status.location : undefined,
       chargeLimit:
         chargeLimit && chargeLimit.acPercent > 0 ? chargeLimit : this.cache ? this.cache.status.chargeLimit : undefined,
     }
@@ -215,7 +217,7 @@ export class BluelinkUSAKia extends Bluelink {
             dtc: '1',
             enrollment: '0',
             functionalCards: '0',
-            location: '0',
+            location: '1',
             vehicleStatus: '1',
             weather: '0',
           },
@@ -229,7 +231,17 @@ export class BluelinkUSAKia extends Bluelink {
       })
 
       if (this.requestResponseValid(resp.resp, resp.json).valid) {
-        return this.returnCarStatus(resp.json.payload.vehicleInfoList[0].lastVehicleInfo.vehicleStatusRpt.vehicleStatus)
+        let location = undefined
+        if (resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location) {
+          location = {
+            latitude: resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location.coord.lat,
+            longitude: resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location.coord.lon,
+          } as Location
+        }
+        return this.returnCarStatus(
+          resp.json.payload.vehicleInfoList[0].lastVehicleInfo.vehicleStatusRpt.vehicleStatus,
+          location,
+        )
       } else if (retry) {
         // manage retry ourselves - just assume we need to re-auth
         await this.refreshLogin(true)

@@ -43,6 +43,7 @@ export interface BluelinkStatus {
   twelveSoc: number
   odometer: number
   chargeLimit?: ChargeLimit
+  location?: Location
 }
 
 export interface Status {
@@ -94,6 +95,11 @@ export interface ClimateRequest {
 export interface ChargeLimit {
   acPercent: number
   dcPercent: number
+}
+
+export interface Location {
+  latitude: string
+  longitude: string
 }
 
 const carImageHttpURL = 'https://bluelink.andyfase.com/app-assets/car-images/'

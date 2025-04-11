@@ -5,6 +5,7 @@ import {
   BluelinkStatus,
   ClimateRequest,
   ChargeLimit,
+  Location,
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
 } from './base'
@@ -193,6 +194,7 @@ export class BluelinkCanada extends Bluelink {
     forceUpdate: boolean,
     odometer?: number,
     chargeLimit?: ChargeLimit,
+    location?: Location,
   ): BluelinkStatus {
     const lastRemoteCheckString = status.lastStatusDate + 'Z'
     const df = new DateFormatter()
@@ -215,6 +217,7 @@ export class BluelinkCanada extends Bluelink {
         climate: status.airCtrlOn,
         twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
         odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
+        location: location ? location : this.cache ? this.cache.status.location : undefined,
         chargeLimit:
           chargeLimit && chargeLimit.acPercent > 0
             ? chargeLimit
@@ -263,6 +266,7 @@ export class BluelinkCanada extends Bluelink {
       soc: status.evStatus.batteryStatus,
       twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
       odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
+      location: location ? location : this.cache ? this.cache.status.location : undefined,
       chargeLimit:
         chargeLimit && chargeLimit.acPercent > 0 ? chargeLimit : this.cache ? this.cache.status.chargeLimit : undefined,
     }
@@ -270,7 +274,7 @@ export class BluelinkCanada extends Bluelink {
 
   protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
     const api = forceUpdate ? 'rltmvhclsts' : 'sltvhcl'
-    const resp = await this.request({
+    const status = await this.request({
       url: this.apiDomain + api,
       method: 'POST',
       ...(!forceUpdate && {
@@ -284,20 +288,28 @@ export class BluelinkCanada extends Bluelink {
       validResponseFunction: this.requestResponseValid,
     })
 
+    if (!this.requestResponseValid(status.resp, status.json).valid) {
+      const error = `Failed to retrieve vehicle status: ${JSON.stringify(status.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+
     let chargeLimit = undefined
+    let location = undefined
     if (forceUpdate) {
       chargeLimit = await this.getChargeLimit(id)
+      location = await this.getLocation(id)
     }
 
-    if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return forceUpdate
-        ? this.returnCarStatus(resp.json.result.status, forceUpdate, resp.json.result.status.odometer, chargeLimit)
-        : this.returnCarStatus(resp.json.result.status, forceUpdate, resp.json.result.vehicle.odometer)
-    }
-
-    const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) this.logger.log(error)
-    throw Error(error)
+    return forceUpdate
+      ? this.returnCarStatus(
+          status.json.result.status,
+          forceUpdate,
+          status.json.result.status.odometer,
+          chargeLimit,
+          location,
+        )
+      : this.returnCarStatus(status.json.result.status, forceUpdate, status.json.result.vehicle.odometer)
   }
 
   protected async getAuthCode(): Promise<string> {
@@ -504,6 +516,32 @@ export class BluelinkCanada extends Bluelink {
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
+  }
+
+  protected async getLocation(id: string): Promise<Location | undefined> {
+    const api = 'fndmcr'
+    const authCode = await this.getAuthCode()
+    const resp = await this.request({
+      method: 'POST',
+      url: this.apiDomain + api,
+      data: JSON.stringify({
+        pin: this.config.auth.pin,
+      }),
+      headers: {
+        Vehicleid: id,
+        Pauth: authCode,
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+
+    // default to zero if we cant extract
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.result) {
+      return {
+        latitude: resp.json.result.coord.lat,
+        longitude: resp.json.result.coord.lon,
+      } as Location
+    }
+    return undefined
   }
 
   protected async getChargeLimit(id: string): Promise<ChargeLimit> {
