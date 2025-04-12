@@ -5,6 +5,7 @@ import {
   BluelinkStatus,
   ClimateRequest,
   ChargeLimit,
+  Location,
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
 } from './base'
@@ -418,6 +419,15 @@ export class BluelinkEurope extends Bluelink {
       chargeLimit.dcPercent = status.Green.ChargingInformation.TargetSoC.Quick
     }
 
+    // check for location
+    let location = undefined
+    if (status.Location && status.Location.GeoCoord) {
+      location = {
+        latitude: status.Location.GeoCoord.Latitude,
+        longitude: status.Location.GeoCoord.Longitude,
+      } as Location
+    }
+
     return {
       lastStatusCheck: Date.now(),
       lastRemoteStatusCheck: Number(updateTime),
@@ -442,12 +452,13 @@ export class BluelinkEurope extends Bluelink {
       soc: status.Green.BatteryManagement.BatteryRemain.Ratio,
       twelveSoc: status.Electronics.Battery.Level ? status.Electronics.Battery.Level : 0,
       odometer: newOdometer ? newOdometer : this.cache ? this.cache.status.odometer : 0,
+      location: location ? location : this.cache ? this.cache.status.location : undefined,
       chargeLimit:
         chargeLimit && chargeLimit.acPercent > 0 ? chargeLimit : this.cache ? this.cache.status.chargeLimit : undefined,
     }
   }
 
-  protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
+  protected async getCarStatus(id: string, forceUpdate: boolean, _location: boolean = false): Promise<BluelinkStatus> {
     // CCS2 endpoint appears to be the only endpoint that works consistantly across all cars
     if (!forceUpdate) {
       const resp = await this.request({

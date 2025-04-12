@@ -5,6 +5,7 @@ import {
   BluelinkStatus,
   ClimateRequest,
   ChargeLimit,
+  Location,
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
 } from './base'
@@ -161,7 +162,7 @@ export class BluelinkUSA extends Bluelink {
     throw Error(error)
   }
 
-  protected returnCarStatus(status: any, forceUpdate: boolean): BluelinkStatus {
+  protected returnCarStatus(status: any, forceUpdate: boolean, location?: Location): BluelinkStatus {
     // format "2025-01-30T00:38:15Z" - which is standard
     const lastRemoteCheck = new Date(status.dateTime)
 
@@ -214,12 +215,13 @@ export class BluelinkUSA extends Bluelink {
       soc: status.evStatus.batteryStatus,
       twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
       odometer: status.odometer ? status.odometer : 0,
+      location: location ? location : this.cache ? this.cache.status.location : undefined,
       chargeLimit:
         chargeLimit && chargeLimit.acPercent > 0 ? chargeLimit : this.cache ? this.cache.status.chargeLimit : undefined,
     }
   }
 
-  protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
+  protected async getCarStatus(id: string, forceUpdate: boolean, location: boolean = false): Promise<BluelinkStatus> {
     const api = 'ac/v2/rcs/rvs/vehicleStatus'
     const resp = await this.request({
       url: this.apiDomain + api,
@@ -231,7 +233,9 @@ export class BluelinkUSA extends Bluelink {
     })
 
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return this.returnCarStatus(resp.json.vehicleStatus, forceUpdate)
+      let locationStatus = undefined
+      if (location) locationStatus = await this.getLocation(id)
+      return this.returnCarStatus(resp.json.vehicleStatus, forceUpdate, locationStatus)
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
@@ -451,5 +455,23 @@ export class BluelinkUSA extends Bluelink {
     const error = `Failed to send chargeLimit command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
+  }
+
+  protected async getLocation(_id: string): Promise<Location | undefined> {
+    const api = 'ac/v2/rcs/rfc/findMyCar'
+    const resp = await this.request({
+      url: this.apiDomain + api,
+      headers: {
+        ...this.carHeaders(),
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.coord) {
+      return {
+        latitude: resp.json.coord.lat,
+        longitude: resp.json.coord.lon,
+      } as Location
+    }
+    return undefined
   }
 }

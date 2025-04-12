@@ -7,6 +7,7 @@ import {
   DEFAULT_STATUS_CHECK_INTERVAL,
   MAX_COMPLETION_POLLS,
   ChargeLimit,
+  Location,
 } from './base'
 import { Config } from '../../config'
 
@@ -151,7 +152,7 @@ export class BluelinkUSAKia extends Bluelink {
     throw Error(error)
   }
 
-  protected returnCarStatus(status: any): BluelinkStatus {
+  protected returnCarStatus(status: any, location?: Location): BluelinkStatus {
     const lastRemoteCheckString = status.syncDate.utc + 'Z'
     const df = new DateFormatter()
     df.dateFormat = 'yyyyMMddHHmmssZ'
@@ -191,12 +192,18 @@ export class BluelinkUSAKia extends Bluelink {
       soc: status.evStatus.batteryStatus,
       twelveSoc: status.batteryStatus.stateOfCharge ? status.batteryStatus.stateOfCharge : 0,
       odometer: 0, // not given in status
+      location: location ? location : this.cache ? this.cache.status.location : undefined,
       chargeLimit:
         chargeLimit && chargeLimit.acPercent > 0 ? chargeLimit : this.cache ? this.cache.status.chargeLimit : undefined,
     }
   }
 
-  protected async getCarStatus(_id: string, forceUpdate: boolean, retry = true): Promise<BluelinkStatus> {
+  protected async getCarStatus(
+    _id: string,
+    forceUpdate: boolean,
+    location: boolean = false,
+    retry = true,
+  ): Promise<BluelinkStatus> {
     if (!forceUpdate) {
       // as the request payload contains the authId - which is a auth param we disable retry and manage retry ourselves
       const resp = await this.request({
@@ -215,7 +222,7 @@ export class BluelinkUSAKia extends Bluelink {
             dtc: '1',
             enrollment: '0',
             functionalCards: '0',
-            location: '0',
+            location: '1',
             vehicleStatus: '1',
             weather: '0',
           },
@@ -229,11 +236,21 @@ export class BluelinkUSAKia extends Bluelink {
       })
 
       if (this.requestResponseValid(resp.resp, resp.json).valid) {
-        return this.returnCarStatus(resp.json.payload.vehicleInfoList[0].lastVehicleInfo.vehicleStatusRpt.vehicleStatus)
+        let locationStatus = undefined
+        if (resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location) {
+          locationStatus = {
+            latitude: resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location.coord.lat,
+            longitude: resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location.coord.lon,
+          } as Location
+        }
+        return this.returnCarStatus(
+          resp.json.payload.vehicleInfoList[0].lastVehicleInfo.vehicleStatusRpt.vehicleStatus,
+          locationStatus,
+        )
       } else if (retry) {
         // manage retry ourselves - just assume we need to re-auth
         await this.refreshLogin(true)
-        return await this.getCarStatus(_id, forceUpdate, false)
+        return await this.getCarStatus(_id, forceUpdate, location, false)
       }
       const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
       if (this.config.debugLogging) this.logger.log(error)
@@ -252,7 +269,10 @@ export class BluelinkUSAKia extends Bluelink {
     })
 
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      return this.returnCarStatus(resp.json.payload.vehicleStatusRpt.vehicleStatus)
+      // only cached data contains latest location so return cached API after remote command
+      return location
+        ? await this.getCarStatus(_id, false)
+        : this.returnCarStatus(resp.json.payload.vehicleStatusRpt.vehicleStatus)
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
