@@ -204,6 +204,10 @@ export class Bluelink {
     return Buffer.from(result).toString('base64')
   }
 
+  public getLogger(): Logger {
+    return this.logger
+  }
+
   protected genRanHex(size: number): string {
     return [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('')
   }

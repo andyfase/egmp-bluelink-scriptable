@@ -5,8 +5,8 @@ import { loadConfigScreen, deleteConfig, setConfig } from 'config'
 import { Version } from 'lib/version'
 import { loadAboutScreen } from 'about'
 import { deleteWidgetCache } from 'widget'
-import { Logger } from './lib/logger'
-import { APP_LOG_FILE } from './lib/util'
+import { getAppLogger } from './lib/util'
+import { getWidgetLogger } from 'widget'
 import {
   sleep,
   loadTintedIcons,
@@ -43,7 +43,7 @@ interface updatingActions {
 
 let isUpdating = false
 let updatingIconAngle = 0
-const logger = new Logger(APP_LOG_FILE, 100)
+const logger = getAppLogger()
 
 const { present, connect, setState } = getTable<{
   name: string
@@ -166,14 +166,39 @@ const settings = (bl: Bluelink) => {
         loadConfigScreen(bl)
       },
       onTripleTap() {
-        destructiveConfirm('Confirm Setting Reset - ALL settings/data will be removed', {
-          confirmButtonTitle: 'Delete all Settings/Data',
-          onConfirm: () => {
-            bl.deleteCache()
-            deleteConfig()
-            deleteWidgetCache()
-            // @ts-ignore - undocumented api
-            App.close()
+        quickOptions(['Share Debug Logs', 'Reset All Settings', 'Cancel'], {
+          title: 'Choose Debug Option:',
+          onOptionSelect: (opt) => {
+            if (opt === 'Cancel') return
+            switch (opt) {
+              case 'Share Debug Logs': {
+                const blRedactedLogs = bl.getLogger().readAndRedact()
+                const widgetLogs = getWidgetLogger().read()
+                const appLogs = getAppLogger().read()
+                ShareSheet.present([
+                  'Bluelink API logs:',
+                  blRedactedLogs,
+                  'Widget Logs',
+                  widgetLogs,
+                  'App Logs',
+                  appLogs,
+                ])
+                break
+              }
+              case 'Reset All Settings': {
+                destructiveConfirm('Confirm Setting Reset - ALL settings/data will be removed', {
+                  confirmButtonTitle: 'Delete all Settings/Data',
+                  onConfirm: () => {
+                    bl.deleteCache()
+                    deleteConfig()
+                    deleteWidgetCache()
+                    // @ts-ignore - undocumented api
+                    App.close()
+                  },
+                })
+                break
+              }
+            }
           },
         })
       },

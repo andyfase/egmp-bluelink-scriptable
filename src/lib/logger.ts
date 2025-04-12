@@ -13,11 +13,13 @@ const loggingDateStringOptions = {
 
 export class Logger {
   private filepath: string
+  private previousFilepath: string | undefined
   private maxSize: number
   private fm: FileManager
 
   constructor(filename: string, maxSize?: number) {
     this.filepath = `${SCRIPTABLE_DIR}/${filename}`
+    this.previousFilepath = ''
     this.maxSize = maxSize || DEFAULT_MAX_SIZE
     this.fm = FileManager.iCloud()
   }
@@ -27,7 +29,8 @@ export class Logger {
       const date = new Date()
       const df = new DateFormatter()
       df.dateFormat = 'yyyyMMddHHmmssZ'
-      this.fm.move(this.filepath, this.filepath + '.' + df.string(date))
+      this.previousFilepath = this.filepath + '.' + df.string(date)
+      this.fm.move(this.filepath, this.previousFilepath)
     }
   }
 
@@ -40,8 +43,8 @@ export class Logger {
     this.fm.writeString(this.filepath, data)
   }
 
-  private readFile(): string {
-    if (this.fm.fileExists(this.filepath)) return this.fm.readString(this.filepath)
+  private readFile(filepath?: string): string {
+    if (this.fm.fileExists(filepath || this.filepath)) return this.fm.readString(filepath || this.filepath)
     return ''
   }
 
@@ -50,5 +53,31 @@ export class Logger {
     let currentData = this.readFile()
     currentData = currentData + '\n' + this.formatLogEntry(input)
     this.writeFile(currentData)
+  }
+
+  private redact(filepath: string): string {
+    let contents = ''
+    if (this.fm.fileExists(filepath)) {
+      contents = this.fm.readString(filepath)
+      contents = contents.replaceAll(/Accesstoken":".*?"/gi, 'Accesstoken":"REDACTED"')
+      contents = contents.replaceAll(/password":".*?"/gi, 'password":"REDACTED"')
+      contents = contents.replaceAll(/username":".*?"/gi, 'username":"REDACTED"')
+      contents = contents.replaceAll(/password=.*?&/gi, 'password=REDACTED&')
+      contents = contents.replaceAll(/username=.*?&/gi, 'username=REDACTED&')
+      contents = contents.replaceAll(/pin":".*?"/gi, 'pin":"REDACTED"')
+    }
+    return contents
+  }
+
+  public read(): string {
+    return this.previousFilepath
+      ? `${this.readFile(this.previousFilepath)}\n${this.readFile(this.filepath)}`
+      : this.readFile(this.filepath)
+  }
+
+  public readAndRedact(): string {
+    return this.previousFilepath
+      ? `${this.redact(this.previousFilepath)}\n${this.redact(this.filepath)}`
+      : this.redact(this.filepath)
   }
 }

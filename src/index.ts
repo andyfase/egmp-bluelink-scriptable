@@ -6,11 +6,10 @@ import {
   createHomeScreenRectangleWidget,
 } from 'widget'
 import { createApp } from 'app'
-import { APP_LOG_FILE } from './lib/util'
+import { getAppLogger } from './lib/util'
 import { processSiriRequest } from 'siri'
 import { getConfig, loadConfigScreen, configExists } from 'config'
 import { confirm } from './lib/scriptable-utils'
-import { Logger } from './lib/logger'
 ;(async () => {
   if (!configExists() && (config.runsWithSiri || config.runsInWidget)) return
   if (!configExists()) {
@@ -18,7 +17,7 @@ import { Logger } from './lib/logger'
     return
   }
 
-  const logger = new Logger(APP_LOG_FILE, 100)
+  const logger = getAppLogger()
   logger.log(`name: ${Script.name()}`)
   const blConfig = getConfig()
   const bl = await initRegionalBluelink(blConfig)

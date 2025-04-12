@@ -1,10 +1,9 @@
 import { getTable, Div, P, Img, Spacer, quickOptions, OK } from 'lib/scriptable-utils'
 import { GithubRelease, Version } from 'lib/version'
-import { Logger } from './lib/logger'
-import { APP_LOG_FILE } from './lib/util'
+import { getAppLogger } from './lib/util'
 
 const SCRIPTABLE_DIR = '/var/mobile/Library/Mobile Documents/iCloud~dk~simonbs~Scriptable/Documents'
-const logger = new Logger(APP_LOG_FILE, 100)
+const logger = getAppLogger()
 
 const { present, connect, setState } = getTable<{
   release: GithubRelease | undefined

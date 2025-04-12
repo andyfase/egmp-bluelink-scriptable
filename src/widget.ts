@@ -22,6 +22,7 @@ const KEYCHAIN_WIDGET_REFRESH_KEY = 'egmp-bluelink-widget'
 const NIGHT_HOUR_START = 23
 const NIGHT_HOUR_STOP = 7
 
+let WIDGET_LOGGER: Logger | undefined = undefined
 const WIDGET_LOG_FILE = `${Script.name().replaceAll(' ', '')}-widget.log`
 
 interface WidgetRefreshCache {
@@ -37,6 +38,11 @@ interface WidgetRefresh {
   status: Status
 }
 
+export function getWidgetLogger(): Logger {
+  if (!WIDGET_LOGGER) WIDGET_LOGGER = new Logger(WIDGET_LOG_FILE, 100)
+  return WIDGET_LOGGER
+}
+
 function getCacheKey(write = false): string {
   const newCacheKey = `egmp-scriptable-widget-${Script.name().replaceAll(' ', '')}`
   if (write || Keychain.contains(newCacheKey)) return newCacheKey
@@ -48,7 +54,7 @@ export function deleteWidgetCache() {
 }
 
 async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<WidgetRefresh> {
-  const logger = new Logger(WIDGET_LOG_FILE, 100)
+  const logger = getWidgetLogger()
 
   const MIN_API_REFRESH_TIME = 300000 // 5 minutes
 
