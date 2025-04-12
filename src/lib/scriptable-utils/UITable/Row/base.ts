@@ -1,4 +1,4 @@
-import { ErrorWithPayload, isObject, isString } from '../../common'
+import { isObject, isString } from '../../common'
 import { getConfig } from '../../configRegister'
 import { shortSwitch } from '../../flow'
 import PersistedLog from '../../io/PersistedLog'
@@ -113,30 +113,23 @@ const executeTapListener = (() => {
   const clickTimer = new Timer()
   return (clickMap: ClickMap) => {
     clickTimer.timeInterval = getConfig('ON_TAP_CLICK_INTERVAL')
-    const configuredClicks = Object.keys(clickMap).map((numStr) => Number.parseInt(numStr, 10))
+    const maxClicks = Math.max(...Object.keys(clickMap).map((numStr) => Number.parseInt(numStr, 10)))
     // Every time a tap comes in, restart the timer & increment the counter
     tapCount++
     clickTimer.invalidate()
     const executeFn = async () => {
-      if (configuredClicks.includes(tapCount)) {
-        try {
-          const action = clickMap[tapCount]
-          if (!action) {
-            throw new ErrorWithPayload('Action at index not found', {
-              tapCount,
-              clickKeysPassed: Object.keys(clickMap),
-            })
-          }
-          await action()
-        } catch (e) {
-          warnError(e, 'table row')
-        }
+      try {
+        const action = clickMap[tapCount]
+        tapCount = 0
+        if (action) await action()
+      } catch (e) {
+        warnError(e, 'table row')
       }
-      tapCount = 0
     }
     // The timer callback will only ever fire if a click timer reaches its full
     // duration
-    clickTimer.schedule(executeFn)
+    if (maxClicks <= tapCount) executeFn()
+    else clickTimer.schedule(executeFn)
   }
 })()
 
