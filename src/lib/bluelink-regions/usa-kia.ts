@@ -201,7 +201,7 @@ export class BluelinkUSAKia extends Bluelink {
   protected async getCarStatus(
     _id: string,
     forceUpdate: boolean,
-    _location: boolean = false,
+    location: boolean = false,
     retry = true,
   ): Promise<BluelinkStatus> {
     if (!forceUpdate) {
@@ -250,7 +250,7 @@ export class BluelinkUSAKia extends Bluelink {
       } else if (retry) {
         // manage retry ourselves - just assume we need to re-auth
         await this.refreshLogin(true)
-        return await this.getCarStatus(_id, forceUpdate, _location, false)
+        return await this.getCarStatus(_id, forceUpdate, location, false)
       }
       const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
       if (this.config.debugLogging) this.logger.log(error)
