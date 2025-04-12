@@ -43,6 +43,7 @@ export interface Config {
   vin: string | undefined
   widgetConfig: WidgetConfig
   customClimates: CustomClimateConfig[]
+  hideDefaultClimates: boolean
   chargeLimits: ChargeLimitConfig[]
 }
 
@@ -73,6 +74,7 @@ export interface FlattenedConfig {
   vin: string | undefined
   widgetConfig: WidgetConfig
   customClimates: CustomClimateConfig[]
+  hideDefaultClimates: boolean
   chargeLimits: ChargeLimitConfig[]
 }
 
@@ -109,6 +111,7 @@ const DEFAULT_CONFIG = {
   allowWidgetRemoteRefresh: false,
   carColor: 'white',
   manufacturer: 'hyundai',
+  hideDefaultClimates: false,
   customClimates: [],
   chargeLimits: [
     {
@@ -207,8 +210,9 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
       promptForUpdate,
       allowWidgetRemoteRefresh,
       carColor,
-      manufacturer: manufacturer,
-      vin: vin,
+      manufacturer,
+      vin,
+      hideDefaultClimates,
     }) => {
       // read and combine with current saved config as other config screens may have changed settings (custom climates etc)
       const config = getConfig()
@@ -232,6 +236,7 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
           promptForUpdate: promptForUpdate,
           manufacturer: manufacturer?.toLowerCase(),
           vin: vin ? vin.toUpperCase().trim() : undefined,
+          hideDefaultClimates: hideDefaultClimates,
         },
       } as Config
       setConfig(newConfig)
@@ -347,11 +352,6 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
         label: 'Enable debug logging',
         isRequired: false,
       },
-      multiCar: {
-        type: 'checkbox',
-        label: 'Enable Multi Car Support (see docs at bluelink.andyfase.com',
-        isRequired: false,
-      },
       promptForUpdate: {
         type: 'checkbox',
         label: 'Enable prompting for app updates',
@@ -399,6 +399,16 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
             },
           })
         },
+      },
+      hideDefaultClimates: {
+        type: 'checkbox',
+        label: 'Hide default climate options',
+        isRequired: false,
+      },
+      multiCar: {
+        type: 'checkbox',
+        label: 'Enable Multi Car Support',
+        isRequired: false,
       },
     },
   })(getFlattenedConfig())
