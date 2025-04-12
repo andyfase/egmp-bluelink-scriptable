@@ -221,7 +221,7 @@ export class BluelinkUSA extends Bluelink {
     }
   }
 
-  protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
+  protected async getCarStatus(id: string, forceUpdate: boolean, location: boolean = false): Promise<BluelinkStatus> {
     const api = 'ac/v2/rcs/rvs/vehicleStatus'
     const resp = await this.request({
       url: this.apiDomain + api,
@@ -233,13 +233,9 @@ export class BluelinkUSA extends Bluelink {
     })
 
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      let location = undefined
-      if (forceUpdate) {
-        location = await this.getLocation(id)
-      }
-      return forceUpdate
-        ? this.returnCarStatus(resp.json.vehicleStatus, forceUpdate, location)
-        : this.returnCarStatus(resp.json.vehicleStatus, forceUpdate)
+      let locationStatus = undefined
+      if (location) locationStatus = await this.getLocation(id)
+      return this.returnCarStatus(resp.json.vehicleStatus, forceUpdate, locationStatus)
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`

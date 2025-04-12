@@ -458,7 +458,7 @@ export class BluelinkEurope extends Bluelink {
     }
   }
 
-  protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
+  protected async getCarStatus(id: string, forceUpdate: boolean, _location: boolean = false): Promise<BluelinkStatus> {
     // CCS2 endpoint appears to be the only endpoint that works consistantly across all cars
     if (!forceUpdate) {
       const resp = await this.request({

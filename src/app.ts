@@ -546,7 +546,7 @@ const pageImage = connect(({ state: { appIcon, updatingActions } }, bl: Bluelink
           onOptionSelect: (opt) => {
             if (opt === 'Cancel') return
             doAsyncUpdate({
-              command: 'status',
+              command: 'location',
               bl: bl,
               actions: updatingActions,
               actionKey: 'status',

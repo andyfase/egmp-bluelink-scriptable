@@ -198,7 +198,12 @@ export class BluelinkUSAKia extends Bluelink {
     }
   }
 
-  protected async getCarStatus(_id: string, forceUpdate: boolean, retry = true): Promise<BluelinkStatus> {
+  protected async getCarStatus(
+    _id: string,
+    forceUpdate: boolean,
+    _location: boolean = false,
+    retry = true,
+  ): Promise<BluelinkStatus> {
     if (!forceUpdate) {
       // as the request payload contains the authId - which is a auth param we disable retry and manage retry ourselves
       const resp = await this.request({
@@ -231,21 +236,21 @@ export class BluelinkUSAKia extends Bluelink {
       })
 
       if (this.requestResponseValid(resp.resp, resp.json).valid) {
-        let location = undefined
+        let locationStatus = undefined
         if (resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location) {
-          location = {
+          locationStatus = {
             latitude: resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location.coord.lat,
             longitude: resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location.coord.lon,
           } as Location
         }
         return this.returnCarStatus(
           resp.json.payload.vehicleInfoList[0].lastVehicleInfo.vehicleStatusRpt.vehicleStatus,
-          location,
+          locationStatus,
         )
       } else if (retry) {
         // manage retry ourselves - just assume we need to re-auth
         await this.refreshLogin(true)
-        return await this.getCarStatus(_id, forceUpdate, false)
+        return await this.getCarStatus(_id, forceUpdate, _location, false)
       }
       const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
       if (this.config.debugLogging) this.logger.log(error)
@@ -265,7 +270,9 @@ export class BluelinkUSAKia extends Bluelink {
 
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
       // only cached data contains latest location so return cached API after remote command
-      return await this.getCarStatus(_id, false)
+      return location
+        ? await this.getCarStatus(_id, false)
+        : this.returnCarStatus(resp.json.payload.vehicleStatusRpt.vehicleStatus)
     }
 
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`

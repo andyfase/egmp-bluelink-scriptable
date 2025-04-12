@@ -272,7 +272,7 @@ export class BluelinkCanada extends Bluelink {
     }
   }
 
-  protected async getCarStatus(id: string, forceUpdate: boolean): Promise<BluelinkStatus> {
+  protected async getCarStatus(id: string, forceUpdate: boolean, location: boolean = false): Promise<BluelinkStatus> {
     const api = forceUpdate ? 'rltmvhclsts' : 'sltvhcl'
     const status = await this.request({
       url: this.apiDomain + api,
@@ -294,22 +294,18 @@ export class BluelinkCanada extends Bluelink {
       throw Error(error)
     }
 
-    let chargeLimit = undefined
-    let location = undefined
-    if (forceUpdate) {
-      chargeLimit = await this.getChargeLimit(id)
-      location = await this.getLocation(id)
-    }
+    let chargeLimitStatus = undefined
+    let locationStatus = undefined
+    if (forceUpdate) chargeLimitStatus = await this.getChargeLimit(id)
+    if (location) locationStatus = await this.getLocation(id)
 
-    return forceUpdate
-      ? this.returnCarStatus(
-          status.json.result.status,
-          forceUpdate,
-          status.json.result.status.odometer,
-          chargeLimit,
-          location,
-        )
-      : this.returnCarStatus(status.json.result.status, forceUpdate, status.json.result.vehicle.odometer)
+    return this.returnCarStatus(
+      status.json.result.status,
+      forceUpdate,
+      forceUpdate ? status.json.result.status.odometer : status.json.result.vehicle.odometer,
+      chargeLimitStatus,
+      locationStatus,
+    )
   }
 
   protected async getAuthCode(): Promise<string> {

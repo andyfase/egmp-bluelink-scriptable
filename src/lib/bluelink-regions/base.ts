@@ -256,13 +256,13 @@ export class Bluelink {
     }
   }
 
-  public async getStatus(forceUpdate: boolean, noCache: boolean): Promise<Status> {
+  public async getStatus(forceUpdate: boolean, noCache: boolean, location: boolean = false): Promise<Status> {
     if (forceUpdate) {
-      this.cache.status = await this.getCarStatus(this.cache.car.id, true)
+      this.cache.status = await this.getCarStatus(this.cache.car.id, true, location)
       this.cache.car = await this.getCar()
       this.saveCache()
     } else if (noCache || this.cache.status.lastStatusCheck + this.statusCheckInterval < Date.now()) {
-      this.cache.status = await this.getCarStatus(this.cache.car.id, false)
+      this.cache.status = await this.getCarStatus(this.cache.car.id, false, location)
       this.saveCache()
     }
     return {
@@ -282,6 +282,9 @@ export class Bluelink {
     switch (type) {
       case 'status':
         promise = this.getStatus(true, true)
+        break
+      case 'location':
+        promise = this.getStatus(true, true, true)
         break
       case 'lock':
         promise = this.lock(this.cache.car.id)
@@ -328,7 +331,7 @@ export class Bluelink {
     try {
       data = await promise
       hasRequestCompleted = true
-      if (type === 'status') {
+      if (type === 'status' || type === 'location') {
         didSucceed = true
         data = data as Status
       } else {
@@ -549,7 +552,11 @@ export class Bluelink {
     throw Error('Not Implemented')
   }
 
-  protected async getCarStatus(_id: string, _forceUpdate: boolean): Promise<BluelinkStatus> {
+  protected async getCarStatus(
+    _id: string,
+    _forceUpdate: boolean,
+    _location: boolean = false,
+  ): Promise<BluelinkStatus> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')
   }
