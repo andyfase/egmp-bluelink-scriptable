@@ -1,6 +1,6 @@
-import { Config, CustomClimateConfig } from 'config'
+import { Config, CustomClimateConfig, ChargeLimitConfig } from 'config'
 import { Logger } from 'lib/logger'
-import { Bluelink, ClimateRequest } from 'lib/bluelink-regions/base'
+import { Bluelink, ClimateRequest, ChargeLimit } from 'lib/bluelink-regions/base'
 import { getChargeCompletionString, sleep } from 'lib/util'
 
 const SIRI_LOG_FILE = 'egmp-bluelink-siri.log'
@@ -15,6 +15,14 @@ export async function processSiriRequest(config: Config, bl: Bluelink, shortcutP
     commands.push({
       words: value.name.split(' ').concat(['climate']),
       function: customClimate,
+      data: value,
+    })
+  }
+
+  for (const value of config.chargeLimits) {
+    commands.push({
+      words: value.name.split(' ').concat(['charge', 'limit']),
+      function: setChargeLimit,
       data: value,
     })
   }
@@ -156,6 +164,19 @@ async function startCharge(bl: Bluelink): Promise<string> {
     bl,
     'startCharge',
     `I've issued a request to start charging ${status.car.nickName || `your ${status.car.modelName}`}.`,
+  )
+}
+
+async function setChargeLimit(bl: Bluelink, data: ChargeLimitConfig): Promise<string> {
+  const status = bl.getCachedStatus()
+  return await blRequest(
+    bl,
+    'chargeLimit',
+    `I've issued a request to set charge limit ${data.name} for ${status.car.nickName || `your ${status.car.modelName}`}.`,
+    {
+      acPercent: data.acPercent,
+      dcPercent: data.dcPercent,
+    } as ChargeLimit,
   )
 }
 
