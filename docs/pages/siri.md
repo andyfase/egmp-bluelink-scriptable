@@ -135,3 +135,10 @@ This will issue a remote command to stop charging the car.
 
 Example: "**Stop charging** the car"
 {: .fs-5 .fw-400 }
+
+### Set Charge Limits
+This will issue a remote command to set the named charge limit of the car (i.e. percentage of battery to stop charging at).
+{: .fs-5 .fw-400 }
+
+Example: "Set **Charge Limit RoadTrip**"
+{: .fs-5 .fw-400 }

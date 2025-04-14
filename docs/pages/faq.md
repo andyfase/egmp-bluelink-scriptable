@@ -1,7 +1,7 @@
 ---
 title: Help
 layout: home
-nav_order: 6
+nav_order: 8
 ---
 
 # Help / FAQ
@@ -52,6 +52,14 @@ You will likely need to provide debug logs. See the below question on details on
 
 ### How do I enable and obtain debug logs
 
-There is a checkbox within the app settings to turn on debug logs. Once enabled every API request and response is then logged to a file. The in-use file is called `egmp-bluelink.log`. Log files are automatically renamed when they get to 100kb in size, hence you will see older log files named `egmp-bluelink.log.20250318150755-0700` or similar. The timestamp is the date the file was renamed.
+Make sure you are running [v1.2.0](https://github.com/andyfase/egmp-bluelink-scriptable/releases) or above, as this version of the app allows for much easier access to obtain debug logs. 
+
+Once you have confirmed your on a appropiate version, go into the app settings screen and enable the "Debug logs" setting. Once enabled every API request and response sent from the app is then logged to a file. 
+
+Now perform the series of actions you need logs for (i.e simulate the bug you are seeing). Once done, triple-tap the setting icon and choose "Share Debug Logs", a share screen will open allowing you to select your email app of choice to send the logs. The logs are automatically redacted of any personal information i.e. username, password, pin etc.
+
+### How do I get the full list of all debug logs?
+
+If you wish to look at the logs outside of the app, they are stored within the Scriptable directory ojn iCloud drive. The in-use file is called `egmp-bluelink.log`. Log files are automatically renamed when they get to 100kb in size, hence you will see older log files named `egmp-bluelink.log.20250318150755-0700` or similar. The timestamp is the date the file was renamed.
 
 All log files are stored within the same Scriptable directory as the scripts themselves. Note as detailed above these log files do contain your credentials. If you are asked, or provide them either directly to myself through email or via a Github issue please ensure you open the log files and redact any of your credentials (login and password)

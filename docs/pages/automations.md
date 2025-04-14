@@ -46,4 +46,23 @@ To setup the automation, perform the following:
 - Choose "Time of Day"
 - Select the time you wish this automation to run, choose "Weekly" and select the days of the week you want it to run. Finally select "Run Immediately"
 
+### Set Charge Limit to 100% once per month
+
+Hyundai / Kia recommend charging to 100% once a month, this can be annoying to remember to do. This Automation can be used if you typically charge daily (or regularly) and you want to automate setting the charge limit to 100% once per month, and then back to your normal value afterwards 
+
+This automation will send a charge limit command to the car, on a defined schedule. Duplicate this to set it back to normal the day after 
+
+[Install "Auto Charge Limit" Shortcut](https://www.icloud.com/shortcuts/2c499728f55d43aa90ba9b68792fe9df)
+{: .fs-5 .fw-300 }
+
+Alter the script to set the charge setting of your choice, by default this is set to "RoadTrip", you're likely want to create your own charge limit setting in the configuration settings of the app first.
+
+To setup the automation, perform the following:
+
+- Click on the Automations tab
+- Click on the plus
+- Choose "Time of Day"
+- Select the time you wish this automation to run, choose "Monthly" and select the day of the month you want it to run. Finally select "Run Immediately"
+
+Duplicate the script and automation to set the charge limit back to its normal value.
 
