@@ -5,6 +5,36 @@ import { getAppLogger } from './lib/util'
 const SCRIPTABLE_DIR = '/var/mobile/Library/Mobile Documents/iCloud~dk~simonbs~Scriptable/Documents'
 const logger = getAppLogger()
 
+export function doDowngrade(appFile = `${Script.name()}.js`) {
+  const fm = FileManager.iCloud()
+  if (fm.fileExists(`${SCRIPTABLE_DIR}/${appFile}.backup`)) {
+    fm.remove(`${SCRIPTABLE_DIR}/${appFile}`)
+    fm.move(`${SCRIPTABLE_DIR}/${appFile}.backup`, `${SCRIPTABLE_DIR}/${appFile}`)
+  } else {
+    OK('Downgrade Dailed', { message: `There is no previous version of ${appFile}` })
+  }
+}
+
+async function doUpgrade(url: string, appFile = `${Script.name()}.js`) {
+  const req = new Request(url)
+  const data = await req.load()
+  if (req.response.statusCode === 200) {
+    const fm = FileManager.iCloud()
+    // try to backup current script - log errors, script could have been renamed for example
+    try {
+      if (fm.fileExists(`${SCRIPTABLE_DIR}/${appFile}.backup`)) {
+        fm.remove(`${SCRIPTABLE_DIR}/${appFile}.backup`)
+      }
+      fm.move(`${SCRIPTABLE_DIR}/${appFile}`, `${SCRIPTABLE_DIR}/${appFile}.backup`)
+    } catch (e) {
+      logger.log(`Failed to backup current script: ${e}`)
+    }
+    fm.write(`${SCRIPTABLE_DIR}/${appFile}`, data)
+  } else {
+    OK('Download Error', { message: `Failed to download release: ${req.response.statusCode}` })
+  }
+}
+
 const { present, connect, setState } = getTable<{
   release: GithubRelease | undefined
   currentVersion: string
@@ -138,26 +168,10 @@ const upgrade = connect(({ state: { currentVersion, release } }) => {
           title: `Confirm Install - App will update "${appFile}" and auto-close`,
           onOptionSelect: async (opt) => {
             if (opt === 'Install') {
-              const req = new Request(release.url)
-              const data = await req.load()
-              if (req.response.statusCode === 200) {
-                const fm = FileManager.iCloud()
-                // try to backup current script - log errors, script could have been renamed for example
-                try {
-                  if (fm.fileExists(`${SCRIPTABLE_DIR}/${appFile}.backup`)) {
-                    fm.remove(`${SCRIPTABLE_DIR}/${appFile}.backup`)
-                  }
-                  fm.move(`${SCRIPTABLE_DIR}/${appFile}`, `${SCRIPTABLE_DIR}/${appFile}.backup`)
-                } catch (e) {
-                  logger.log(`Failed to backup current script: ${e}`)
-                }
-                fm.write(`${SCRIPTABLE_DIR}/${appFile}`, data)
-                Script.complete()
-                // @ts-ignore - undocumented api
-                App.close()
-              } else {
-                OK('Download Error', { message: `Failed to download release: ${req.response.statusCode}` })
-              }
+              await doUpgrade(release.url, appFile)
+              Script.complete()
+              // @ts-ignore - undocumented api
+              App.close()
             }
           },
         })

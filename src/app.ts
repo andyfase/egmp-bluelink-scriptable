@@ -3,7 +3,7 @@ import { Bluelink, Status, ClimateRequest, ChargeLimit } from './lib/bluelink-re
 import { getTable, Div, P, Img, quickOptions, DivChild, Spacer, destructiveConfirm } from 'lib/scriptable-utils'
 import { loadConfigScreen, deleteConfig, setConfig } from 'config'
 import { Version } from 'lib/version'
-import { loadAboutScreen } from 'about'
+import { loadAboutScreen, doDowngrade } from 'about'
 import { deleteWidgetCache } from 'widget'
 import { getAppLogger } from './lib/util'
 import { getWidgetLogger } from 'widget'
@@ -166,7 +166,7 @@ const settings = (bl: Bluelink) => {
         loadConfigScreen(bl)
       },
       onTripleTap() {
-        quickOptions(['Share Debug Logs', 'Reset All Settings', 'Cancel'], {
+        quickOptions(['Share Debug Logs', 'Reset All Settings', 'Downgrade to Previous Version', 'Cancel'], {
           title: 'Choose Debug Option:',
           onOptionSelect: (opt) => {
             if (opt === 'Cancel') return
@@ -192,6 +192,17 @@ const settings = (bl: Bluelink) => {
                     bl.deleteCache()
                     deleteConfig()
                     deleteWidgetCache()
+                    // @ts-ignore - undocumented api
+                    App.close()
+                  },
+                })
+                break
+              }
+              case 'Downgrade to Previous Version': {
+                destructiveConfirm('Confirm downgrade to saved older app version?', {
+                  confirmButtonTitle: 'Yes, downgrade',
+                  onConfirm: () => {
+                    doDowngrade()
                     // @ts-ignore - undocumented api
                     App.close()
                   },
