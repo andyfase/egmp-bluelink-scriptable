@@ -15,19 +15,19 @@ The app supports direct Siri interaction via the "Shortcuts" IOS app. A collecti
 These shortcuts can be used via Siri or through [Control Center](./control-center.md).
 
 ### Lock the Car - "Hey Siri, Lock the car"
-[Install "Lock Car" Shortcut](https://www.icloud.com/shortcuts/d38a927b5de54a2ca46999beacb95b9d)
+[Install "Lock Car" Shortcut](https://www.icloud.com/shortcuts/5b569f78ef00452b9d7fe4455635d36d)
 {: .fs-5 .fw-300 }
 
 ### UnLock the Car - "Hey Siri, Unlock the car"
-[Install "Unlock the Car" Shortcut](https://www.icloud.com/shortcuts/aba2db0d48d2420884fdcf205bf16022)
+[Install "Unlock the Car" Shortcut](https://www.icloud.com/shortcuts/631cb0865dfc4358837485410eb2a46f)
 {: .fs-5 .fw-300 }
 
 ### Warm the Car - "Hey Siri, warm the car"
-[Install "Warm the Car" Shortcut](https://www.icloud.com/shortcuts/700dc3f758124786a2c9b5bac9b004c4)
+[Install "Warm the Car" Shortcut](https://www.icloud.com/shortcuts/ea24582e07e44edea66b0d7a9773ea75)
 {: .fs-5 .fw-300 }
 
 ### Cool the Car - "Hey Siri, Cool the car"
-[Install "Cool the Car" Shortcut](https://www.icloud.com/shortcuts/b2a392c34e58493da2422bee5e26676e)
+[Install "Cool the Car" Shortcut](https://www.icloud.com/shortcuts/486487c8d3c841feb9d4b46476eef294)
 {: .fs-5 .fw-300 }
 
 
