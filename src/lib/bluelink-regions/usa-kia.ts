@@ -222,7 +222,7 @@ export class BluelinkUSAKia extends Bluelink {
             dtc: '1',
             enrollment: '0',
             functionalCards: '0',
-            location: '1',
+            location: location ? '1' : '0',
             vehicleStatus: '1',
             weather: '0',
           },
@@ -237,7 +237,7 @@ export class BluelinkUSAKia extends Bluelink {
 
       if (this.requestResponseValid(resp.resp, resp.json).valid) {
         let locationStatus = undefined
-        if (resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location) {
+        if (location && resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location) {
           locationStatus = {
             latitude: resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location.coord.lat,
             longitude: resp.json.payload.vehicleInfoList[0].lastVehicleInfo.location.coord.lon,
@@ -271,7 +271,7 @@ export class BluelinkUSAKia extends Bluelink {
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
       // only cached data contains latest location so return cached API after remote command
       return location
-        ? await this.getCarStatus(_id, false)
+        ? await this.getCarStatus(_id, false, true)
         : this.returnCarStatus(resp.json.payload.vehicleStatusRpt.vehicleStatus)
     }
 

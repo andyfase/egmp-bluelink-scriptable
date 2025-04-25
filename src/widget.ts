@@ -141,6 +141,7 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
     } else if (currentTimestamp > status.status.lastStatusCheck + MIN_API_REFRESH_TIME) {
       if (config.debugLogging) logger.log('Doing API Refresh')
       status = await bl.getStatus(false, true)
+      if (config.debugLogging) logger.log('Completed API Refresh')
     }
   } catch (_error) {
     // ignore any API errors and just displayed last cached values in widget
@@ -222,7 +223,12 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
   const batteryPercent = status.status.soc
   const remainingChargingTime = status.status.remainingChargeTimeMins
   const chargingKw = status.status.chargingPower > 0 ? `${status.status.chargingPower.toFixed(1).toString()} kW` : '-'
-  const odometer = status.status.odometer > 0 ? status.status.odometer : status.car.odometer ? status.car.odometer : 0
+  const odometer =
+    status.car.odometer === undefined
+      ? status.status.odometer
+      : status.status.odometer >= status.car.odometer
+        ? status.status.odometer
+        : status.car.odometer
   const lastSeen = new Date(status.status.lastRemoteStatusCheck)
 
   // Battery Percent Value
