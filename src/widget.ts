@@ -27,10 +27,12 @@ const WIDGET_LOG_FILE = `${Script.name().replaceAll(' ', '')}-widget.log`
 
 interface WidgetRefreshCache {
   lastRemoteRefresh: number
+  lastCommand: 'API' | 'REMOTE'
 }
 
 const DEFAULT_WIDGET_CACHE = {
   lastRemoteRefresh: 0,
+  lastCommand: 'API',
 } as WidgetRefreshCache
 
 interface WidgetRefresh {
@@ -106,6 +108,17 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
   //   - DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL if charging
   // 2. Normal refresh if not #1
   // The time intervals vary based on day/night - with day being more frequent
+
+  const chargeCompletionTime = status.status.isCharging
+    ? status.status.lastRemoteStatusCheck + status.status.remainingChargeTimeMins * 60 * 1000
+    : 0
+
+  const chargingComplete = status.status.isCharging && chargeCompletionTime < currentTimestamp
+  if (status.status.isCharging && config.debugLogging)
+    logger.log(
+      `Now:${currentTimestamp}, Charge Completion Time: ${chargeCompletionTime}, chargingComplete: ${chargingComplete}`,
+    )
+
   const chargingAndOverRemoteRefreshInterval =
     status.status.isCharging && lastRemoteCheck + DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL < currentTimestamp
 
@@ -113,11 +126,18 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
     !status.status.isCharging && lastRemoteCheck + DEFAULT_REMOTE_REFRESH_INTERVAL < currentTimestamp
 
   // calculate next remote check - reset if calculated value is in the past
+  // if charging ends before next remote check use charge end + 10 minutes
   const remoteRefreshInterval = status.status.isCharging
     ? DEFAULT_CHARGING_REMOTE_REFRESH_INTERVAL
     : DEFAULT_REMOTE_REFRESH_INTERVAL
   let nextRemoteRefreshTime = lastRemoteCheck + remoteRefreshInterval
   if (nextRemoteRefreshTime < currentTimestamp) nextRemoteRefreshTime = currentTimestamp + remoteRefreshInterval
+  if (status.status.isCharging) {
+    if (chargeCompletionTime + 10 * 60 * 1000 < nextRemoteRefreshTime) {
+      nextRemoteRefreshTime = chargeCompletionTime + 10 * 60 * 1000
+      if (nextRemoteRefreshTime < currentTimestamp) nextRemoteRefreshTime = currentTimestamp + 5 * 60 * 1000
+    }
+  }
 
   // nextAPIRefreshTime is always based on DEFAULT_STATUS_CHECK_INTERVAL as its the default option
   const nextAPIRefreshTime = currentTimestamp + DEFAULT_STATUS_CHECK_INTERVAL
@@ -129,7 +149,8 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
   try {
     if (
       config.allowWidgetRemoteRefresh &&
-      (chargingAndOverRemoteRefreshInterval || notChargingAndOverRemoteRefreshInterval)
+      cache.lastCommand !== 'REMOTE' &&
+      (chargingComplete || chargingAndOverRemoteRefreshInterval || notChargingAndOverRemoteRefreshInterval)
     ) {
       // Note a remote refresh takes to long to wait for - so trigger it and set a small nextRefresh value to pick
       // up the remote data on the next widget refresh
@@ -137,10 +158,12 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
       bl.getStatus(true, true) // no await deliberatly
       sleep(500) // wait for API request to be actually sent in background
       cache.lastRemoteRefresh = currentTimestamp
+      cache.lastCommand = 'REMOTE'
       nextRefresh = new Date(Date.now() + 5 * 60 * 1000)
-    } else if (currentTimestamp > status.status.lastStatusCheck + MIN_API_REFRESH_TIME) {
+    } else if (chargingComplete || currentTimestamp > status.status.lastStatusCheck + MIN_API_REFRESH_TIME) {
       if (config.debugLogging) logger.log('Doing API Refresh')
       status = await bl.getStatus(false, true)
+      cache.lastCommand = 'API'
       if (config.debugLogging) logger.log('Completed API Refresh')
     }
   } catch (_error) {
@@ -151,7 +174,7 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
   Keychain.set(getCacheKey(true), JSON.stringify(cache))
   if (config.debugLogging)
     logger.log(
-      `Current time: ${new Date().toLocaleString()}. Last Remote refresh: last refresh ${new Date(status.status.lastRemoteStatusCheck).toLocaleString()} Setting next refresh to ${nextRefresh.toLocaleString()}`,
+      `Current time: ${new Date().toLocaleString()}. cache: ${JSON.stringify(cache)}, Last Remote Check: ${new Date(lastRemoteCheck).toLocaleString()} Setting next widget refresh to ${nextRefresh.toLocaleString()}`,
     )
 
   return {
