@@ -151,7 +151,7 @@ export class BluelinkCanada extends Bluelink {
     }
   }
 
-  protected async getCar(): Promise<BluelinkCar> {
+  protected async getCar(): Promise<BluelinkCar | undefined> {
     let vin = this.vin
     if (!vin && this.cache) {
       vin = this.cache.car.vin
@@ -162,6 +162,20 @@ export class BluelinkCanada extends Bluelink {
       method: 'POST',
       validResponseFunction: this.requestResponseValid,
     })
+
+    // if multuple cars and we have no vin populate options and return undefined for user selection
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.result.vehicles.length > 1 && !vin) {
+      for (const vehicle of resp.json.result.vehicles) {
+        this.carOptions.push({
+          vin: vehicle.vin,
+          nickName: vehicle.nickName,
+          modelName: vehicle.modelName,
+          modelYear: vehicle.modelYear,
+        })
+      }
+      return undefined
+    }
+
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.result.vehicles.length > 0) {
       let vehicle = resp.json.result.vehicles[0]
       if (vin) {

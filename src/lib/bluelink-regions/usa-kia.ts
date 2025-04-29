@@ -101,7 +101,8 @@ export class BluelinkUSAKia extends Bluelink {
         refreshToken: '', // seemingly KIA us doesnt support refresh?
         expiry: Math.floor(Date.now() / 1000) + Number(LOGIN_EXPIRY), // we also dont get an expiry?
       }
-      this.tokens.authId = (await this.getCar(true)).id
+      const car = await this.getCar(true)
+      if (car) this.tokens.authId = car.id
       return this.tokens
     }
 
@@ -110,7 +111,7 @@ export class BluelinkUSAKia extends Bluelink {
     return undefined
   }
 
-  protected async getCar(noRetry = false): Promise<BluelinkCar> {
+  protected async getCar(noRetry = false): Promise<BluelinkCar | undefined> {
     let vin = this.vin
     if (!vin && this.cache) {
       vin = this.cache.car.vin
@@ -125,6 +126,20 @@ export class BluelinkUSAKia extends Bluelink {
       noRetry: noRetry,
       validResponseFunction: this.requestResponseValid,
     })
+
+    // if multiple cars and we have no vin populate options and return undefined for user selection
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.payload.vehicleSummary.length > 1 && !vin) {
+      for (const vehicle of resp.json.payload.vehicleSummary) {
+        this.carOptions.push({
+          vin: vehicle.vin,
+          nickName: vehicle.nickName,
+          modelName: vehicle.modelName,
+          modelYear: vehicle.modelYear,
+        })
+      }
+      return undefined
+    }
+
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.payload.vehicleSummary.length > 0) {
       let vehicle = resp.json.payload.vehicleSummary[0]
       if (vin) {

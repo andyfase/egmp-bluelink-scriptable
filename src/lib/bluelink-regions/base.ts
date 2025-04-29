@@ -17,6 +17,13 @@ export interface BluelinkTokens {
   authId?: string
 }
 
+export interface CarOption {
+  vin: string
+  nickName: string
+  modelName: string
+  modelYear: string
+}
+
 export interface BluelinkCar {
   id: string
   vin: string
@@ -133,6 +140,7 @@ export class Bluelink {
   protected debugLastRequest: DebugLastRequest | undefined
   protected logger: any
   protected loginFailure: boolean
+  protected carOptions: CarOption[]
   protected distanceUnit: string
   protected lastCommandSent: number | undefined
 
@@ -146,6 +154,7 @@ export class Bluelink {
     this.authHeader = 'Authentication'
     this.tokens = undefined
     this.loginFailure = false
+    this.carOptions = []
     this.debugLastRequest = undefined
     this.tempLookup = undefined
     this.authIdHeader = undefined
@@ -249,6 +258,10 @@ export class Bluelink {
     return this.lastCommandSent
   }
 
+  public getCarOptions(): CarOption[] {
+    return this.carOptions
+  }
+
   public loginFailed(): boolean {
     return this.loginFailure
   }
@@ -265,7 +278,8 @@ export class Bluelink {
       // getCar first then save then get remote status
       // widget remote refresh does not await for entire process to complete, and odometer in US is only on getCar calls, which need to complete and save to cache before sending remote status command
       // the remote status command will update the API servers in backgound - hence next normal status check will get the updated status data
-      this.cache.car = await this.getCar()
+      const car = await this.getCar()
+      if (car) this.cache.car = car
       this.saveCache()
       this.setLastCommandSent()
       this.cache.status = await this.getCarStatus(this.cache.car.id, true, location)
@@ -390,6 +404,10 @@ export class Bluelink {
       }
       this.tokens = tokens
       const car = await this.getCar()
+      if (!car) {
+        this.loginFailure = true
+        return
+      }
       cache = {
         token: this.tokens,
         car: car,
@@ -570,7 +588,7 @@ export class Bluelink {
     throw Error('Not Implemented')
   }
 
-  protected async getCar(): Promise<BluelinkCar> {
+  protected async getCar(): Promise<BluelinkCar | undefined> {
     // implemented in country specific sub-class
     throw Error('Not Implemented')
   }

@@ -122,7 +122,7 @@ export class BluelinkUSA extends Bluelink {
     return undefined
   }
 
-  protected async getCar(): Promise<BluelinkCar> {
+  protected async getCar(): Promise<BluelinkCar | undefined> {
     let vin = this.vin
     if (!vin && this.cache) {
       vin = this.cache.car.vin
@@ -132,6 +132,20 @@ export class BluelinkUSA extends Bluelink {
       url: this.apiDomain + `ac/v2/enrollment/details/${this.config.auth.username}`,
       validResponseFunction: this.requestResponseValid,
     })
+
+    // if multiple cars and we have no vin populate options and return undefined for user selection
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.enrolledVehicleDetails.length > 1 && !vin) {
+      for (const vehicle of resp.json.enrolledVehicleDetails) {
+        this.carOptions.push({
+          vin: vehicle.vin,
+          nickName: vehicle.nickName,
+          modelName: vehicle.modelCode,
+          modelYear: vehicle.modelYear,
+        })
+      }
+      return undefined
+    }
+
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.enrolledVehicleDetails.length > 0) {
       let vehicle = resp.json.enrolledVehicleDetails[0].vehicleDetails
       if (vin) {

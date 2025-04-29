@@ -8,8 +8,8 @@ import {
 import { createApp } from 'app'
 import { getAppLogger } from './lib/util'
 import { processSiriRequest } from 'siri'
-import { getConfig, loadConfigScreen, configExists } from 'config'
-import { confirm } from './lib/scriptable-utils'
+import { getConfig, loadConfigScreen, configExists, setConfig } from 'config'
+import { confirm, quickOptions } from './lib/scriptable-utils'
 ;(async () => {
   if (!configExists() && (config.runsWithSiri || config.runsInWidget)) return
   if (!configExists()) {
@@ -26,12 +26,36 @@ import { confirm } from './lib/scriptable-utils'
     if (config.runsWithSiri || config.runsInWidget) {
       return
     }
-    await confirm('Login Failed - please re-check your credentials', {
-      confirmButtonTitle: 'Ok',
-      includeCancel: false,
-    })
-    await loadConfigScreen()
-    return
+    if (bl && bl.loginFailed()) {
+      // check for car option selection
+      const carOptions = bl.getCarOptions()
+      if (carOptions) {
+        const carOptionsNames = carOptions.map((car) => ({
+          name: car.nickName.length > 0 ? `${car.nickName} - ${car.modelName}` : `${car.modelYear} ${car.modelName}`,
+          vin: car.vin,
+        }))
+        await quickOptions(
+          carOptionsNames.map((car) => car.name),
+          {
+            title: 'Multiple cars found, choose your EV',
+            onOptionSelect: (opt) => {
+              const selectedCar = carOptionsNames.find((car) => car.name === opt)
+              if (selectedCar) {
+                blConfig.vin = selectedCar.vin
+                setConfig(blConfig)
+              }
+            },
+          },
+        )
+      }
+    } else {
+      await confirm('Login Failed - please re-check your credentials', {
+        confirmButtonTitle: 'Ok',
+        includeCancel: false,
+      })
+      await loadConfigScreen()
+      return
+    }
   }
 
   if (config.runsInWidget) {
