@@ -71,11 +71,28 @@ async function getStatus(bl: Bluelink): Promise<string> {
   return response
 }
 
+async function waitForCommandSent(
+  bl: Bluelink,
+  sleepTime = 200,
+  startTime = Date.now(),
+  counter = 1,
+): Promise<boolean> {
+  const lastCommand = bl.getLastCommandSent()
+  if (lastCommand && lastCommand > startTime) return true
+  if (counter > 10) return false
+  await sleep(sleepTime)
+  return await waitForCommandSent(bl, sleepTime, startTime, counter + 1)
+}
+
 async function getRemoteStatus(bl: Bluelink): Promise<string> {
   // send remote status request but dont wait for response as it takes to long
   // wait 5000ms just to ensure we send the command and allow for re-auth etc to complete
   bl.getStatus(true, true)
-  await sleep(3000)
+  //wait for getCar command to be completed + another 200ms to ensure the remote status command is sent
+  const result = await waitForCommandSent(bl, 200)
+  if (!result)
+    return "I've issued a remote status request but it seems like the command was not sent. Please try again."
+  await sleep(200)
   return "I've issued a remote status request. Ask me for the normal status again in 30 seconds and I will have your answer."
 }
 

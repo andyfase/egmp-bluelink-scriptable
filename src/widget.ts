@@ -55,6 +55,19 @@ export function deleteWidgetCache() {
   Keychain.remove(getCacheKey(true))
 }
 
+async function waitForCommandSent(
+  bl: Bluelink,
+  sleepTime = 200,
+  startTime = Date.now(),
+  counter = 1,
+): Promise<boolean> {
+  const lastCommand = bl.getLastCommandSent()
+  if (lastCommand && lastCommand > startTime) return true
+  if (counter > 10) return false
+  await sleep(sleepTime)
+  return await waitForCommandSent(bl, sleepTime, startTime, counter + 1)
+}
+
 async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<WidgetRefresh> {
   const logger = getWidgetLogger()
 
@@ -154,11 +167,19 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
     ) {
       // Note a remote refresh takes to long to wait for - so trigger it and set a small nextRefresh value to pick
       // up the remote data on the next widget refresh
-      if (config.debugLogging) logger.log('Doing Force Refresh')
-      bl.getStatus(true, true) // no await deliberatly
-      sleep(500) // wait for API request to be actually sent in background
-      cache.lastRemoteRefresh = currentTimestamp
-      cache.lastCommand = 'REMOTE'
+      if (config.debugLogging) logger.log('Doing Remote Refresh')
+      bl.getStatus(true, true) // no await deliberatly as it takes to long to complete
+
+      //wait for getCar command to be completed + another 200ms to ensure the remote status command is sent
+      const result = await waitForCommandSent(bl, 200)
+      if (result) {
+        await sleep(200)
+        cache.lastRemoteRefresh = currentTimestamp
+        cache.lastCommand = 'REMOTE'
+        if (config.debugLogging) logger.log('Completed Remote Refresh')
+      } else {
+        if (config.debugLogging) logger.log('Remote status command failed to send')
+      }
       nextRefresh = new Date(Date.now() + 5 * 60 * 1000)
     } else if (chargingComplete || currentTimestamp > status.status.lastStatusCheck + MIN_API_REFRESH_TIME) {
       if (config.debugLogging) logger.log('Doing API Refresh')

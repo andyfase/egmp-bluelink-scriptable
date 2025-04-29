@@ -287,7 +287,7 @@ export class BluelinkUSA extends Bluelink {
         }
       }
       attempts += 1
-      await this.sleep(4000)
+      await this.sleep(2000)
     }
     if (this.config.debugLogging) this.logger.log(`Return poll failure!! -  last response ${JSON.stringify(resp.json)}`)
     return {

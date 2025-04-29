@@ -262,8 +262,13 @@ export class Bluelink {
 
   public async getStatus(forceUpdate: boolean, noCache: boolean, location: boolean = false): Promise<Status> {
     if (forceUpdate) {
-      this.cache.status = await this.getCarStatus(this.cache.car.id, true, location)
+      // getCar first then save then get remote status
+      // widget remote refresh does not await for entire process to complete, and odometer in US is only on getCar calls, which need to complete and save to cache before sending remote status command
+      // the remote status command will update the API servers in backgound - hence next normal status check will get the updated status data
       this.cache.car = await this.getCar()
+      this.saveCache()
+      this.setLastCommandSent()
+      this.cache.status = await this.getCarStatus(this.cache.car.id, true, location)
       this.saveCache()
     } else if (noCache || this.cache.status.lastStatusCheck + this.statusCheckInterval < Date.now()) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, false, location)
