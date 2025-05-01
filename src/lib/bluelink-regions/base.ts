@@ -481,7 +481,6 @@ export class Bluelink {
     if (props.noRedirect) {
       // @ts-ignore - returning null is allowed
       req.onRedirect = (_request) => {
-        this.logger.log('in redirect')
         return null
       }
     }
