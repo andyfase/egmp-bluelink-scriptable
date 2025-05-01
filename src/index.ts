@@ -18,7 +18,6 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
   }
 
   const logger = getAppLogger()
-  logger.log(`name: ${Script.name()}`)
   const blConfig = getConfig()
   const bl = await initRegionalBluelink(blConfig)
 

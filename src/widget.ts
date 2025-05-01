@@ -68,6 +68,21 @@ async function waitForCommandSent(
   return await waitForCommandSent(bl, sleepTime, startTime, counter + 1)
 }
 
+async function refreshDataForWidgetWithTimeout(bl: Bluelink, config: Config, timeout = 4000): Promise<WidgetRefresh> {
+  const logger = getWidgetLogger()
+  const timer = Timer.schedule(timeout, false, () => {
+    if (config.debugLogging) logger.log(`Timeout refreshing data for widget - failing back to cached data`)
+    return {
+      status: bl.getCachedStatus(),
+      nextRefresh: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes by default if call timeouts
+    }
+  })
+
+  const result = await refreshDataForWidget(bl, config)
+  timer.invalidate()
+  return result
+}
+
 async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<WidgetRefresh> {
   const logger = getWidgetLogger()
 
@@ -205,7 +220,7 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
 }
 
 export async function createMediumWidget(config: Config, bl: Bluelink) {
-  const refresh = await refreshDataForWidget(bl, config)
+  const refresh = await refreshDataForWidgetWithTimeout(bl, config)
   const status = refresh.status
 
   // Prepare image
@@ -352,7 +367,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
 }
 
 export async function createSmallWidget(config: Config, bl: Bluelink) {
-  const refresh = await refreshDataForWidget(bl, config)
+  const refresh = await refreshDataForWidgetWithTimeout(bl, config)
   const status = refresh.status
 
   // Prepare image
@@ -465,7 +480,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
 }
 
 export async function createHomeScreenCircleWidget(config: Config, bl: Bluelink) {
-  const refresh = await refreshDataForWidget(bl, config)
+  const refresh = await refreshDataForWidgetWithTimeout(bl, config)
   const status = refresh.status
 
   const widget = new ListWidget()
@@ -481,7 +496,7 @@ export async function createHomeScreenCircleWidget(config: Config, bl: Bluelink)
 }
 
 export async function createHomeScreenRectangleWidget(config: Config, bl: Bluelink) {
-  const refresh = await refreshDataForWidget(bl, config)
+  const refresh = await refreshDataForWidgetWithTimeout(bl, config)
   const status = refresh.status
 
   const widget = new ListWidget()
