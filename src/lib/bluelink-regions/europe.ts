@@ -420,7 +420,10 @@ export class BluelinkEurope extends Bluelink {
       status.Green.ChargingInformation.Charging.RemainTime > 0
     ) {
       isCharging = true
-      chargingPower = status.Green.Electric.SmartGrid.RealTimePower
+      // check for charging power as sometimes not available
+      if (status.Green.Electric && status.Green.Electric.SmartGrid && status.Green.Electric.SmartGrid.RealTimePower) {
+        chargingPower = status.Green.Electric.SmartGrid.RealTimePower
+      }
     }
 
     // check for charge limits
