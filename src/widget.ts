@@ -5,6 +5,7 @@ import {
   getChargingIcon,
   dateStringOptions,
   getChargeCompletionString,
+  getChargingPowerString,
   sleep,
 } from './lib/util'
 import { Bluelink, Status } from './lib/bluelink-regions/base'
@@ -281,7 +282,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
   const isPluggedIn = status.status.isPluggedIn
   const batteryPercent = status.status.soc
   const remainingChargingTime = status.status.remainingChargeTimeMins
-  const chargingKw = status.status.chargingPower > 0 ? `${status.status.chargingPower.toFixed(1).toString()} kW` : '-'
+  const chargingKw = getChargingPowerString(status.status.chargingPower)
   const odometer =
     status.car.odometer === undefined
       ? status.status.odometer
@@ -413,7 +414,7 @@ export async function createSmallWidget(config: Config, bl: Bluelink) {
   const isPluggedIn = status.status.isPluggedIn
   const batteryPercent = status.status.soc
   const remainingChargingTime = status.status.remainingChargeTimeMins
-  const chargingKw = status.status.chargingPower > 0 ? `${status.status.chargingPower.toFixed(1).toString()} kW` : '-'
+  const chargingKw = getChargingPowerString(status.status.chargingPower)
   const lastSeen = new Date(status.status.lastRemoteStatusCheck)
 
   // Battery Percent Value
@@ -536,15 +537,17 @@ export async function createHomeScreenRectangleWidget(config: Config, bl: Blueli
 
   // Battery Percent Value
   const batteryPercentStack = batteryInfoStack.addStack()
+  batteryPercentStack.centerAlignContent()
   batteryPercentStack.addSpacer()
   const chargingIcon = getChargingIcon(isCharging, isPluggedIn, true)
   if (chargingIcon) {
     const chargingElement = batteryPercentStack.addImage(await getTintedIconAsync(chargingIcon))
     chargingElement.tintColor = new Color('#ffffff')
     chargingElement.imageSize = new Size(15, 15)
+    chargingElement.rightAlignImage()
   }
 
-  batteryPercentStack.addSpacer(5)
+  batteryPercentStack.addSpacer(3)
   const batteryPercentText = batteryPercentStack.addText(`${batteryPercent.toString()}%`)
   batteryPercentText.textColor = getBatteryPercentColor(status.status.soc)
   batteryPercentText.font = Font.boldSystemFont(15)
@@ -553,20 +556,18 @@ export async function createHomeScreenRectangleWidget(config: Config, bl: Blueli
     const chargeComplete = getChargeCompletionString(lastSeen, remainingChargingTime, 'short', true)
     const batteryChargingTimeStack = batteryInfoStack.addStack()
 
-    // bug in dynamic spacing means we set a small size if lenght of string is > 7
-    if (chargeComplete.length > 7) {
-      batteryChargingTimeStack.addSpacer(5)
-    } else {
+    // bug in dynamic spacing means we only set spacing if string is less than 10 characters
+    if (chargeComplete.length < 10) {
       batteryChargingTimeStack.addSpacer()
     }
 
     const chargingTimeIconElement = batteryChargingTimeStack.addImage(SFSymbol.named('clock.fill').image)
     chargingTimeIconElement.tintColor = new Color('#ffffff')
-    chargingTimeIconElement.imageSize = new Size(15, 15)
+    chargingTimeIconElement.imageSize = new Size(14, 14)
     batteryChargingTimeStack.addSpacer(3)
 
     const chargingTimeElement = batteryChargingTimeStack.addText(`${chargeComplete}`)
-    chargingTimeElement.font = Font.mediumSystemFont(12)
+    chargingTimeElement.font = Font.mediumMonospacedSystemFont(12)
     chargingTimeElement.textOpacity = 0.9
     chargingTimeElement.textColor = Color.white()
     chargingTimeElement.rightAlignText()

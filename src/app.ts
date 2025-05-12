@@ -16,6 +16,7 @@ import {
   getChargingIcon,
   dateStringOptions,
   getChargeCompletionString,
+  getChargingPowerString,
 } from 'lib/util'
 
 interface updatingActions {
@@ -264,7 +265,7 @@ const pageIcons = connect(
     const lastSeen = new Date(lastUpdated)
     const batteryIcon = isCharging ? 'charging' : 'not-charging'
     const batteryText = 'Not Charging'
-    const chargingPowerText = chargingPower > 0 ? `${chargingPower.toFixed(1).toString()} kW` : '- kW'
+    const chargingPowerText = getChargingPowerString(chargingPower)
     let chargingPowerTextRowPercentage = '25%'
 
     // annoying but impacts UI fairly significantly.
