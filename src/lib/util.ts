@@ -22,7 +22,11 @@ const icons: Record<string, icon> = {
     iconName: 'battery.25percent',
     color: Color.red(),
   },
-  'battery.50': {
+  'battery.50.green': {
+    iconName: 'battery.50percent',
+    color: Color.green(),
+  },
+  'battery.50.orange': {
     iconName: 'battery.50percent',
     color: Color.orange(),
   },
@@ -144,9 +148,9 @@ export function getChargeCompletionString(
 }
 
 export function getBatteryPercentColor(batteryPercent: number): Color {
-  if (batteryPercent >= 50) {
+  if (batteryPercent >= 45) {
     return Color.green()
-  } else if (batteryPercent >= 30) {
+  } else if (batteryPercent >= 35) {
     return Color.orange()
   }
   return Color.red()
@@ -204,16 +208,21 @@ export function getChargingIcon(isCharging: boolean, isPluggedIn: boolean, isWid
 
 export function calculateBatteryIcon(batteryPercent: number): string {
   let percentRounded = 0
+  let colorExtra = ''
   if (batteryPercent > 90) {
     percentRounded = 100
-  } else if (batteryPercent > 60) {
+  } else if (batteryPercent >= 65) {
     percentRounded = 75
-  } else if (batteryPercent > 40) {
+  } else if (batteryPercent >= 45) {
     percentRounded = 50
-  } else if (batteryPercent > 15) {
+    colorExtra = '.green'
+  } else if (batteryPercent >= 35) {
+    percentRounded = 50
+    colorExtra = '.orange'
+  } else if (batteryPercent >= 15) {
     percentRounded = 25
   }
-  return `battery.${percentRounded}`
+  return `battery.${percentRounded}${colorExtra}`
 }
 
 export async function tintSFSymbol(name: string, image: Image, color: Color, rotateDegree?: number) {
