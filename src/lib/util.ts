@@ -22,7 +22,11 @@ const icons: Record<string, icon> = {
     iconName: 'battery.25percent',
     color: Color.red(),
   },
-  'battery.50.green': {
+  'battery.25.orange': {
+    iconName: 'battery.25percent',
+    color: Color.orange(),
+  },
+  'battery.50': {
     iconName: 'battery.50percent',
     color: Color.green(),
   },
@@ -148,9 +152,9 @@ export function getChargeCompletionString(
 }
 
 export function getBatteryPercentColor(batteryPercent: number): Color {
-  if (batteryPercent >= 45) {
+  if (batteryPercent >= 40) {
     return Color.green()
-  } else if (batteryPercent >= 35) {
+  } else if (batteryPercent >= 20) {
     return Color.orange()
   }
   return Color.red()
@@ -213,11 +217,13 @@ export function calculateBatteryIcon(batteryPercent: number): string {
     percentRounded = 100
   } else if (batteryPercent >= 65) {
     percentRounded = 75
-  } else if (batteryPercent >= 45) {
+  } else if (batteryPercent >= 40) {
     percentRounded = 50
-    colorExtra = '.green'
   } else if (batteryPercent >= 35) {
     percentRounded = 50
+    colorExtra = '.orange'
+  } else if (batteryPercent >= 20) {
+    percentRounded = 25
     colorExtra = '.orange'
   } else if (batteryPercent >= 15) {
     percentRounded = 25
