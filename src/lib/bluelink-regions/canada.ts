@@ -33,7 +33,7 @@ export class BluelinkCanada extends Bluelink {
       language: '0',
       brand: this.apiHost === 'mybluelink.ca' ? 'H' : 'kia',
       offset: this.getTimeZone().slice(0, 3),
-      'User-Agent': 'MyHyundai/2.0.25 (iPhone; iOS 18.3; Scale/3.00)',
+      'User-Agent': config.manufacturer === 'kia' ? 'okhttp/4.12.0' : 'MyHyundai/2.0.25 (iPhone; iOS 18.3; Scale/3.00)',
     }
     this.authHeader = 'Accesstoken'
     this.tempLookup = {
@@ -100,8 +100,8 @@ export class BluelinkCanada extends Bluelink {
     await req.load()
     if (req.response.cookies) {
       for (const cookie of req.response.cookies) {
-        if (cookie.name.toLowerCase() === 'dtcookie') {
-          return `dtCookie=${cookie.value}`
+        if (cookie.name.toLowerCase() === '__cf_bm') {
+          return `__cf_bm=${cookie.value}`
         }
       }
     }
