@@ -12,6 +12,30 @@ export interface Auth {
   region: string
 }
 
+export const ClimateSeatSettingCool: Record<string, number> = {
+  Off: 0,
+  Low: 3,
+  Medium: 4,
+  High: 5,
+}
+
+export const ClimateSeatSettingWarm: Record<string, number> = {
+  Off: 0,
+  Low: 6,
+  Medium: 7,
+  High: 8,
+}
+
+export const ClimateSeatSetting: Record<string, number> = {
+  Off: 0,
+  'Cool - Low': 3,
+  'Cool - Medium': 4,
+  'Cool - High': 5,
+  'Heat - Low': 6,
+  'Heat - Medium': 7,
+  'Heat - High': 8,
+}
+
 export interface CustomClimateConfig {
   name: string
   tempType: 'C' | 'F'
@@ -20,6 +44,7 @@ export interface CustomClimateConfig {
   rearDefrost: boolean
   steering: boolean
   durationMinutes: number
+  seatClimate: string
 }
 
 export interface ChargeLimitConfig {
@@ -35,6 +60,7 @@ export interface Config {
   distanceUnit: 'km' | 'mi'
   climateTempWarm: number
   climateTempCold: number
+  climateSeatLevel: string
   allowWidgetRemoteRefresh: boolean
   carColor: string
   debugLogging: boolean
@@ -66,6 +92,7 @@ export interface FlattenedConfig {
   distanceUnit: 'km' | 'mi'
   climateTempWarm: number
   climateTempCold: number
+  climateSeatLevel: string
   allowWidgetRemoteRefresh: boolean
   carColor: string
   debugLogging: boolean
@@ -105,6 +132,7 @@ const DEFAULT_CONFIG = {
   distanceUnit: 'km',
   climateTempCold: DEFAULT_TEMPS.C.cold,
   climateTempWarm: DEFAULT_TEMPS.C.warm,
+  climateSeatLevel: 'Off',
   debugLogging: false,
   multiCar: false,
   promptForUpdate: true,
@@ -205,6 +233,7 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
       distanceUnit,
       climateTempWarm,
       climateTempCold,
+      climateSeatLevel,
       debugLogging,
       multiCar,
       promptForUpdate,
@@ -229,6 +258,7 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
           distanceUnit: distanceUnit,
           climateTempCold: climateTempCold,
           climateTempWarm: climateTempWarm,
+          climateSeatLevel: climateSeatLevel,
           allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
           carColor: carColor ? carColor.toLocaleLowerCase() : 'white',
           debugLogging: debugLogging,
@@ -334,6 +364,12 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
         type: 'numberValue',
         label: 'Climate temp when pre-cooling (whole number or .5)',
         isRequired: true,
+      },
+      climateSeatLevel: {
+        type: 'dropdown',
+        label: 'Climate Seat Setting',
+        isRequired: true,
+        options: Object.keys(ClimateSeatSettingCool),
       },
       carColor: {
         type: 'dropdown',
@@ -508,13 +544,14 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
       rearDefrost: true,
       steering: true,
       durationMinutes: 15,
+      seatClimate: 'OFF',
     } as CustomClimateConfig
   }
 
   return await form<CustomClimateConfig & { delete: boolean }>({
     title: 'Custom Climate Configuration',
     subtitle: previousName ? `Editing configuration: ${previousName}` : 'Create new configuration',
-    onSubmit: ({ name, tempType, temp, frontDefrost, rearDefrost, steering, durationMinutes }) => {
+    onSubmit: ({ name, tempType, temp, frontDefrost, rearDefrost, steering, durationMinutes, seatClimate }) => {
       const config = getConfig()
       const newConfig = {
         name: name,
@@ -524,6 +561,7 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
         rearDefrost: rearDefrost,
         steering: steering,
         durationMinutes: durationMinutes,
+        seatClimate: seatClimate || 'OFF',
       } as CustomClimateConfig
       if (previousName) {
         const index = config.customClimates.findIndex((x) => x.name === previousName)
@@ -598,6 +636,11 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
         type: 'numberValue',
         label: 'Number of Minutes to run climate',
         isRequired: true,
+      },
+      seatClimate: {
+        type: 'dropdown',
+        label: 'Seat Climate Setting',
+        options: Object.keys(ClimateSeatSetting),
       },
       delete: {
         type: 'clickable',
