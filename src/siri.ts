@@ -117,7 +117,14 @@ async function warm(bl: Bluelink): Promise<string> {
       steering: true,
       temp: bl.getConfig().climateTempWarm,
       durationMinutes: 15,
-      seatClimate: ClimateSeatSettingWarm[config.climateSeatLevel],
+      ...(config.climateSeatLevel !== 'Off' && {
+        seatClimate: {
+          driver: ClimateSeatSettingWarm[config.climateSeatLevel],
+          passenger: ClimateSeatSettingWarm[config.climateSeatLevel],
+          rearLeft: ClimateSeatSettingWarm[config.climateSeatLevel],
+          rearRight: ClimateSeatSettingWarm[config.climateSeatLevel],
+        },
+      }),
     } as ClimateRequest,
   )
 }
@@ -136,7 +143,14 @@ async function cool(bl: Bluelink): Promise<string> {
       steering: false,
       temp: config.climateTempCold,
       durationMinutes: 15,
-      seatClimate: ClimateSeatSettingCool[config.climateSeatLevel],
+      ...(config.climateSeatLevel !== 'Off' && {
+        seatClimate: {
+          driver: ClimateSeatSettingCool[config.climateSeatLevel],
+          passenger: ClimateSeatSettingCool[config.climateSeatLevel],
+          rearLeft: ClimateSeatSettingCool[config.climateSeatLevel],
+          rearRight: ClimateSeatSettingCool[config.climateSeatLevel],
+        },
+      }),
     } as ClimateRequest,
   )
 }
@@ -155,7 +169,6 @@ async function climateOff(bl: Bluelink): Promise<string> {
       steering: false,
       temp: config.climateTempCold,
       durationMinutes: 15,
-      seatClimate: 0,
     } as ClimateRequest,
   )
 }
@@ -169,7 +182,14 @@ async function customClimate(bl: Bluelink, data: CustomClimateConfig): Promise<s
     {
       ...data,
       enable: true,
-      seatClimate: data.seatClimate ? ClimateSeatSetting[data.seatClimate] : 0,
+      ...(data.seatClimate !== 'Off' && {
+        seatClimate: {
+          driver: ClimateSeatSetting[data.seatClimate],
+          passenger: ['ALL', 'FRONT'].includes(data.seatClimateSettings) ? ClimateSeatSetting[data.seatClimate] : 0,
+          rearLeft: ['ALL'].includes(data.seatClimateSettings) ? ClimateSeatSetting[data.seatClimate] : 0,
+          rearRight: ['ALL'].includes(data.seatClimateSettings) ? ClimateSeatSetting[data.seatClimate] : 0,
+        },
+      }),
     } as ClimateRequest,
   )
 }

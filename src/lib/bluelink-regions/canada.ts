@@ -485,12 +485,12 @@ export class BluelinkCanada extends Bluelink {
           },
           igniOnDuration: config.durationMinutes,
           heating1: this.getHeatingValue(config.rearDefrost, config.steering),
-          ...(config.seatClimate > 0 && {
+          ...(config.seatClimate && {
             seatHeaterVentCMD: {
-              drvSeatOptCmd: config.seatClimate,
-              astSeatOptCmd: config.seatClimate,
-              rlSeatOptCmd: config.seatClimate,
-              rrSeatOptCmd: config.seatClimate,
+              drvSeatOptCmd: config.seatClimate.driver,
+              astSeatOptCmd: config.seatClimate.passenger,
+              rlSeatOptCmd: config.seatClimate.rearLeft,
+              rrSeatOptCmd: config.seatClimate.rearRight,
             },
           }),
         },

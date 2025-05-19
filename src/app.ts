@@ -403,7 +403,20 @@ const pageIcons = connect(
                       ? ({
                           ...payload,
                           enable: true,
-                          seatClimate: payload.seatClimate ? ClimateSeatSetting[payload.seatClimate] : 0,
+                          ...(payload.seatClimate !== 'Off' && {
+                            seatClimate: {
+                              driver: ClimateSeatSetting[payload.seatClimate],
+                              passenger: ['ALL', 'FRONT'].includes(payload.seatClimateSettings)
+                                ? ClimateSeatSetting[payload.seatClimate]
+                                : 0,
+                              rearLeft: ['ALL'].includes(payload.seatClimateSettings)
+                                ? ClimateSeatSetting[payload.seatClimate]
+                                : 0,
+                              rearRight: ['ALL'].includes(payload.seatClimateSettings)
+                                ? ClimateSeatSetting[payload.seatClimate]
+                                : 0,
+                            },
+                          }),
                         } as ClimateRequest)
                       : ({
                           enable: opt !== 'Off' ? true : false,
@@ -412,10 +425,22 @@ const pageIcons = connect(
                           steering: opt === 'Warm' ? true : false,
                           temp: opt === 'Warm' ? config.climateTempWarm : config.climateTempCold,
                           durationMinutes: 15,
-                          seatClimate:
-                            opt === 'Warm'
-                              ? ClimateSeatSettingWarm[config.climateSeatLevel]
-                              : ClimateSeatSettingCool[config.climateSeatLevel],
+                          ...(config.climateSeatLevel !== 'Off' && {
+                            seatClimate:
+                              opt === 'Warm'
+                                ? {
+                                    driver: ClimateSeatSettingWarm[config.climateSeatLevel],
+                                    passenger: ClimateSeatSettingWarm[config.climateSeatLevel],
+                                    rearLeft: ClimateSeatSettingWarm[config.climateSeatLevel],
+                                    rearRight: ClimateSeatSettingWarm[config.climateSeatLevel],
+                                  }
+                                : {
+                                    driver: ClimateSeatSettingCool[config.climateSeatLevel],
+                                    passenger: ClimateSeatSettingCool[config.climateSeatLevel],
+                                    rearLeft: ClimateSeatSettingCool[config.climateSeatLevel],
+                                    rearRight: ClimateSeatSettingCool[config.climateSeatLevel],
+                                  },
+                          }),
                         } as ClimateRequest),
                     actions: updatingActions,
                     actionKey: 'climate',

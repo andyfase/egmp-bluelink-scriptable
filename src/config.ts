@@ -45,6 +45,7 @@ export interface CustomClimateConfig {
   steering: boolean
   durationMinutes: number
   seatClimate: string
+  seatClimateSettings: 'DRIVER' | 'FRONT' | 'ALL'
 }
 
 export interface ChargeLimitConfig {
@@ -545,13 +546,24 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
       steering: true,
       durationMinutes: 15,
       seatClimate: 'OFF',
+      seatClimateSettings: 'ALL',
     } as CustomClimateConfig
   }
 
   return await form<CustomClimateConfig & { delete: boolean }>({
     title: 'Custom Climate Configuration',
     subtitle: previousName ? `Editing configuration: ${previousName}` : 'Create new configuration',
-    onSubmit: ({ name, tempType, temp, frontDefrost, rearDefrost, steering, durationMinutes, seatClimate }) => {
+    onSubmit: ({
+      name,
+      tempType,
+      temp,
+      frontDefrost,
+      rearDefrost,
+      steering,
+      durationMinutes,
+      seatClimate,
+      seatClimateSettings,
+    }) => {
       const config = getConfig()
       const newConfig = {
         name: name,
@@ -562,6 +574,7 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
         steering: steering,
         durationMinutes: durationMinutes,
         seatClimate: seatClimate || 'OFF',
+        seatClimateSettings: seatClimateSettings || 'ALL',
       } as CustomClimateConfig
       if (previousName) {
         const index = config.customClimates.findIndex((x) => x.name === previousName)
@@ -640,7 +653,14 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
       seatClimate: {
         type: 'dropdown',
         label: 'Seat Climate Setting',
+        isRequired: true,
         options: Object.keys(ClimateSeatSetting),
+      },
+      seatClimateSettings: {
+        type: 'dropdown',
+        label: 'Seat Climate Settings',
+        isRequired: true,
+        options: ['DRIVER', 'FRONT', 'ALL'],
       },
       delete: {
         type: 'clickable',
