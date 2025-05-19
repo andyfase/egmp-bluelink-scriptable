@@ -445,6 +445,14 @@ export class BluelinkUSAKia extends Bluelink {
             rearWindow: Number(config.rearDefrost),
             sideMirror: Number(config.rearDefrost),
           },
+          ...(config.seatClimate > 0 && {
+            heatVentSeat: {
+              driverSeat: config.seatClimate,
+              passengerSeat: config.seatClimate,
+              rearLeftSeat: config.seatClimate,
+              rearRightSeat: config.seatClimate,
+            },
+          }),
         },
       }),
       headers: {

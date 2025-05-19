@@ -397,6 +397,14 @@ export class BluelinkUSA extends Bluelink {
         },
         // igniOnDuration: config.durationMinutes, // not supported in US
         heating1: this.getHeatingValue(config.rearDefrost, config.steering),
+        ...(config.seatClimate > 0 && {
+          seatHeaterVentInfo: {
+            drvSeatHeatState: config.seatClimate,
+            astSeatHeatState: config.seatClimate,
+            rlSeatHeatState: config.seatClimate,
+            rrSeatHeatState: config.seatClimate,
+          },
+        }),
       }),
       notJSON: true,
       headers: {
