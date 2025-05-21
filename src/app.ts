@@ -1,7 +1,14 @@
 import { Config, getConfig, STANDARD_CLIMATE_OPTIONS } from 'config'
 import { Bluelink, Status, ClimateRequest, ChargeLimit } from './lib/bluelink-regions/base'
 import { getTable, Div, P, Img, quickOptions, DivChild, Spacer, destructiveConfirm } from 'lib/scriptable-utils'
-import { loadConfigScreen, deleteConfig, setConfig } from 'config'
+import {
+  loadConfigScreen,
+  deleteConfig,
+  setConfig,
+  ClimateSeatSetting,
+  ClimateSeatSettingCool,
+  ClimateSeatSettingWarm,
+} from 'config'
 import { Version } from 'lib/version'
 import { loadAboutScreen, doDowngrade } from 'about'
 import { deleteWidgetCache } from 'widget'
@@ -393,7 +400,25 @@ const pageIcons = connect(
                     command: 'climate',
                     bl: bl,
                     payload: payload
-                      ? ({ ...payload, enable: true } as ClimateRequest)
+                      ? ({
+                          ...payload,
+                          enable: true,
+                          ...(payload.seatClimate &&
+                            payload.seatClimate !== 'Off' && {
+                              seatClimate: {
+                                driver: ClimateSeatSetting[payload.seatClimate],
+                                passenger: ['ALL', 'FRONT'].includes(payload.seatClimateSettings)
+                                  ? ClimateSeatSetting[payload.seatClimate]
+                                  : 0,
+                                rearLeft: ['ALL'].includes(payload.seatClimateSettings)
+                                  ? ClimateSeatSetting[payload.seatClimate]
+                                  : 0,
+                                rearRight: ['ALL'].includes(payload.seatClimateSettings)
+                                  ? ClimateSeatSetting[payload.seatClimate]
+                                  : 0,
+                              },
+                            }),
+                        } as ClimateRequest)
                       : ({
                           enable: opt !== 'Off' ? true : false,
                           frontDefrost: opt === 'Warm' ? true : false,
@@ -401,6 +426,22 @@ const pageIcons = connect(
                           steering: opt === 'Warm' ? true : false,
                           temp: opt === 'Warm' ? config.climateTempWarm : config.climateTempCold,
                           durationMinutes: 15,
+                          ...(config.climateSeatLevel !== 'Off' && {
+                            seatClimate:
+                              opt === 'Warm'
+                                ? {
+                                    driver: ClimateSeatSettingWarm[config.climateSeatLevel],
+                                    passenger: ClimateSeatSettingWarm[config.climateSeatLevel],
+                                    rearLeft: ClimateSeatSettingWarm[config.climateSeatLevel],
+                                    rearRight: ClimateSeatSettingWarm[config.climateSeatLevel],
+                                  }
+                                : {
+                                    driver: ClimateSeatSettingCool[config.climateSeatLevel],
+                                    passenger: ClimateSeatSettingCool[config.climateSeatLevel],
+                                    rearLeft: ClimateSeatSettingCool[config.climateSeatLevel],
+                                    rearRight: ClimateSeatSettingCool[config.climateSeatLevel],
+                                  },
+                          }),
                         } as ClimateRequest),
                     actions: updatingActions,
                     actionKey: 'climate',

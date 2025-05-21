@@ -90,6 +90,13 @@ export interface TempConversion {
   H: string[]
 }
 
+export interface SeatClimate {
+  driver: number
+  passenger: number
+  rearLeft: number
+  rearRight: number
+}
+
 export interface ClimateRequest {
   enable: boolean
   frontDefrost: boolean
@@ -97,6 +104,7 @@ export interface ClimateRequest {
   steering: boolean
   temp: number
   durationMinutes: number
+  seatClimate?: SeatClimate
 }
 
 export interface ChargeLimit {

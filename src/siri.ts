@@ -1,4 +1,11 @@
-import { Config, CustomClimateConfig, ChargeLimitConfig } from 'config'
+import {
+  Config,
+  CustomClimateConfig,
+  ChargeLimitConfig,
+  ClimateSeatSetting,
+  ClimateSeatSettingCool,
+  ClimateSeatSettingWarm,
+} from 'config'
 import { Logger } from 'lib/logger'
 import { Bluelink, ClimateRequest, ChargeLimit } from 'lib/bluelink-regions/base'
 import { getChargeCompletionString, sleep } from 'lib/util'
@@ -98,6 +105,7 @@ async function getRemoteStatus(bl: Bluelink): Promise<string> {
 
 async function warm(bl: Bluelink): Promise<string> {
   const status = bl.getCachedStatus()
+  const config = bl.getConfig()
   return await blRequest(
     bl,
     'climate',
@@ -109,12 +117,21 @@ async function warm(bl: Bluelink): Promise<string> {
       steering: true,
       temp: bl.getConfig().climateTempWarm,
       durationMinutes: 15,
+      ...(config.climateSeatLevel !== 'Off' && {
+        seatClimate: {
+          driver: ClimateSeatSettingWarm[config.climateSeatLevel],
+          passenger: ClimateSeatSettingWarm[config.climateSeatLevel],
+          rearLeft: ClimateSeatSettingWarm[config.climateSeatLevel],
+          rearRight: ClimateSeatSettingWarm[config.climateSeatLevel],
+        },
+      }),
     } as ClimateRequest,
   )
 }
 
 async function cool(bl: Bluelink): Promise<string> {
   const status = bl.getCachedStatus()
+  const config = bl.getConfig()
   return await blRequest(
     bl,
     'climate',
@@ -124,14 +141,23 @@ async function cool(bl: Bluelink): Promise<string> {
       frontDefrost: false,
       rearDefrost: false,
       steering: false,
-      temp: bl.getConfig().climateTempCold,
+      temp: config.climateTempCold,
       durationMinutes: 15,
+      ...(config.climateSeatLevel !== 'Off' && {
+        seatClimate: {
+          driver: ClimateSeatSettingCool[config.climateSeatLevel],
+          passenger: ClimateSeatSettingCool[config.climateSeatLevel],
+          rearLeft: ClimateSeatSettingCool[config.climateSeatLevel],
+          rearRight: ClimateSeatSettingCool[config.climateSeatLevel],
+        },
+      }),
     } as ClimateRequest,
   )
 }
 
 async function climateOff(bl: Bluelink): Promise<string> {
   const status = bl.getCachedStatus()
+  const config = bl.getConfig()
   return await blRequest(
     bl,
     'climate',
@@ -141,7 +167,7 @@ async function climateOff(bl: Bluelink): Promise<string> {
       frontDefrost: false,
       rearDefrost: false,
       steering: false,
-      temp: bl.getConfig().climateTempCold,
+      temp: config.climateTempCold,
       durationMinutes: 15,
     } as ClimateRequest,
   )
@@ -153,7 +179,19 @@ async function customClimate(bl: Bluelink, data: CustomClimateConfig): Promise<s
     bl,
     'climate',
     `I've issued a request to turn on climate setting ${data.name} on ${status.car.nickName || `your ${status.car.modelName}`}.`,
-    { ...data, enable: true } as ClimateRequest,
+    {
+      ...data,
+      enable: true,
+      ...(data.seatClimate &&
+        data.seatClimate !== 'Off' && {
+          seatClimate: {
+            driver: ClimateSeatSetting[data.seatClimate],
+            passenger: ['ALL', 'FRONT'].includes(data.seatClimateSettings) ? ClimateSeatSetting[data.seatClimate] : 0,
+            rearLeft: ['ALL'].includes(data.seatClimateSettings) ? ClimateSeatSetting[data.seatClimate] : 0,
+            rearRight: ['ALL'].includes(data.seatClimateSettings) ? ClimateSeatSetting[data.seatClimate] : 0,
+          },
+        }),
+    } as ClimateRequest,
   )
 }
 

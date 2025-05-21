@@ -690,6 +690,14 @@ export class BluelinkEurope extends Bluelink {
       tempUnit: this.config.tempType,
       drvSeatLoc: this.distanceUnit === 'mi' ? 'R' : 'L',
       hvacTemp: config.temp,
+      ...(config.seatClimate && {
+        seatClimateInfo: {
+          drvSeatClimateState: config.seatClimate.driver,
+          psgSeatClimateState: config.seatClimate.passenger,
+          rlSeatClimateState: config.seatClimate.rearLeft,
+          rrSeatClimateState: config.seatClimate.rearRight,
+        },
+      }),
     })
   }
 
