@@ -536,19 +536,19 @@ export async function loadWidgetConfigScreen() {
 
 export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig | undefined) {
   const previousName = climateConfig ? climateConfig.name : undefined
-  if (!climateConfig) {
-    climateConfig = {
-      name: '',
-      tempType: 'C',
-      temp: DEFAULT_TEMPS.C.warm,
-      frontDefrost: true,
-      rearDefrost: true,
-      steering: true,
-      durationMinutes: 15,
-      seatClimate: 'OFF',
-      seatClimateSettings: 'ALL',
-    } as CustomClimateConfig
-  }
+  const defaultClimateConfig = {
+    name: '',
+    tempType: 'C',
+    temp: DEFAULT_TEMPS.C.warm,
+    frontDefrost: true,
+    rearDefrost: true,
+    steering: true,
+    durationMinutes: 15,
+    seatClimate: 'OFF',
+    seatClimateSettings: 'ALL',
+  } as CustomClimateConfig
+  if (!climateConfig) climateConfig = defaultClimateConfig
+  else climateConfig = { ...defaultClimateConfig, ...climateConfig } // merge with default config
 
   return await form<CustomClimateConfig & { delete: boolean }>({
     title: 'Custom Climate Configuration',

@@ -403,20 +403,21 @@ const pageIcons = connect(
                       ? ({
                           ...payload,
                           enable: true,
-                          ...(payload.seatClimate !== 'Off' && {
-                            seatClimate: {
-                              driver: ClimateSeatSetting[payload.seatClimate],
-                              passenger: ['ALL', 'FRONT'].includes(payload.seatClimateSettings)
-                                ? ClimateSeatSetting[payload.seatClimate]
-                                : 0,
-                              rearLeft: ['ALL'].includes(payload.seatClimateSettings)
-                                ? ClimateSeatSetting[payload.seatClimate]
-                                : 0,
-                              rearRight: ['ALL'].includes(payload.seatClimateSettings)
-                                ? ClimateSeatSetting[payload.seatClimate]
-                                : 0,
-                            },
-                          }),
+                          ...(payload.seatClimate &&
+                            payload.seatClimate !== 'Off' && {
+                              seatClimate: {
+                                driver: ClimateSeatSetting[payload.seatClimate],
+                                passenger: ['ALL', 'FRONT'].includes(payload.seatClimateSettings)
+                                  ? ClimateSeatSetting[payload.seatClimate]
+                                  : 0,
+                                rearLeft: ['ALL'].includes(payload.seatClimateSettings)
+                                  ? ClimateSeatSetting[payload.seatClimate]
+                                  : 0,
+                                rearRight: ['ALL'].includes(payload.seatClimateSettings)
+                                  ? ClimateSeatSetting[payload.seatClimate]
+                                  : 0,
+                              },
+                            }),
                         } as ClimateRequest)
                       : ({
                           enable: opt !== 'Off' ? true : false,
