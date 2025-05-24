@@ -121,7 +121,7 @@ export const dateStringOptions = {
 // } as Intl.DateTimeFormatOptions
 
 export function getChargingPowerString(chargingPower: number): string {
-  if (chargingPower === 0) return '-'
+  if (!chargingPower || chargingPower === 0) return '-'
   // if DC charging (power above 11kw) then drop any decimal
   const power = chargingPower >= 12 ? chargingPower.toFixed(0) : chargingPower.toFixed(1)
   return `${power} kW`
