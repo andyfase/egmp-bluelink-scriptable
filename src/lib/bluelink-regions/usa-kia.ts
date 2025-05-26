@@ -445,7 +445,11 @@ export class BluelinkUSAKia extends Bluelink {
     }
   }
 
-  protected async climateOn(id: string, config: ClimateRequest): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+  protected async climateOn(
+    id: string,
+    config: ClimateRequest,
+    retryWithNoSeat = false,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const api = 'rems/start'
     const resp = await this.request({
       url: this.apiDomain + api,
@@ -466,14 +470,15 @@ export class BluelinkUSAKia extends Bluelink {
             rearWindow: Number(config.rearDefrost),
             sideMirror: Number(config.rearDefrost),
           },
-          ...(config.seatClimate && {
-            heatVentSeat: {
-              driverSeat: this.seatSettings(config.seatClimate.driver),
-              passengerSeat: this.seatSettings(config.seatClimate.passenger),
-              rearLeftSeat: this.seatSettings(config.seatClimate.rearLeft),
-              rearRightSeat: this.seatSettings(config.seatClimate.rearRight),
-            },
-          }),
+          ...(config.seatClimate &&
+            !retryWithNoSeat && {
+              heatVentSeat: {
+                driverSeat: this.seatSettings(config.seatClimate.driver),
+                passengerSeat: this.seatSettings(config.seatClimate.passenger),
+                rearLeftSeat: this.seatSettings(config.seatClimate.rearLeft),
+                rearRightSeat: this.seatSettings(config.seatClimate.rearRight),
+              },
+            }),
         },
       }),
       headers: {
@@ -485,7 +490,11 @@ export class BluelinkUSAKia extends Bluelink {
       this.setLastCommandSent()
       const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
+    } else {
+      // KIA US seems pretty particular with seat settings, hence if fail retry without them,
+      if (!retryWithNoSeat) return this.climateOn(id, config, true)
     }
+
     const error = `Failed to send climateOn command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
