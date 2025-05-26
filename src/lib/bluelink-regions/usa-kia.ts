@@ -424,6 +424,27 @@ export class BluelinkUSAKia extends Bluelink {
     throw Error(error)
   }
 
+  private seatSettings(level: number): { heatVentType: number; heatVentLevel: number; heatVentStep: number } {
+    switch (level) {
+      case 8: // High heat
+        return { heatVentType: 1, heatVentLevel: 4, heatVentStep: 1 }
+      case 7: // Medium heat
+        return { heatVentType: 1, heatVentLevel: 3, heatVentStep: 2 }
+      case 6: // Low heat
+        return { heatVentType: 1, heatVentLevel: 2, heatVentStep: 3 }
+      case 5: // High cool
+        return { heatVentType: 2, heatVentLevel: 4, heatVentStep: 1 }
+      case 4: // Medium cool
+        return { heatVentType: 2, heatVentLevel: 3, heatVentStep: 2 }
+      case 3: // Low cool
+        return { heatVentType: 2, heatVentLevel: 2, heatVentStep: 3 }
+      case 1: // Generically on, assume high heat
+        return { heatVentType: 1, heatVentLevel: 4, heatVentStep: 1 }
+      default: // Off
+        return { heatVentType: 0, heatVentLevel: 1, heatVentStep: 0 }
+    }
+  }
+
   protected async climateOn(id: string, config: ClimateRequest): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const api = 'rems/start'
     const resp = await this.request({
@@ -447,10 +468,10 @@ export class BluelinkUSAKia extends Bluelink {
           },
           ...(config.seatClimate && {
             heatVentSeat: {
-              driverSeat: config.seatClimate.driver,
-              passengerSeat: config.seatClimate.passenger,
-              rearLeftSeat: config.seatClimate.rearLeft,
-              rearRightSeat: config.seatClimate.rearRight,
+              driverSeat: this.seatSettings(config.seatClimate.driver),
+              passengerSeat: this.seatSettings(config.seatClimate.passenger),
+              rearLeftSeat: this.seatSettings(config.seatClimate.rearLeft),
+              rearRightSeat: this.seatSettings(config.seatClimate.rearRight),
             },
           }),
         },

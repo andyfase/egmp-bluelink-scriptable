@@ -432,14 +432,14 @@ const pageIcons = connect(
                                 ? {
                                     driver: ClimateSeatSettingWarm[config.climateSeatLevel],
                                     passenger: ClimateSeatSettingWarm[config.climateSeatLevel],
-                                    rearLeft: ClimateSeatSettingWarm[config.climateSeatLevel],
-                                    rearRight: ClimateSeatSettingWarm[config.climateSeatLevel],
+                                    rearLeft: 0,
+                                    rearRight: 0,
                                   }
                                 : {
                                     driver: ClimateSeatSettingCool[config.climateSeatLevel],
                                     passenger: ClimateSeatSettingCool[config.climateSeatLevel],
-                                    rearLeft: ClimateSeatSettingCool[config.climateSeatLevel],
-                                    rearRight: ClimateSeatSettingCool[config.climateSeatLevel],
+                                    rearLeft: 0,
+                                    rearRight: 0,
                                   },
                           }),
                         } as ClimateRequest),
