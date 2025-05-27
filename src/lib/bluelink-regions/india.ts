@@ -49,11 +49,10 @@ const API_CONFIG: Record<string, APIConfig> = {
     clientId: 'e5b3f6d0-7f83-43c9-aff3-a254db7af368',
     authClientID: '64621b96-0f0d-11ec-82a8-0242ac130003',
     pushType: 'GCM',
-  },  
+  },
 }
 
 export class BluelinkIndia extends Bluelink {
-  // private lang = 'en' // hard-code to en as the language doesnt appear to matter from an API perspective.
   private apiConfig: APIConfig
   private controlToken: ControlToken | undefined
   private europeccs2: number | undefined
@@ -70,7 +69,6 @@ export class BluelinkIndia extends Bluelink {
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
       'User-Agent': 'okhttp/3.14.9',
-      // offset: this.getTimeZone().slice(0, 3),
       Host: `${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}`,
       'ccsp-service-id': this.apiConfig.ccspServiceId,
       'ccsp-application-id': this.apiConfig.appId,
@@ -125,7 +123,7 @@ export class BluelinkIndia extends Bluelink {
     // Find the index of the temperature
     const tempIndex = temperatureRange.indexOf(temp)
     if (tempIndex === -1) {
-      // Default to 21°C if temperature not found
+      // Default to 23°C if temperature not found
       const defaultIndex = temperatureRange.indexOf(23)
       return defaultIndex.toString(16).padStart(2, '0') + 'H'
     }
@@ -197,29 +195,6 @@ export class BluelinkIndia extends Bluelink {
       throw Error(error)
     }
 
-    // Get refresh token
-    // const refreshData = `grant_type=refresh_token&redirect_uri=https%3A%2F%2Fwww.getpostman.com%2Foauth2%2Fcallback&refresh_token=${respTokens.json.refreshToken}`
-    // const respRefresh = await this.request({
-    //   url: `${this.apiDomain}/api/v1/user/oauth2/token`,
-    //   noAuth: true,
-    //   validResponseFunction: this.requestResponseValid,
-    //   data: refreshData,
-    //   headers: {
-    //     Authorization: this.apiConfig.authBasic,
-    //     Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-    //     'Content-Type': 'application/x-www-form-urlencoded',
-    //   },
-    // })
-
-    // if (!this.requestResponseValid(respRefresh.resp, respRefresh.json).valid) {
-    //   const error = `Failed to get refresh token ${JSON.stringify(respRefresh.resp)}`
-    //   if (this.config.debugLogging) this.logger.log(error)
-    //   throw Error(error)
-    // }
-    if (this.config.debugLogging)
-      this.logger.log(
-        `v0110 Access Token Bearer ${respTokens.json.access_token}, refresh token: ${respTokens.json.refresh_token}`,
-      )
     return {
       accessToken: `Bearer ${respTokens.json.access_token}`,
       refreshToken: respTokens.json.refresh_token,
@@ -336,7 +311,6 @@ export class BluelinkIndia extends Bluelink {
     if (!vin && this.cache) {
       vin = this.cache.car.vin
     }
-    if (this.config.debugLogging) this.logger.log('In getCAR()')
     const resp = await this.request({
       url: this.apiDomain + `/api/v1/spa/vehicles`,
       validResponseFunction: this.requestResponseValid,
@@ -386,13 +360,10 @@ export class BluelinkIndia extends Bluelink {
   }
 
   protected returnCarStatus(maint: any, loc: any, status: any, updateTime: number): BluelinkStatus {
-    // cached status contains a wrapped status object along with odometer info - force status does not
-    // force status also does not include a time field
-    //if (this.config.debugLogging) this.logger.log('In returnCarStatus()')
+    // location and odometer info come from separate API calls.
     // convert odometer if needed
     const newOdometer = this.distanceUnit === 'mi' ? Math.floor(maint.odometer * 0.621371) : Math.floor(maint.odometer)
 
-    // isCharging based on plug being connected and remainingTime being above zero
     const isCharging = status.evStatus.batteryCharge
 
     const chargingPower = 11 // charging power is not reported in status, just fix it.
@@ -425,10 +396,10 @@ export class BluelinkIndia extends Bluelink {
       } as Location
     }
 
-    if (this.config.debugLogging)
-      this.logger.log(
-        `odometer: ${newOdometer}, isCharging: ${isCharging}, chargingPower: ${chargingPower}, chargeLimit: ${chargeLimit}, location: ${location}, updateTime: ${updateTime}, timeStamp: ${updateTime}`,
-      )
+    // if (this.config.debugLogging)
+    //   this.logger.log(
+    //     `odometer: ${newOdometer}, isCharging: ${isCharging}, chargingPower: ${chargingPower}, chargeLimit: ${chargeLimit}, location: ${location}, updateTime: ${updateTime}, timeStamp: ${updateTime}`,
+    //   )
 
     return {
       lastStatusCheck: Date.now(),
@@ -456,13 +427,14 @@ export class BluelinkIndia extends Bluelink {
   }
 
   protected async getCarStatus(id: string, forceUpdate: boolean, _location: boolean = false): Promise<BluelinkStatus> {
-    // CCS2 endpoint appears to be the only endpoint that works consistantly across all cars
     let resp
     if (!forceUpdate) {
       resp = await this.request({
-        url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/status/latest`,
+        url:
+          (this.cache?.car.europeccs2 ?? 0) > 0
+            ? `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus/latest`
+            : `${this.apiDomain}/api/v1/spa/vehicles/${id}/status/latest`,
         headers: {
-          //Host: `${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}`,
           ccuCCS2ProtocolSupport: this.getCCS2Header(),
         },
         validResponseFunction: this.requestResponseValid,
@@ -471,7 +443,6 @@ export class BluelinkIndia extends Bluelink {
       resp = await this.request({
         url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/status`,
         headers: {
-          //Host: `${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}`,
           ccuCCS2ProtocolSupport: this.getCCS2Header(),
         },
         validResponseFunction: this.requestResponseValid,
@@ -494,23 +465,6 @@ export class BluelinkIndia extends Bluelink {
     const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     throw Error(error)
-
-    // if (this.requestResponseValid(resp.resp, resp.json).valid) {
-    //   // poll cached status API until the date is above currentTime
-    //   let attempts = 0
-    //   let resp = undefined
-    //   while (attempts <= MAX_COMPLETION_POLLS) {
-    //     attempts += 1
-    //     await this.sleep(2000)
-    //     resp = await this.getCarStatus(id, false)
-    //     if (currentTime < resp.lastRemoteStatusCheck) {
-    //       return resp
-    //     }
-    //   }
-    // }
-    // const error = `Failed to retrieve remote vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    // if (this.config.debugLogging) this.logger.log(error)
-    // throw Error(error)
   }
 
   // named for consistency - but this is a special Authetication token - used instead of the normal Authentication token?
@@ -553,9 +507,7 @@ export class BluelinkIndia extends Bluelink {
     while (attempts <= MAX_COMPLETION_POLLS) {
       const resp = await this.request({
         url: `${this.apiDomain}/api/v1/spa/notifications/${id}/records`,
-        headers: {
-          //Host: `${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}`,
-        },
+        headers: {},
         validResponseFunction: this.requestResponseValid,
       })
 
@@ -615,9 +567,7 @@ export class BluelinkIndia extends Bluelink {
         action: shouldLock ? 'close' : 'open',
         deviceId: this.cache.token.authId,
       }),
-      headers: {
-        //Host: `${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}`,
-      },
+      headers: {},
       //authTokenOverride: await this.getAuthCode(id),
       validResponseFunction: this.requestResponseValid,
       noRetry: true,
@@ -653,7 +603,6 @@ export class BluelinkIndia extends Bluelink {
         ccuCCS2ProtocolSupport: this.getCCS2Header(),
       }),
       headers: {
-        //Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
         ccuCCS2ProtocolSupport: this.getCCS2Header(),
       },
       authTokenOverride: await this.getAuthCode(id),
@@ -669,25 +618,13 @@ export class BluelinkIndia extends Bluelink {
     throw Error(error)
   }
 
-  // protected async climateOn(id: string, config: ClimateRequest): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
-  //   return await this.climateStartStop(id, {
-  //     command: 'start',
-  //     windshieldFrontDefogState: config.frontDefrost,
-  //     hvacTempType: 1,
-  //     heating1: this.getHeatingValue(config.rearDefrost, config.steering),
-  //     tempUnit: this.config.tempType,
-  //     drvSeatLoc: this.distanceUnit === 'mi' ? 'R' : 'L',
-  //     hvacTemp: config.temp,
-  //   })
-  // }
-
+  //Climate on and off use different endpoints, so we need two functions.
   protected async climateOn(id: string, config: ClimateRequest): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     // Set default values if not provided
     const temp = config.temp ?? 23
     const frontDefrost = config.frontDefrost ?? false
     const heating = 0
 
-    // Create payload matching Python implementation
     const payload = {
       action: 'start',
       hvacType: 1,
@@ -704,9 +641,7 @@ export class BluelinkIndia extends Bluelink {
       url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/control/engine`,
       method: 'POST',
       data: JSON.stringify(payload),
-      headers: {
-        Host: `${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}`,
-      },
+      headers: {},
       validResponseFunction: this.requestResponseValid,
     })
 
@@ -721,26 +656,17 @@ export class BluelinkIndia extends Bluelink {
     throw Error(error)
   }
 
-  // protected async climateOff(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
-  //   return await this.climateStartStop(id, {
-  //     command: 'stop',
-  //   })
-  // }
-
   protected async climateOff(id: string): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
-    // Create payload matching Python implementation
     const payload = {
       action: 'stop',
     }
 
-    // Call the API - note this uses v2 in Python
+    // Call the API - note this uses v2
     const resp = await this.request({
       url: `${this.apiDomain}/api/v2/spa/vehicles/${id}/control/engine`,
       method: 'POST',
       data: JSON.stringify(payload),
-      headers: {
-        Host: `${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}`,
-      },
+      headers: {},
       authTokenOverride: await this.getAuthCode(id),
       validResponseFunction: this.requestResponseValid,
     })
@@ -772,9 +698,7 @@ export class BluelinkIndia extends Bluelink {
       url: `${this.apiDomain}/api/v2/spa/vehicles/${id}/control/valet`,
       method: 'POST',
       data: JSON.stringify(payload),
-      headers: {
-        //Host: `${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}`,
-      },
+      headers: {},
       authTokenOverride: await this.getAuthCode(id),
       validResponseFunction: this.requestResponseValid,
     })
@@ -785,7 +709,7 @@ export class BluelinkIndia extends Bluelink {
       if (transactionId)
         return { isSuccess: true } //await this.pollForCommandCompletion(id, transactionId)
       else return { isSuccess: false } //valet mode state is not in the car status json and does not show
-      // up in the records for polling, so just return true if a msgId comes.
+      // up in the record endpoint used for polling, so just return true if a msgId comes in.
     }
 
     const error = `Failed to set valet mode: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
@@ -814,14 +738,12 @@ export class BluelinkIndia extends Bluelink {
         ],
       }),
       headers: {
-        //Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
         ccuCCS2ProtocolSupport: this.getCCS2Header(),
       },
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
       this.setLastCommandSent()
-      // polling seemingly not an option for Europe - return the result of a force update (which itself can poll)
       return {
         isSuccess: true,
         data: await this.getCarStatus(id, true),
@@ -836,9 +758,7 @@ export class BluelinkIndia extends Bluelink {
     const resp = await this.request({
       url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/setting/alert/maintenance`,
       validResponseFunction: this.requestResponseValid,
-      headers: {
-        Host: `${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}`,
-      },
+      headers: {},
     })
 
     if (!this.requestResponseValid(resp.resp, resp.json).valid) {
@@ -854,9 +774,7 @@ export class BluelinkIndia extends Bluelink {
     const resp = await this.request({
       url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/location/park`,
       validResponseFunction: this.requestResponseValid,
-      headers: {
-        Host: `${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}`,
-      },
+      headers: {},
     })
 
     if (!this.requestResponseValid(resp.resp, resp.json).valid) {
