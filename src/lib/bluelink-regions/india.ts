@@ -430,10 +430,7 @@ export class BluelinkIndia extends Bluelink {
     let resp
     if (!forceUpdate) {
       resp = await this.request({
-        url:
-          (this.cache?.car.europeccs2 ?? 0) > 0
-            ? `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus/latest`
-            : `${this.apiDomain}/api/v1/spa/vehicles/${id}/status/latest`,
+        url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/status/latest`,
         headers: {
           ccuCCS2ProtocolSupport: this.getCCS2Header(),
         },
