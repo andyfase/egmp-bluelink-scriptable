@@ -106,16 +106,6 @@ export class BluelinkIndia extends Bluelink {
     return { valid: false, retry: true }
   }
 
-  //This function assumes the timestring being passed is in UTC.
-  private timeStringToTimestamp(timeString: number): number {
-    // Format: YYYYMMDDHHMMSS to YYYY-MM-DD HH:MM:SS
-    const ts: string = String(timeString)
-    const formatted = ts.replace(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/, '$1-$2-$3T$4:$5:$6Z')
-    //if (this.config.debugLogging) this.logger.log(`timeString: ${ts}, formatted: ${formatted}, Date: ${dp}`)
-    // Parse as UTC time and get timestamp
-    return Number(Date.parse(formatted))
-  }
-
   private getTempCode(temp: number): string {
     // Define temperature range as in Python
     const temperatureRange = Array.from({ length: 65 }, (_, i) => (i + 28) * 0.5)
@@ -366,7 +356,7 @@ export class BluelinkIndia extends Bluelink {
 
     const isCharging = status.evStatus.batteryCharge
 
-    const chargingPower = 11 // charging power is not reported in status, just fix it.
+    const chargingPower = 0 // charging power is not reported in status, just fix it.
 
     /* check for charge limits  --- load values from cache if available because when status
      is fetched from servers without a remote refresh, only AC % is included for some reason. So we 
@@ -418,7 +408,7 @@ export class BluelinkIndia extends Bluelink {
       locked: status.doorLock,
       climate: status.airCtrlOn,
       soc: status.evStatus.batteryStatus,
-      twelveSoc: 95, //see if this is reported and fix later
+      twelveSoc: 0, //see if this is reported and fix later
       odometer: newOdometer ? newOdometer : this.cache ? this.cache.status.odometer : 0,
       location: location ? location : this.cache ? this.cache.status.location : undefined,
       chargeLimit:
@@ -451,11 +441,15 @@ export class BluelinkIndia extends Bluelink {
 
       const respLoc = await this.getLocation(id) //for location.
 
+      const df = new DateFormatter()
+      df.dateFormat = 'yyyyMMddHHmmssZ'
+      const lastRemoteCheck = Number(df.date(String(resp.json.resMsg.time) + 'Z'))
+
       return this.returnCarStatus(
         respMaint,
         respLoc,
         resp.json.resMsg,
-        this.timeStringToTimestamp(resp.json.resMsg.time),
+        lastRemoteCheck, // this.timeStringToTimestamp(resp.json.resMsg.time),
       )
     }
 
@@ -620,7 +614,7 @@ export class BluelinkIndia extends Bluelink {
     // Set default values if not provided
     const temp = config.temp ?? 23
     const frontDefrost = config.frontDefrost ?? false
-    const heating = 0
+    const heating = this.getHeatingValue(config.rearDefrost, false)
 
     const payload = {
       action: 'start',
