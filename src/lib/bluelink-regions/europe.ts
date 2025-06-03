@@ -12,6 +12,7 @@ import {
 import { Config } from '../../config'
 import { Buffer } from 'buffer'
 import Url from 'url'
+import { isNotEmptyObject } from '../util'
 
 const b64decode = (str: string): string => Buffer.from(str, 'base64').toString('binary')
 // const b64encode = (str: string): string => Buffer.from(str, 'binary').toString('base64')
@@ -690,14 +691,15 @@ export class BluelinkEurope extends Bluelink {
       tempUnit: this.config.tempType,
       drvSeatLoc: this.distanceUnit === 'mi' ? 'R' : 'L',
       hvacTemp: config.temp,
-      ...(config.seatClimate && {
-        seatClimateInfo: {
-          drvSeatClimateState: config.seatClimate.driver,
-          psgSeatClimateState: config.seatClimate.passenger,
-          rlSeatClimateState: config.seatClimate.rearLeft,
-          rrSeatClimateState: config.seatClimate.rearRight,
-        },
-      }),
+      ...(config.seatClimateOption &&
+        isNotEmptyObject(config.seatClimateOption) && {
+          seatClimateInfo: {
+            drvSeatClimateState: config.seatClimateOption.driver,
+            psgSeatClimateState: config.seatClimateOption.passenger,
+            rlSeatClimateState: config.seatClimateOption.rearLeft,
+            rrSeatClimateState: config.seatClimateOption.rearRight,
+          },
+        }),
     })
   }
 
@@ -710,6 +712,7 @@ export class BluelinkEurope extends Bluelink {
   protected async climateStartStop(
     id: string,
     climateRequest: any,
+    retryWithNoSeat = false,
   ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     const resp = await this.request({
       url: `${this.apiDomain}/api/v2/spa/vehicles/${id}/ccs2/control/temperature`,
@@ -726,6 +729,12 @@ export class BluelinkEurope extends Bluelink {
       this.setLastCommandSent()
       const transactionId = resp.json.msgId // SID or msgId
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
+    } else {
+      // Kia/Hyundai US seems pretty particular with seat settings, hence if fail retry without them,
+      if (!retryWithNoSeat && climateRequest.seatClimateInfo) {
+        delete climateRequest.seatClimateInfo
+        return this.climateStartStop(id, climateRequest, true)
+      }
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)

@@ -3,6 +3,10 @@ import { Logger } from './logger'
 export const APP_LOG_FILE = `${Script.name().replaceAll(' ', '')}-app.log`
 let APP_LOGGER: Logger | undefined = undefined
 
+export function isNotEmptyObject(obj: Record<string, any>): boolean {
+  return obj && !(Object.keys(obj).length === 0 && obj.constructor === Object)
+}
+
 export function getAppLogger(): Logger {
   if (!APP_LOGGER) APP_LOGGER = new Logger(APP_LOG_FILE, 100)
   return APP_LOGGER

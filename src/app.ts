@@ -405,7 +405,7 @@ const pageIcons = connect(
                           enable: true,
                           ...(payload.seatClimate &&
                             payload.seatClimate !== 'Off' && {
-                              seatClimate: {
+                              seatClimateOption: {
                                 driver: ClimateSeatSetting[payload.seatClimate],
                                 passenger: ['ALL', 'FRONT'].includes(payload.seatClimateSettings)
                                   ? ClimateSeatSetting[payload.seatClimate]
@@ -427,7 +427,7 @@ const pageIcons = connect(
                           temp: opt === 'Warm' ? config.climateTempWarm : config.climateTempCold,
                           durationMinutes: 15,
                           ...(config.climateSeatLevel !== 'Off' && {
-                            seatClimate:
+                            seatClimateOption:
                               opt === 'Warm'
                                 ? {
                                     driver: ClimateSeatSettingWarm[config.climateSeatLevel],

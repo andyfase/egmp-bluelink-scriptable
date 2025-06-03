@@ -184,7 +184,7 @@ async function customClimate(bl: Bluelink, data: CustomClimateConfig): Promise<s
       enable: true,
       ...(data.seatClimate &&
         data.seatClimate !== 'Off' && {
-          seatClimate: {
+          seatClimateOption: {
             driver: ClimateSeatSetting[data.seatClimate],
             passenger: ['ALL', 'FRONT'].includes(data.seatClimateSettings) ? ClimateSeatSetting[data.seatClimate] : 0,
             rearLeft: ['ALL'].includes(data.seatClimateSettings) ? ClimateSeatSetting[data.seatClimate] : 0,

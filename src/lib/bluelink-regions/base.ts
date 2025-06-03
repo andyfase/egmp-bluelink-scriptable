@@ -104,7 +104,7 @@ export interface ClimateRequest {
   steering: boolean
   temp: number
   durationMinutes: number
-  seatClimate?: SeatClimate
+  seatClimateOption?: SeatClimate
 }
 
 export interface ChargeLimit {
