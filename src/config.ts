@@ -368,7 +368,7 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
       },
       climateSeatLevel: {
         type: 'dropdown',
-        label: 'Climate Seat Setting',
+        label: 'Seat Climate Level',
         isRequired: true,
         options: Object.keys(ClimateSeatSettingCool),
       },
@@ -652,13 +652,13 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
       },
       seatClimate: {
         type: 'dropdown',
-        label: 'Seat Climate Setting',
+        label: 'Seat Climate Level',
         isRequired: true,
         options: Object.keys(ClimateSeatSetting),
       },
       seatClimateSettings: {
         type: 'dropdown',
-        label: 'Seat Climate Settings',
+        label: 'Seat Climate "Seat Selection"',
         isRequired: true,
         options: ['DRIVER', 'FRONT', 'ALL'],
       },

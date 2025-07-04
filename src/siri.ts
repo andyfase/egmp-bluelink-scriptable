@@ -118,7 +118,7 @@ async function warm(bl: Bluelink): Promise<string> {
       temp: bl.getConfig().climateTempWarm,
       durationMinutes: 15,
       ...(config.climateSeatLevel !== 'Off' && {
-        seatClimate: {
+        seatClimateOption: {
           driver: ClimateSeatSettingWarm[config.climateSeatLevel],
           passenger: ClimateSeatSettingWarm[config.climateSeatLevel],
           rearLeft: ClimateSeatSettingWarm[config.climateSeatLevel],
@@ -144,7 +144,7 @@ async function cool(bl: Bluelink): Promise<string> {
       temp: config.climateTempCold,
       durationMinutes: 15,
       ...(config.climateSeatLevel !== 'Off' && {
-        seatClimate: {
+        seatClimateOption: {
           driver: ClimateSeatSettingCool[config.climateSeatLevel],
           passenger: ClimateSeatSettingCool[config.climateSeatLevel],
           rearLeft: ClimateSeatSettingCool[config.climateSeatLevel],
@@ -184,7 +184,7 @@ async function customClimate(bl: Bluelink, data: CustomClimateConfig): Promise<s
       enable: true,
       ...(data.seatClimate &&
         data.seatClimate !== 'Off' && {
-          seatClimate: {
+          seatClimateOption: {
             driver: ClimateSeatSetting[data.seatClimate],
             passenger: ['ALL', 'FRONT'].includes(data.seatClimateSettings) ? ClimateSeatSetting[data.seatClimate] : 0,
             rearLeft: ['ALL'].includes(data.seatClimateSettings) ? ClimateSeatSetting[data.seatClimate] : 0,

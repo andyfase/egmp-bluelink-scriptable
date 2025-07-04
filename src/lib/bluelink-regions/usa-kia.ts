@@ -10,6 +10,7 @@ import {
   Location,
 } from './base'
 import { Config } from '../../config'
+import { isNotEmptyObject } from '../util'
 
 const DEFAULT_API_DOMAIN = 'api.owners.kia.com'
 const LOGIN_EXPIRY = 24 * 60 * 60 * 1000
@@ -470,13 +471,14 @@ export class BluelinkUSAKia extends Bluelink {
             rearWindow: Number(config.rearDefrost),
             sideMirror: Number(config.rearDefrost),
           },
-          ...(config.seatClimate &&
+          ...(config.seatClimateOption &&
+            isNotEmptyObject(config.seatClimateOption) &&
             !retryWithNoSeat && {
               heatVentSeat: {
-                driverSeat: this.seatSettings(config.seatClimate.driver),
-                passengerSeat: this.seatSettings(config.seatClimate.passenger),
-                rearLeftSeat: this.seatSettings(config.seatClimate.rearLeft),
-                rearRightSeat: this.seatSettings(config.seatClimate.rearRight),
+                driverSeat: this.seatSettings(config.seatClimateOption.driver),
+                passengerSeat: this.seatSettings(config.seatClimateOption.passenger),
+                rearLeftSeat: this.seatSettings(config.seatClimateOption.rearLeft),
+                rearRightSeat: this.seatSettings(config.seatClimateOption.rearRight),
               },
             }),
         },
@@ -491,7 +493,7 @@ export class BluelinkUSAKia extends Bluelink {
       const transactionId = this.caseInsensitiveParamExtraction('Xid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(id, transactionId)
     } else {
-      // KIA US seems pretty particular with seat settings, hence if fail retry without them,
+      // Kia/Hyundai US seems pretty particular with seat settings, hence if fail retry without them,
       if (!retryWithNoSeat) return this.climateOn(id, config, true)
     }
 

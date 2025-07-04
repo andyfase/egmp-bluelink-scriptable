@@ -10,6 +10,7 @@ import {
   MAX_COMPLETION_POLLS,
 } from './base'
 import { Config } from '../../config'
+import { isNotEmptyObject } from '../util'
 
 const DEFAULT_API_DOMAIN = 'mybluelink.ca'
 const API_DOMAINS: Record<string, string> = {
@@ -485,14 +486,15 @@ export class BluelinkCanada extends Bluelink {
           },
           igniOnDuration: config.durationMinutes,
           heating1: this.getHeatingValue(config.rearDefrost, config.steering),
-          ...(config.seatClimate && {
-            seatHeaterVentCMD: {
-              drvSeatOptCmd: config.seatClimate.driver,
-              astSeatOptCmd: config.seatClimate.passenger,
-              rlSeatOptCmd: config.seatClimate.rearLeft,
-              rrSeatOptCmd: config.seatClimate.rearRight,
-            },
-          }),
+          ...(config.seatClimateOption &&
+            isNotEmptyObject(config.seatClimateOption) && {
+              seatHeaterVentCMD: {
+                drvSeatOptCmd: config.seatClimateOption.driver,
+                astSeatOptCmd: config.seatClimateOption.passenger,
+                rlSeatOptCmd: config.seatClimateOption.rearLeft,
+                rrSeatOptCmd: config.seatClimateOption.rearRight,
+              },
+            }),
         },
       }),
       headers: {
