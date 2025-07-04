@@ -345,7 +345,7 @@ const pageIcons = connect(
                   bl: bl,
                   actions: updatingActions,
                   actionKey: 'charge',
-                  updatingText: opt === 'Charge' ? 'Starting charging ...' : 'Stoping charging ...',
+                  updatingText: opt === 'Charge' ? 'Starting charging ...' : 'Stopping charging ...',
                   successText: opt === 'Charge' ? 'Car charging started!' : 'Car charging stopped!',
                   failureText: `Failed to ${opt === 'Charge' ? 'start charging' : 'stop charging'} car!!!`,
                   successCallback: (data) => {

@@ -442,8 +442,8 @@ export class BluelinkIndia extends Bluelink {
       const respLoc = await this.getLocation(id) //for location.
 
       const df = new DateFormatter()
-      df.dateFormat = 'yyyyMMddHHmmssZ'
-      const lastRemoteCheck = Number(df.date(String(resp.json.resMsg.time) + 'Z'))
+      df.dateFormat = 'yyyyMMddHHmmsszzz'
+      const lastRemoteCheck = Number(df.date(String(resp.json.resMsg.time) + 'IST'))
 
       return this.returnCarStatus(
         respMaint,
