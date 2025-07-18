@@ -36,7 +36,7 @@ export class Version {
     const latest = Math.floor(Version.versionToNumber(latestRelease.version) / 10)
     const current = Math.floor(Version.versionToNumber(this.currentVersion) / 10)
 
-    return latest - current >= 1
+    return latest > current
   }
 
   public async getReleaseVersion(): Promise<string> {
