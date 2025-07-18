@@ -28,6 +28,7 @@ export class BluelinkCanada extends Bluelink {
     this.apiDomain = `https://${this.apiHost}/tods/api/`
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
+      deviceid: UUID.string(), // native scriptable UUID method
       from: 'SPA',
       client_id: 'HATAHSPACA0232141ED9722C67715A0B',
       client_secret: 'CLISCR01AHSPA',
