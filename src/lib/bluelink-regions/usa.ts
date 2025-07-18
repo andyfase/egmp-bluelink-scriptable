@@ -454,7 +454,7 @@ export class BluelinkUSA extends Bluelink {
     _id: string,
     config: ChargeLimit,
   ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
-    const api = 'evc/charge/targetsoc/set'
+    const api = 'ac/v2/evc/charge/targetsoc/set'
     const resp = await this.request({
       url: this.apiDomain + api,
       method: 'POST',
