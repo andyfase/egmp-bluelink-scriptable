@@ -209,16 +209,17 @@ export class Bluelink {
     }
   }
 
-  protected getStamp(appId: string, cfb: string): string {
+  protected getStamp(appId: string, cfbB64: string): string {
     const rawData = `${appId}:${Math.floor(Date.now() / 1000)}`
     const rawDataBytes = Buffer.from(rawData, 'utf-8')
-    const rawCfbBytes = Buffer.from(cfb, 'utf-8')
-    const result = new Uint8Array(rawDataBytes.length)
+    const cfbBytes = Buffer.from(cfbB64, 'base64')
+    const minLen = Math.min(rawDataBytes.length, cfbBytes.length)
+    const result = Buffer.alloc(minLen)
 
-    for (const [i, byte] of rawDataBytes.entries()) {
-      if (i <= rawCfbBytes.length) result[i] = byte ^ rawCfbBytes[i]! //
+    for (let i = 0; i < minLen; i++) {
+      result[i] = rawDataBytes[i]! ^ cfbBytes[i]!
     }
-    return Buffer.from(result).toString('base64')
+    return result.toString('base64')
   }
 
   public getLogger(): Logger {
