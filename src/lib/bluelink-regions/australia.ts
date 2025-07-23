@@ -10,11 +10,8 @@ import {
   MAX_COMPLETION_POLLS,
 } from './base'
 import { Config } from '../../config'
-import { Buffer } from 'buffer'
 import Url from 'url'
-
-const b64decode = (str: string): string => Buffer.from(str, 'base64').toString('binary')
-// const b64encode = (str: string): string => Buffer.from(str, 'binary').toString('base64')
+import { isNotEmptyObject } from '../util'
 
 interface ControlToken {
   expiry: number
@@ -45,14 +42,14 @@ const API_CONFIG: Record<string, APIConfig> = {
     pushType: 'GCM',
   },
   kia: {
-    apiDomain: 'prd.eu-ccapi.kia.com',
-    apiPort: 8080,
-    ccspServiceId: 'fdc85c00-0a2f-4c64-bcb4-2cfb1500730a',
-    appId: 'a2b8469b-30a3-4361-8e13-6fceea8fbe74',
-    authCfb: 'wLTVxwidmH8CfJYBWSnHD6E0huk0ozdiuygB4hLkM5XCgzAL1Dk5sE36d/bx5PFMbZs=',
+    apiDomain: 'au-apigw.ccs.kia.com.au',
+    apiPort: 8082,
+    ccspServiceId: '8acb778a-b918-4a8d-8624-73a0beb64289',
+    appId: '4ad4dcde-be23-48a8-bc1c-91b94f5c06f8',
+    authCfb: 'IDbMgWBXgic4MAyMgf5PFFRAdGX5O3IyC3uvN3scCs0gDpTFDuyvBorlAH9JMM2/wMc=',
     clientId: 'fdc85c00-0a2f-4c64-bcb4-2cfb1500730a',
     authBasic:
-      'Basic ODU1YzcyZGYtZGZkNy00MjMwLWFiMDMtNjdjYmY5MDJiYjFjOmU2ZmJ3SE0zMllOYmhRbDBwdmlhUHAzcmY0dDNTNms5MWVjZUEzTUpMZGJkVGhDTw==',
+      'Basic OGFjYjc3OGEtYjkxOC00YThkLTg2MjQtNzNhMGJlYjY0Mjg5OjdTY01NbTZmRVlYZGlFUEN4YVBhUW1nZVlkbFVyZndvaDRBZlhHT3pZSVMyQ3U5VA==',
     pushType: 'GCM',
   },
 }
@@ -617,16 +614,17 @@ export class BluelinkAustralia extends Bluelink {
       hvacTempType: 1,
       heating1: this.getHeatingValue(config.rearDefrost, config.steering),
       tempUnit: this.config.tempType,
-      drvSeatLoc: this.distanceUnit === 'mi' ? 'R' : 'L',
+      drvSeatLoc: 'R', // Australia uses RHD cars
       hvacTemp: config.temp,
-      ...(config.seatClimateOption && {
-        seatClimateInfo: {
-          drvSeatClimateState: config.seatClimateOption.driver,
-          psgSeatClimateState: config.seatClimateOption.passenger,
-          rlSeatClimateState: config.seatClimateOption.rearLeft,
-          rrSeatClimateState: config.seatClimateOption.rearRight,
-        },
-      }),
+      ...(config.seatClimateOption &&
+        isNotEmptyObject(config.seatClimateOption) && {
+          seatClimateInfo: {
+            drvSeatClimateState: config.seatClimateOption.driver,
+            psgSeatClimateState: config.seatClimateOption.passenger,
+            rlSeatClimateState: config.seatClimateOption.rearLeft,
+            rrSeatClimateState: config.seatClimateOption.rearRight,
+          },
+        }),
     })
   }
 

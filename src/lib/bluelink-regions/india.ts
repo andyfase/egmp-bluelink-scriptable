@@ -10,11 +10,7 @@ import {
   MAX_COMPLETION_POLLS,
 } from './base'
 import { Config } from '../../config'
-import { Buffer } from 'buffer'
 import Url from 'url'
-
-const b64decode = (str: string): string => Buffer.from(str, 'base64').toString('binary')
-// const b64encode = (str: string): string => Buffer.from(str, 'binary').toString('base64')
 
 interface ControlToken {
   expiry: number
