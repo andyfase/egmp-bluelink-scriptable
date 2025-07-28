@@ -119,6 +119,7 @@ export interface Location {
 
 const carImageHttpURL = 'https://bluelink.andyfase.com/app-assets/car-images/'
 const carImageMap: Record<string, string> = {
+  ioniq9: 'ioniq9',
   ioniq5n: 'ioniq5n',
   ioniq5: 'ioniq5',
   ioniq6: 'ioniq6',
