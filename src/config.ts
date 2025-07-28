@@ -107,7 +107,7 @@ export interface FlattenedConfig {
 }
 
 // const SUPPORTED_REGIONS = ['canada']
-const SUPPORTED_REGIONS = ['canada', 'usa', 'europe', 'india']
+const SUPPORTED_REGIONS = ['canada', 'usa', 'europe', 'india', 'australia']
 const SUPPORTED_MANUFACTURERS = ['Hyundai', 'Kia']
 const CAR_COLORS = ['White', 'Black', 'Grey', 'Matte-Grey', 'Metallic-Grey', 'Silver', 'Red', 'Orange', 'Blue', 'Green']
 const DEFAULT_TEMPS = {

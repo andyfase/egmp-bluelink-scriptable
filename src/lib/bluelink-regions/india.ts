@@ -10,11 +10,7 @@ import {
   MAX_COMPLETION_POLLS,
 } from './base'
 import { Config } from '../../config'
-import { Buffer } from 'buffer'
 import Url from 'url'
-
-const b64decode = (str: string): string => Buffer.from(str, 'base64').toString('binary')
-// const b64encode = (str: string): string => Buffer.from(str, 'binary').toString('base64')
 
 interface ControlToken {
   expiry: number
@@ -41,7 +37,7 @@ const API_CONFIG: Record<string, APIConfig> = {
     apiPort: 8080,
     ccspServiceId: 'e5b3f6d0-7f83-43c9-aff3-a254db7af368',
     appId: '5a27df80-4ca1-4154-8c09-6f4029d91cf7',
-    authCfb: b64decode('RFtoRq/vDXJmRndoZaZQyfOot7OrIqGVFj96iY2WL3yyH5Z/pUvlUhqmCxD2t+D65SQ='),
+    authCfb: 'RFtoRq/vDXJmRndoZaZQyfOot7OrIqGVFj96iY2WL3yyH5Z/pUvlUhqmCxD2t+D65SQ=',
     authBasic:
       'Basic ZTViM2Y2ZDAtN2Y4My00M2M5LWFmZjMtYTI1NGRiN2FmMzY4OjVKRk9DcjZDMjRPZk96bERxWnA3RXdxcmtMMFd3MDRVYXhjRGlFNlVkM3FJNVNFNA==',
     authHost: 'prd.in-ccapi.hyundai.connected-car.io',
