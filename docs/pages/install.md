@@ -35,7 +35,7 @@ Step 4: Open the scriptable app and choose "egmp-bluelink". This launches the ap
 Step 5: Once you enter your credentials and press "Save" the app will close. Click on "egmp-bluelink" again and the app will open and be available for use.
 {: .fs-5 .fw-300 }
 
-Step 6: Create a new widget on your homescreen or lockscrren . [See the apple guide if you need help](https://support.apple.com/en-ca/118610). The [Widget Page](./widgets.md) shows the available widgets to choose from 
+Step 6: Create a new widget on your homescreen or lockscreen . [See the apple guide if you need help](https://support.apple.com/en-ca/118610). The [Widget Page](./widgets.md) shows the available widgets to choose from 
 {: .fs-5 .fw-300 }
 
 When configuring the widget, make sure you:
@@ -50,7 +50,7 @@ When configuring the widget, make sure you:
 Step 7: (Optional but Recommended) Continue to install the [Siri IOS Shortcuts](./siri.md) and the [Control Center controls](./control-center.md)
 {: .fs-5 .fw-300 }
 
-Thats it your done. Enjoy bluelink-scriptable!
+Thats it you're done. Enjoy bluelink-scriptable!
 {: .fs-5 .fw-300 }
 
 ----
