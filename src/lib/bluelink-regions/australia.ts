@@ -154,7 +154,7 @@ export class BluelinkAustralia extends Bluelink {
     if (!this.requestResponseValid(respLogin.resp, respLogin.json).valid) {
       const error = `Failed to login ${JSON.stringify(respLogin.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
+      return undefined // username and passwword likely wrong
     }
 
     const loginRedirectUrl = respLogin.json.redirectUrl
