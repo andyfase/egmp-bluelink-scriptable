@@ -466,7 +466,7 @@ export class BluelinkCanada extends Bluelink {
     const configTempIndex = this.config.tempType
     const tempIndex = this.tempLookup[configTempIndex].indexOf(config.temp)
 
-    if (!tempIndex || tempIndex == -1) {
+    if (tempIndex === undefined || tempIndex == -1) {
       throw Error(`Failed to convert temp ${config.temp} in climateOn command`)
     }
 
