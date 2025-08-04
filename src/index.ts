@@ -28,7 +28,7 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
     if (bl && bl.loginFailed()) {
       // check for car option selection
       const carOptions = bl.getCarOptions()
-      if (carOptions) {
+      if (carOptions.length > 0) {
         const carOptionsNames = carOptions.map((car) => ({
           name: car.nickName.length > 0 ? `${car.nickName} - ${car.modelName}` : `${car.modelYear} ${car.modelName}`,
           vin: car.vin,
@@ -46,13 +46,22 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
             },
           },
         )
+      } else {
+        await confirm('Login Failed - please re-check your credentials', {
+          confirmButtonTitle: 'Ok',
+          includeCancel: false,
+        })
+        await loadConfigScreen()
+        return
       }
-    } else {
-      await confirm('Login Failed - please re-check your credentials', {
+    }
+
+    if (!bl) {
+      logger.log('Bluelink instance is undefined')
+      await confirm('Something went wrong initalizing Bluelink - try again later', {
         confirmButtonTitle: 'Ok',
         includeCancel: false,
       })
-      await loadConfigScreen()
       return
     }
   }
