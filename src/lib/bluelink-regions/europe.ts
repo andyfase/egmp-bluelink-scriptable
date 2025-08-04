@@ -21,13 +21,11 @@ interface ControlToken {
 interface APIConfig {
   apiDomain: string
   apiPort: number
-  ccspServiceId: string
   appId: string
   authCfb: string
   authBasic: string
   authHost: string
   clientId: string
-  authClientID: string
   pushType: string
 }
 
@@ -35,26 +33,22 @@ const API_CONFIG: Record<string, APIConfig> = {
   hyundai: {
     apiDomain: 'prd.eu-ccapi.hyundai.com',
     apiPort: 8080,
-    ccspServiceId: '6d477c38-3ca4-4cf3-9557-2a1929a94654',
     appId: '014d2225-8495-4735-812d-2616334fd15d',
     authCfb: 'RFtoRq/vDXJmRndoZaZQyfOot7OrIqGVFj96iY2WL3yyH5Z/pUvlUhqmCxD2t+D65SQ=',
     authBasic:
       'Basic NmQ0NzdjMzgtM2NhNC00Y2YzLTk1NTctMmExOTI5YTk0NjU0OktVeTQ5WHhQekxwTHVvSzB4aEJDNzdXNlZYaG10UVI5aVFobUlGampvWTRJcHhzVg==',
     authHost: 'idpconnect-eu.hyundai.com',
     clientId: '6d477c38-3ca4-4cf3-9557-2a1929a94654',
-    authClientID: '6d477c38-3ca4-4cf3-9557-2a1929a94654',
     pushType: 'GCM',
   },
   kia: {
     apiDomain: 'prd.eu-ccapi.kia.com',
     apiPort: 8080,
-    ccspServiceId: 'fdc85c00-0a2f-4c64-bcb4-2cfb1500730a',
     appId: 'a2b8469b-30a3-4361-8e13-6fceea8fbe74',
     authCfb: 'wLTVxwidmH8CfJYBWSnHD6E0huk0ozdiuygB4hLkM5XCgzAL1Dk5sE36d/bx5PFMbZs=',
     authBasic: 'Basic ZmRjODVjMDAtMGEyZi00YzY0LWJjYjQtMmNmYjE1MDA3MzBhOnNlY3JldA==',
     authHost: 'idpconnect-eu.kia.com',
     clientId: 'fdc85c00-0a2f-4c64-bcb4-2cfb1500730a',
-    authClientID: 'fdc85c00-0a2f-4c64-bcb4-2cfb1500730a',
     pushType: 'APNS',
   },
 }
@@ -78,7 +72,7 @@ export class BluelinkEurope extends Bluelink {
     this.additionalHeaders = {
       'User-Agent': 'okhttp/3.14.9',
       offset: this.getTimeZone().slice(0, 3),
-      'ccsp-service-id': this.apiConfig.ccspServiceId,
+      'ccsp-service-id': this.apiConfig.clientId,
       'ccsp-application-id': this.apiConfig.appId,
     }
     this.authIdHeader = 'ccsp-device-id'
@@ -115,6 +109,7 @@ export class BluelinkEurope extends Bluelink {
   }
 
   protected async login(): Promise<BluelinkTokens | undefined> {
+    // reset session - get initial cookies
     const respReset = await this.request({
       url: `${this.apiDomain}/api/v1/user/oauth2/authorize?response_type=code&state=test&client_id=${this.apiConfig.clientId}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect&lang=${this.lang}`,
       noAuth: true,
@@ -127,45 +122,10 @@ export class BluelinkEurope extends Bluelink {
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
-    // user ID and Service ID
-    const respIntegration = await this.request({
-      url: `${this.apiDomain}/api/v1/user/integrationinfo`,
-      noAuth: true,
-      validResponseFunction: this.requestResponseValid,
-    })
 
-    if (!this.requestResponseValid(respIntegration.resp, respIntegration.json).valid) {
-      const error = `Failed to reset session ${JSON.stringify(respIntegration.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
-    const userId = respIntegration.json.userId
-    const serviceId = respIntegration.json.serviceId
-    if (!userId || !serviceId) {
-      const error = `Failed to get userId or serviceId ${JSON.stringify(respIntegration.resp.json)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
-
-    // set language
-    const respLang = await this.request({
-      url: `${this.apiDomain}/api/v1/user/language`,
-      noAuth: true,
-      notJSON: true,
-      data: JSON.stringify({ language: this.lang }),
-      validResponseFunction: this.requestResponseValid,
-    })
-
-    if (!this.requestResponseValid(respLang.resp, respLang.json).valid) {
-      const error = `Failed to set language ${JSON.stringify(respLang.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
-
-    // start login - this could auto redirect and auto login based on previous state
-    // or could send back form to process actual login - so need to handle both
+    // start login - new flow not involving forms anymore
     const respLoginStart = await this.request({
-      url: `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?client_id=${this.apiConfig.authClientID}&response_type=code&&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect&lang=${this.lang}&state=ccsp`,
+      url: `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?client_id=${this.apiConfig.clientId}&response_type=code&&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect&lang=${this.lang}&state=ccsp`,
       noAuth: true,
       notJSON: true,
       validResponseFunction: this.requestResponseValid,
@@ -177,8 +137,6 @@ export class BluelinkEurope extends Bluelink {
       throw Error(error)
     }
 
-    if (this.config.debugLogging) this.logger.log(`login form response: ${JSON.stringify(respLoginStart.resp)}`)
-
     // extract connector_session_key from URL
     const connectorURL = Url.parse(decodeURI(respLoginStart.resp.url), true).query
     const nextUri = connectorURL.next_uri
@@ -188,8 +146,6 @@ export class BluelinkEurope extends Bluelink {
       throw Error(error)
     }
     const connectorParams = Url.parse(decodeURI(nextUri), true).query
-
-    this.logger.log(`connectorParams: ${JSON.stringify(connectorParams)}`)
     const connectorSessionKey = connectorParams.connector_session_key
     if (!connectorSessionKey) {
       const error = `Failed to extract connector_session_key ${JSON.stringify(respLoginStart.resp)}`
@@ -198,8 +154,6 @@ export class BluelinkEurope extends Bluelink {
     }
 
     // login
-    // const loginData = `username=${encodeURIComponent(this.config.auth.username)}&password=${encodeURIComponent(this.config.auth.password)}&credentialId=&rememberMe=false`
-    // const loginData = `client_id=${this.apiConfig.clientId}&encryptedPassword=false&connector_session_key=${connectorSessionKey}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`
     const respLogin = await this.request({
       url: `https://${this.apiConfig.authHost}/auth/account/signin`,
       noAuth: true,
@@ -212,7 +166,7 @@ export class BluelinkEurope extends Bluelink {
         'orgHmgSid=',
         `username=${encodeURIComponent(this.config.auth.username)}`,
         `password=${encodeURIComponent(this.config.auth.password)}`,
-        `redirect_uri=https://${this.apiConfig.apiDomain}:8080/api/v1/user/oauth2/redirect`,
+        `redirect_uri=https://${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}/api/v1/user/oauth2/redirect`,
         'state=ccsp',
         'remember_me=false',
         `connector_session_key=${connectorSessionKey}`,
@@ -247,7 +201,7 @@ export class BluelinkEurope extends Bluelink {
       data: [
         'grant_type=authorization_code',
         `code=${code}`,
-        `redirect_uri=https://${this.apiConfig.apiDomain}:8080/api/v1/user/oauth2/redirect`,
+        `redirect_uri=https://${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}/api/v1/user/oauth2/redirect`,
         `client_id=${this.apiConfig.clientId}`,
         'client_secret=secret',
       ].join('&'),
@@ -275,12 +229,16 @@ export class BluelinkEurope extends Bluelink {
       if (this.config.debugLogging) this.logger.log('No refresh token - cannot refresh')
       return undefined
     }
-    const refreshData = `client_id=${this.apiConfig.clientId}&grant_type=refresh_token&refresh_token=${this.cache.token.refreshToken}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`
 
     if (this.config.debugLogging) this.logger.log('Refreshing tokens')
     const resp = await this.request({
       url: `${this.apiDomain}/api/v1/user/oauth2/token`,
-      data: refreshData,
+      data: [
+        `client_id=${this.apiConfig.clientId}`,
+        'grant_type=refresh_token',
+        `refresh_token=${this.cache.token.refreshToken}`,
+        `redirect_uri=${this.apiDomain}:${this.apiConfig.apiPort}/api/v1/user/oauth2/redirect`,
+      ].join('&'),
       noAuth: true,
       validResponseFunction: this.requestResponseValid,
       headers: {
