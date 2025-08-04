@@ -142,7 +142,7 @@ export class BluelinkIndia extends Bluelink {
     if (!this.requestResponseValid(respSignin.resp, respSignin.json).valid) {
       const error = `Failed to sign in ${JSON.stringify(respSignin.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
+      return undefined // username and passwword likely wrong
     }
 
     // Extract authorization code from redirect URL
