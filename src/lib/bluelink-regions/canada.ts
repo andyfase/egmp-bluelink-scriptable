@@ -459,7 +459,11 @@ export class BluelinkCanada extends Bluelink {
     throw Error(error)
   }
 
-  protected async climateOn(id: string, config: ClimateRequest): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+  protected async climateOn(
+    id: string,
+    config: ClimateRequest,
+    newPayloadType = false,
+  ): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
     if (!this.tempLookup) {
       throw Error(`Mis-Configured sub-class - no temp lookup defined`)
     }
@@ -470,6 +474,10 @@ export class BluelinkCanada extends Bluelink {
       throw Error(`Failed to convert temp ${config.temp} in climateOn command`)
     }
 
+    // More modern Canaidan vehicles use a different payload attribute
+    // Kia EV9 uses remoteControl instead of hvacInfo
+    // rather than whitelist to detect this we just retry on failure with the new key
+    // in the future we can default to the new payload key
     const authCode = await this.getAuthCode()
     const api = 'evc/rfon'
     const resp = await this.request({
@@ -477,7 +485,7 @@ export class BluelinkCanada extends Bluelink {
       method: 'POST',
       data: JSON.stringify({
         pin: this.config.auth.pin,
-        hvacInfo: {
+        [newPayloadType ? 'remoteControl' : 'hvacInfo']: {
           airCtrl: 1,
           defrost: config.frontDefrost,
           airTemp: {
@@ -511,6 +519,9 @@ export class BluelinkCanada extends Bluelink {
     }
     const error = `Failed to send climateOff command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
+
+    // retry with new payload type if needed
+    if (!newPayloadType) return await this.climateOn(id, config, true)
     throw Error(error)
   }
 
