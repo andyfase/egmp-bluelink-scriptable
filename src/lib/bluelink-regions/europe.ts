@@ -25,6 +25,8 @@ interface APIConfig {
   authCfb: string
   authBasic: string
   authHost: string
+  authClientID?: string
+  authParam: string
   clientId: string
   pushType: string
 }
@@ -37,8 +39,10 @@ const API_CONFIG: Record<string, APIConfig> = {
     authCfb: 'RFtoRq/vDXJmRndoZaZQyfOot7OrIqGVFj96iY2WL3yyH5Z/pUvlUhqmCxD2t+D65SQ=',
     authBasic:
       'Basic NmQ0NzdjMzgtM2NhNC00Y2YzLTk1NTctMmExOTI5YTk0NjU0OktVeTQ5WHhQekxwTHVvSzB4aEJDNzdXNlZYaG10UVI5aVFobUlGampvWTRJcHhzVg==',
-    authHost: 'idpconnect-eu.hyundai.com',
+    authHost: 'eu-account.hyundai.com',
     clientId: '6d477c38-3ca4-4cf3-9557-2a1929a94654',
+    authParam: 'euhyundaiidm',
+    authClientID: '64621b96-0f0d-11ec-82a8-0242ac130003',
     pushType: 'GCM',
   },
   kia: {
@@ -49,6 +53,8 @@ const API_CONFIG: Record<string, APIConfig> = {
     authBasic: 'Basic ZmRjODVjMDAtMGEyZi00YzY0LWJjYjQtMmNmYjE1MDA3MzBhOnNlY3JldA==',
     authHost: 'idpconnect-eu.kia.com',
     clientId: 'fdc85c00-0a2f-4c64-bcb4-2cfb1500730a',
+    authParam: 'eukiaidm',
+    authClientID: 'fdc85c00-0a2f-4c64-bcb4-2cfb1500730a',
     pushType: 'APNS',
   },
 }
@@ -123,6 +129,152 @@ export class BluelinkEurope extends Bluelink {
       throw Error(error)
     }
 
+    return this.config.manufacturer === 'kia' ? await this.KiaLogin() : await this.HyundaiLogin()
+  }
+
+  protected async HyundaiLogin(): Promise<BluelinkTokens | undefined> {
+    // user ID and Service ID
+    const respIntegration = await this.request({
+      url: `${this.apiDomain}/api/v1/user/integrationinfo`,
+      noAuth: true,
+      validResponseFunction: this.requestResponseValid,
+    })
+
+    if (!this.requestResponseValid(respIntegration.resp, respIntegration.json).valid) {
+      const error = `Failed to reset session ${JSON.stringify(respIntegration.resp)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+    const userId = respIntegration.json.userId
+    const serviceId = respIntegration.json.serviceId
+    if (!userId || !serviceId) {
+      const error = `Failed to get userId or serviceId ${JSON.stringify(respIntegration.resp.json)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+
+    // start login - this could auto redirect and auto login based on previous state
+    // or could send back form to process actual login - so need to handle both
+    const respLoginForm = await this.request({
+      url: `https://${this.apiConfig.authHost}/auth/realms/${this.apiConfig.authParam}/protocol/openid-connect/auth?client_id=${this.apiConfig.authClientID}&scope=openid%20profile%20email%20phone&response_type=code&hkid_session_reset=true&redirect_uri=${this.apiDomain}/api/v1/user/integration/redirect/login&ui_locales=${this.lang}&state=${serviceId}:${userId}`,
+      noAuth: true,
+      notJSON: true,
+      validResponseFunction: this.requestResponseValid,
+    })
+
+    if (!this.requestResponseValid(respLoginForm.resp, respLoginForm.json).valid) {
+      const error = `Failed to get login form ${JSON.stringify(respLoginForm.resp)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+
+    if (!respLoginForm.resp.url.startsWith(this.apiDomain)) {
+      // we have not been redirected - so need to login
+      // Form HTML looks like
+      // <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="https://eu-account.hyundai.com/auth/realms/euhyundaiidm/login-actions/authenticate?session_code=<session_code>&amp;execution=<execution_id>&amp;client_id=<client_id>&amp;tab_id=<tab_id>" method="post">
+      // extract entire action URL - confirm its the right host - then extract session code and execution ID
+      const loginURL = respLoginForm.json.match(/action="([^"]+)"/)
+      if (!loginURL || loginURL.length < 2 || !loginURL[1].startsWith(`https://${this.apiConfig.authHost}`)) {
+        const error = `Failed to extract login URL ${JSON.stringify(respLoginForm.resp)}`
+        if (this.config.debugLogging) this.logger.log(error)
+        throw Error(error)
+      }
+
+      const params = Url.parse(loginURL[1].replaceAll('&amp;', '&'), true).query
+      const sessionCode = params.session_code
+      const executionId = params.execution
+      const tabId = params.tab_id
+      if (!sessionCode || !executionId || !tabId) {
+        const error = `Failed to extract session code or execution ID ${JSON.stringify(params)}`
+        if (this.config.debugLogging) this.logger.log(error)
+        throw Error(error)
+      }
+
+      // now actually login
+      const loginData = `username=${encodeURIComponent(this.config.auth.username)}&password=${encodeURIComponent(this.config.auth.password)}&credentialId=&rememberMe=on`
+      const respLogin = await this.request({
+        url: `https://${this.apiConfig.authHost}/auth/realms/${this.apiConfig.authParam}/login-actions/authenticate?session_code=${sessionCode}&execution=${executionId}&client_id=${this.apiConfig.authClientID}&tab_id=${tabId}`,
+        noAuth: true,
+        notJSON: true,
+        validResponseFunction: this.requestResponseValid,
+        method: 'POST',
+        data: loginData,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      })
+
+      if (!this.requestResponseValid(respLogin.resp, respLogin.json).valid) {
+        const error = `Failed to login ${JSON.stringify(respLogin.resp)}`
+        if (this.config.debugLogging) this.logger.log(error)
+        throw Error(error)
+      }
+
+      // at this point we should have been rediected to the API domain after completing login - if not its a error - likely password issues
+      if (!respLogin.resp.url.startsWith(this.apiDomain)) {
+        const error = `Login did not redirect - login error: ${JSON.stringify(respLogin.resp)} data: ${respLogin.json}`
+        if (this.config.debugLogging) this.logger.log(error)
+        return undefined
+      }
+    } // end of optional login form
+
+    // silent login - which returns Auth Code needed for final call to get tokens
+    const respSilent = await this.request({
+      url: `${this.apiDomain}/api/v1/user/silentsignin`,
+      noAuth: true,
+      data: JSON.stringify({ intUserId: '' }),
+      validResponseFunction: this.requestResponseValid,
+    })
+
+    if (!this.requestResponseValid(respSilent.resp, respSilent.json).valid) {
+      const error = `Failed to perform silent login ${JSON.stringify(respSilent.resp)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+
+    const redirectUrl = respSilent.json.redirectUrl
+    if (!redirectUrl) {
+      const error = `Failed to get redirectUrl ${JSON.stringify(respSilent.resp.json)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+    const params = Url.parse(redirectUrl, true).query
+    const authCode = params.code
+    if (!authCode) {
+      const error = `Failed to extract auth code ${JSON.stringify(respSilent.resp)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+
+    // final login to get tokens
+    const tokenData = `client_id=${this.apiConfig.clientId}&grant_type=authorization_code&code=${authCode}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`
+    const respTokens = await this.request({
+      url: `${this.apiDomain}/api/v1/user/oauth2/token`,
+      noAuth: true,
+      validResponseFunction: this.requestResponseValid,
+      data: tokenData,
+      headers: {
+        Authorization: this.apiConfig.authBasic,
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    })
+
+    if (!this.requestResponseValid(respTokens.resp, respTokens.json).valid) {
+      const error = `Failed to login ${JSON.stringify(respTokens.resp)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+
+    return {
+      accessToken: `Bearer ${respTokens.json.access_token}`,
+      refreshToken: respTokens.json.refresh_token,
+      expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expires_in), // we only get a expireIn not a actual date
+      authId: await this.getDeviceId(),
+    }
+  }
+
+  protected async KiaLogin(): Promise<BluelinkTokens | undefined> {
     // start login - new flow not involving forms anymore
     const respLoginStart = await this.request({
       url: `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?client_id=${this.apiConfig.clientId}&response_type=code&&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect&lang=${this.lang}&state=ccsp`,
