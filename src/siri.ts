@@ -78,6 +78,11 @@ async function getStatus(bl: Bluelink): Promise<string> {
   return response
 }
 
+async function getStatusData(bl: Bluelink): Promise<string> {
+  const status = await bl.getStatus(false, true)
+  return JSON.stringify(status, null, 2)
+}
+
 async function waitForCommandSent(
   bl: Bluelink,
   sleepTime = 200,
@@ -271,6 +276,10 @@ const commandMap: commandDetection[] = [
   {
     words: ['status', 'remote'],
     function: getRemoteStatus,
+  },
+  {
+    words: ['data'],
+    function: getStatusData,
   },
   {
     words: ['status'],
