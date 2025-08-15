@@ -4,6 +4,7 @@ import {
   createMediumWidget,
   createHomeScreenCircleWidget,
   createHomeScreenRectangleWidget,
+  createErrorWidget,
 } from 'widget'
 import { createApp } from 'app'
 import { getAppLogger } from './lib/util'
@@ -11,6 +12,7 @@ import { processSiriRequest } from 'siri'
 import { getConfig, loadConfigScreen, configExists, setConfig } from 'config'
 import { confirm, quickOptions } from './lib/scriptable-utils'
 ;(async () => {
+  // load config on first run if not configured
   if (!configExists() && (config.runsWithSiri || config.runsInWidget)) return
   if (!configExists()) {
     await loadConfigScreen()
@@ -19,8 +21,33 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
 
   const logger = getAppLogger()
   const blConfig = getConfig()
-  const bl = await initRegionalBluelink(blConfig)
+  let bl = undefined
 
+  // Init Bluelink - Deal with region exceptions if needed
+  try {
+    bl = await initRegionalBluelink(blConfig)
+  } catch (e) {
+    const error = e instanceof Error ? e.message : e
+    const errorMessage = `Error Initalizing Bluelink: ${error}`
+    logger.log(errorMessage)
+    if (!config.runsWithSiri && !config.runsInWidget) {
+      await confirm(errorMessage, {
+        confirmButtonTitle: 'Ok',
+        includeCancel: false,
+      })
+      await loadConfigScreen()
+    } else {
+      if (config.runsInWidget) {
+        Script.setWidget(createErrorWidget(errorMessage))
+      } else {
+        Script.setShortcutOutput(errorMessage)
+      }
+      Script.complete()
+    }
+    return
+  }
+
+  // deal with login failure, multiple car selection - main app only
   if (!bl || bl.loginFailed()) {
     if (config.runsWithSiri || config.runsInWidget) {
       return
@@ -66,6 +93,7 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
     }
   }
 
+  // actual app / widget / siri response handiling
   if (config.runsInWidget) {
     let widget = undefined
     switch (config.widgetFamily) {

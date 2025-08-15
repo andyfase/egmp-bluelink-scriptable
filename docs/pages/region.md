@@ -29,7 +29,7 @@ If you can confirm support for any un-tested regions (Noted via question-mark ic
 </thead>
 <tbody>
 <tr>
-<td rowspan=4 class="styled-table-col">Hyundai</td>
+<td rowspan=5 class="styled-table-col">Hyundai</td>
 <td>Canada</td>
 <td><img src="../images/checkmark.png" width="30"/></td>
 </tr>
@@ -41,12 +41,20 @@ If you can confirm support for any un-tested regions (Noted via question-mark ic
 <td>Europe</td>
 <td><img src="../images/checkmark.png" width="30"/></td>
 </tr>
-<tr  class="styled-table-row">
+<tr>
 <td>Australia</td>
 <td><img src="../images/checkmark.png" width="30"/></td>
 </tr>
+
+<tr  class="styled-table-row">
+<td>India</td>
+<td><img src="../images/checkmark.png" width="30"/></td>
+</tr>
+
+
+
 <tr>
-<td rowspan=4 class="styled-table-col">Kia</td>
+<td rowspan=5 class="styled-table-col">Kia</td>
 <td>Canada</td>
 <td><img src="../images/checkmark.png" width="30"/></td>
 </tr>
@@ -66,6 +74,42 @@ If you can confirm support for any un-tested regions (Noted via question-mark ic
 <img src="../images/question.png" width="30"/>
 </td>
 </tr>
+
+<tr  class="styled-table-row">
+<td>India</td>
+<td><img src="../images/cross.png" width="30"/></td>
+</tr>
+
+<tr>
+<td rowspan=5 class="styled-table-col">Genesis</td>
+<td>Canada</td>
+<td><img src="../images/checkmark.png" width="30"/></td>
+</tr>
+<tr>
+<td>US</td>
+<td>
+<img src="../images/checkmark.png" width="30"/>
+<img src="../images/question.png" width="30"/>
+</td>
+</tr>
+<tr>
+<td>Europe</td>
+<td><img src="../images/cross.png" width="30"/>
+</td>
+</tr>
+<tr>
+<td>Australia</td>
+<td>
+<img src="../images/cross.png" width="30"/>
+</td>
+</tr>
+
+<tr>
+<td>India</td>
+<td><img src="../images/cross.png" width="30"/></td>
+</tr>
+
+
 </tbody>
 </table>
 

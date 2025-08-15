@@ -220,6 +220,36 @@ async function refreshDataForWidget(bl: Bluelink, config: Config): Promise<Widge
   }
 }
 
+export function createErrorWidget(message: string) {
+  const widget = new ListWidget()
+  widget.setPadding(20, 10, 15, 15)
+
+  const mainStack = widget.addStack()
+  mainStack.layoutVertically()
+  mainStack.addSpacer()
+
+  // Add background color
+  widget.backgroundColor = DARK_MODE ? new Color(DARK_BG_COLOR) : new Color(LIGHT_BG_COLOR)
+
+  // Show app icon and title
+  const titleStack = mainStack.addStack()
+  const titleElement = titleStack.addText('Error')
+  titleElement.textColor = DARK_MODE ? Color.red() : Color.red()
+  titleElement.font = Font.boldSystemFont(25)
+  titleStack.addSpacer()
+
+  mainStack.addSpacer()
+
+  const messageElement = mainStack.addText(message)
+  messageElement.textColor = DARK_MODE ? Color.white() : Color.black()
+  messageElement.font = Font.systemFont(15)
+  messageElement.minimumScaleFactor = 0.5
+  messageElement.lineLimit = 5
+  mainStack.addSpacer()
+
+  return widget
+}
+
 export async function createMediumWidget(config: Config, bl: Bluelink) {
   const refresh = await refreshDataForWidgetWithTimeout(bl, config)
   const status = refresh.status

@@ -7,12 +7,26 @@ import { BluelinkEurope } from './bluelink-regions/europe'
 import { BluelinkIndia } from './bluelink-regions/india'
 import { BluelinkAustralia } from './bluelink-regions/australia'
 
+const regionSupport = {
+  kia: ['canada', 'usa', 'europe', 'australia'],
+  hyundai: ['canada', 'usa', 'europe', 'india', 'australia'],
+  genesis: ['canada', 'usa'],
+}
+
 export async function initRegionalBluelink(config: Config): Promise<BluelinkCanada | Bluelink | undefined> {
+  for (const [manufacturer, regions] of Object.entries(regionSupport)) {
+    if (config.manufacturer.toLowerCase() === manufacturer) {
+      if (!regions.includes(config.auth.region)) {
+        throw new Error(`${config.manufacturer} is not supported in this region`)
+      }
+    }
+  }
+
   switch (config.auth.region) {
     case 'canada':
       return await BluelinkCanada.init(config)
     case 'usa':
-      return config.manufacturer === 'hyundai' ? await BluelinkUSA.init(config) : await BluelinkUSAKia.init(config)
+      return config.manufacturer === 'kia' ? await BluelinkUSAKia.init(config) : await BluelinkUSA.init(config)
     case 'europe':
       return await BluelinkEurope.init(config)
     case 'india':
@@ -20,6 +34,8 @@ export async function initRegionalBluelink(config: Config): Promise<BluelinkCana
     case 'australia':
       return await BluelinkAustralia.init(config)
     default:
-      return
+      throw new Error(
+        `Something went wrong determining bluelink region! Please raise an issue on GitHub with details of your vehicle and region.`,
+      )
   }
 }

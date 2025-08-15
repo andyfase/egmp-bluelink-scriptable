@@ -142,3 +142,48 @@ This will issue a remote command to set the named charge limit of the car (i.e. 
 
 Example: "Set **Charge Limit RoadTrip**"
 {: .fs-5 .fw-400 }
+
+### Data
+This is a advanced keyword that can be used in IOS Shortcuts so that the status of the car can be extracted into a Shortcut Dictionary for further use. This data can then be used in whatever condition is desired. For example you could define a shortcut that checks every night the cars range against known calendar entries and alerts if a road-trip is planned and the range is low.
+{: .fs-5 .fw-400 }
+
+The data extracted is in the following format 
+
+```
+{
+    "car": {
+        "id": string,
+        "vin": string,
+        "nickName": string,
+        "modelName": string,
+        "modelYear": string,
+        "modelColour": string,
+        "modelTrim": string
+    },
+    "status": {
+        "lastStatusCheck": int # epoch_milliseconds_since_last_api_status,
+        "lastRemoteStatusCheck": int # <epoch_milliseconds_since_last_remote_api_status>,
+        "isCharging": boolean,
+        "isPluggedIn": boolean,
+        "chargingPower": int,
+        "remainingChargeTimeMins": int,
+        "range": int,
+        "locked": boolean,
+        "climate": boolean,
+        "soc": int,
+        "twelveSoc": int,
+        "odometer": float,
+        "location": {
+            "latitude": string,
+            "longitude": string
+        },
+        "chargeLimit": {
+            "dcPercent": int,
+            "acPercent": int
+        }
+    }
+}
+```
+
+Example: "**data**"
+{: .fs-5 .fw-400 }

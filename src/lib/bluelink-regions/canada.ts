@@ -16,6 +16,7 @@ const DEFAULT_API_DOMAIN = 'mybluelink.ca'
 const API_DOMAINS: Record<string, string> = {
   hyundai: 'mybluelink.ca',
   kia: 'kiaconnect.ca',
+  genesis: 'genesisconnect.ca',
 }
 
 export class BluelinkCanada extends Bluelink {
@@ -33,9 +34,10 @@ export class BluelinkCanada extends Bluelink {
       client_id: 'HATAHSPACA0232141ED9722C67715A0B',
       client_secret: 'CLISCR01AHSPA',
       language: '0',
-      brand: this.apiHost === 'mybluelink.ca' ? 'H' : 'kia',
+      // brand: this.apiHost === 'mybluelink.ca' ? 'H' : 'kia', // seems to be ignored by API
       offset: this.getTimeZone().slice(0, 3),
-      'User-Agent': config.manufacturer === 'kia' ? 'okhttp/4.12.0' : 'MyHyundai/2.0.25 (iPhone; iOS 18.3; Scale/3.00)',
+      'User-Agent':
+        config.manufacturer === 'hyundai' ? 'MyHyundai/2.0.25 (iPhone; iOS 18.3; Scale/3.00)' : 'okhttp/4.12.0',
     }
     this.authHeader = 'Accesstoken'
     this.tempLookup = {
