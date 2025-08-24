@@ -7,10 +7,20 @@ nav_order: 2
 # Widget Support
 {: .fs-9 }
 
-Bluelink Scriptable supports two sizes of both Lockscreen and Homescreen widgets. All widgets provide single click access to the main app and all widgets will auto-update in the background.
+Bluelink Scriptable supports  both Lockscreen and Homescreen widgets. 
 {: .fs-6 .fw-300 }
 
-It should be noted that there is a optional opt-in setting within the Settings screen called "Enable widget remote refresh" once enabled, the auto-updating of widget data will include sending intermittent remote status commands to the car. This is required to get the latest data from the car directly vs cached data from the Bluelink servers.
+All widgets provide single click access to the main app and all widgets allow for auto-updating of car data in the background.
+{: .fs-5 .fw-300 }
+
+{: .info-title }
+> Remote Widget Refresh
+>
+> It should be noted that auto-updating of car data is "opt-in" you are required to check the setting "Enable widget remote refresh" in the settings screen to enable this feature. This feature will auto send intermittent remote status commands to the car to obtain up-to date data on the status of your car.
+>
+> This is required to get the latest data from the car directly, without enabiling this setting it is likely your widget will always display stale data.
+>
+> 12V battery drain can occur if you send too many remote refresh commands. The defaults set in the app are very conservative for this reason. Only play with the advanced widget settings if you understand the potential consequences of sending too many commands.
 {: .fs-5 .fw-300 }
 
 ## Home Screen Widgets

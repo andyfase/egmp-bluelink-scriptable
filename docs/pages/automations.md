@@ -20,6 +20,13 @@ Below are a few example automations, and downloadable Shortcut scripts. The prov
 
 ### Walk Away Lock
 
+{: .warning-title }
+> Warning: You can lock yourself out of your car with this feature
+>
+> Locking via bluelink always locks regardless of your keys location. Thus auto-locking via bluelink means if you turn off the car, leave your keys in the car and leave the car - with the doors closed - you can get locked out.
+>
+> If using this feature never leave the car without one of your keys or your phone with the app installed (so you can un-lock when needed)
+
 This automation will send a lock command to the car, after a delay. The triggering event can either be disconnecting from CarPlay or disconnecting from the Car's Bluetooth.
 
 [Install "Auto Lock Car" Shortcut](https://www.icloud.com/shortcuts/2b49acde29904725b31c64f8195074ce)

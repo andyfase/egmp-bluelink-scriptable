@@ -7,10 +7,15 @@ nav_order: 4
 # Install Guide
 {: .fs-9 }
 
-Bluelink Scriptable is a "scriptable app". Its written in Javascript and runs within the [scriptable IOS app](https://scriptable.app/). Using scriptable meant a vastly reduced amount of development time was required, and no pesky app store rejections
-{: .fs-5 .fw-300 }
+{: .info-title }
+> This is not an "App Store" app
+>
+> Bluelink Scriptable is a "scriptable app". Its a "script" runs within the [scriptable IOS app](https://scriptable.app/), think of it as an app within a app. This means you install the scriptable app from the app store and then download the JS (Javascript) file into the scriptable directory on your phone.
+>
+>Using scriptable meant a vastly reduced amount of development time was required, no pesky app store rejections and quick fix times when Hyundai or Kia change their APIs! You still get close to the look and feel of a native app including widgets, Automations, Siri support and more!
 
-As such, installation is a couple more test than just "install an app". However once installed the app will prompt and auto-install new versions as they are released!.
+
+Instalation is a one time process. Once installed the app will prompt you when updates are released. The app includes a one-click upgrade process for ease of use.
 {: .fs-5 .fw-300 } 
 
 ## Install Steps
