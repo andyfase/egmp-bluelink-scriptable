@@ -131,6 +131,10 @@ const carImageMap: Record<string, string> = {
   default: 'ioniq5',
 }
 
+export function getBluelinkLogger() {
+  return new Logger(BLUELINK_LOG_FILE, 100)
+}
+
 export class Bluelink {
   // @ts-ignore - config is initalized in init
   protected config: Config
@@ -168,7 +172,7 @@ export class Bluelink {
     this.tempLookup = undefined
     this.authIdHeader = undefined
     this.distanceUnit = 'km'
-    this.logger = new Logger(BLUELINK_LOG_FILE, 100)
+    this.logger = getBluelinkLogger()
   }
 
   protected async superInit(config: Config, statusCheckInterval?: number) {

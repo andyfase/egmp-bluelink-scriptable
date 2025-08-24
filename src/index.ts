@@ -1,4 +1,6 @@
 import { initRegionalBluelink } from 'lib/bluelink'
+import { getBluelinkLogger } from 'lib/bluelink-regions/base'
+import { getWidgetLogger } from 'widget'
 import {
   createSmallWidget,
   createMediumWidget,
@@ -29,13 +31,35 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
   } catch (e) {
     const error = e instanceof Error ? e.message : e
     const errorMessage = `Error Initalizing Bluelink: ${error}`
+    const errorMessageShort = errorMessage.replace(/\{.*\}/, '')
     logger.log(errorMessage)
     if (!config.runsWithSiri && !config.runsInWidget) {
-      await confirm(errorMessage, {
-        confirmButtonTitle: 'Ok',
-        includeCancel: false,
+      await quickOptions(['Ok', 'Settings', 'Share Debug Logs'], {
+        title: errorMessageShort,
+        onOptionSelect: async (opt) => {
+          if (opt === 'Ok') return
+          switch (opt) {
+            case 'Share Debug Logs': {
+              const blRedactedLogs = getBluelinkLogger().readAndRedact()
+              const widgetLogs = getWidgetLogger().read()
+              const appLogs = getAppLogger().read()
+              await ShareSheet.present([
+                'Bluelink API logs:',
+                blRedactedLogs,
+                'Widget Logs',
+                widgetLogs,
+                'App Logs',
+                appLogs,
+              ])
+              break
+            }
+            case 'Settings': {
+              await loadConfigScreen()
+              break
+            }
+          }
+        },
       })
-      await loadConfigScreen()
     } else {
       if (config.runsInWidget) {
         Script.setWidget(createErrorWidget(errorMessage))

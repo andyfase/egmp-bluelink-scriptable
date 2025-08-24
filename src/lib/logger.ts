@@ -59,13 +59,44 @@ export class Logger {
     let contents = ''
     if (this.fm.fileExists(filepath)) {
       contents = this.fm.readString(filepath)
-      contents = contents.replaceAll(/Accesstoken":".*?"/gi, 'Accesstoken":"REDACTED"')
-      contents = contents.replaceAll(/password":".*?"/gi, 'password":"REDACTED"')
-      contents = contents.replaceAll(/username":".*?"/gi, 'username":"REDACTED"')
-      contents = contents.replaceAll(/password=.*?&/gi, 'password=REDACTED&')
-      contents = contents.replaceAll(/username=.*?&/gi, 'username=REDACTED&')
-      contents = contents.replaceAll(/pin":".*?"/gi, 'pin":"REDACTED"')
+
+      const attributes = [
+        'Accesstoken',
+        'Authorization',
+        'Authentication',
+        'refreshToken',
+        'refresh_token',
+        'sid',
+        'password',
+        'username',
+        'email',
+        'userId',
+        'loginId',
+        'pin',
+        'blueLinkServicePin',
+      ]
+
+      for (const attr of attributes) {
+        // Matches:
+        //   key":"value"
+        //   key=value&
+        //   \"key\":\"value\" (JSON-in-string)
+        //   key=...&
+        const regex = new RegExp(
+          `${attr}"\\s*:\\s*".*?"|${attr}=.*?&|\\\\?"${attr}\\\\?"\\s*:\\s*\\\\?".*?\\\\?"`,
+          'gi',
+        )
+        contents = contents.replaceAll(regex, (match) => {
+          if (match.includes('":') || match.includes('\\"')) {
+            // Handles both normal and escaped JSON
+            return match.startsWith('\\') ? `\\"${attr}\\":\\"REDACTED\\"` : `${attr}":"REDACTED"`
+          } else {
+            return `${attr}=REDACTED&`
+          }
+        })
+      }
     }
+
     return contents
   }
 
