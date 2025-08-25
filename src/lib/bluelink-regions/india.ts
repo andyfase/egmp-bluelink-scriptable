@@ -303,6 +303,12 @@ export class BluelinkIndia extends Bluelink {
       headers: {},
     })
 
+    if (!this.requestResponseValid(resp.resp, resp.json).valid) {
+      const error = `Failed to retrieve vehicles: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+
     // if multuple cars and we have no vin populate options and return undefined for user selection
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 1 && !vin) {
       for (const vehicle of resp.json.resMsg.vehicles) {

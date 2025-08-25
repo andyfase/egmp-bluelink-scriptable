@@ -190,6 +190,7 @@ export class Bluelink {
   }
 
   protected async refreshLogin(force?: boolean) {
+    if (!this.cache) return // we have no cache - likely failed on first load - ignore
     // if we are here we have logged in successfully at least once and can refresh if supported
     if (force || !this.tokenValid()) {
       let tokens = undefined
@@ -518,7 +519,7 @@ export class Bluelink {
       const checkResponse = props.validResponseFunction(req.response, json)
       if (!props.noRetry && checkResponse.retry && !props.noAuth) {
         // re-auth and call ourselves
-        await this.refreshLogin(true)
+        if (this.cache) await this.refreshLogin(true) // only refresh login if we have a cache - i.e not first login
         return await this.request({
           ...props,
           noRetry: true,
