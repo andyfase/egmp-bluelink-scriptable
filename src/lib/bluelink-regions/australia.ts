@@ -35,7 +35,7 @@ const API_CONFIG: Record<string, APIConfig> = {
     apiPort: 8080,
     ccspServiceId: '855c72df-dfd7-4230-ab03-67cbf902bb1c',
     appId: 'f9ccfdac-a48d-4c57-bd32-9116963c24ed',
-    authCfb: 'V60WkEmyRQaAfrBF1623/7QL62MjLVbCHdItGzQ1g5T/hkmKmMVTaMHv4cKGzgD3gL8=',
+    authCfb: 'nGDHng3k4Cg9gWV+C+A6Yk/ecDopUNTkGmDpr2qVKAQXx9bvY2/YLoHPfObliK32F2g=',
     clientId: '855c72df-dfd7-4230-ab03-67cbf902bb1c',
     authBasic:
       'Basic ODU1YzcyZGYtZGZkNy00MjMwLWFiMDMtNjdjYmY5MDJiYjFjOmU2ZmJ3SE0zMllOYmhRbDBwdmlhUHAzcmY0dDNTNms5MWVjZUEzTUpMZGJkVGhDTw==',
@@ -71,11 +71,12 @@ export class BluelinkAustralia extends Bluelink {
 
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
-      'User-Agent': 'okhttp/3.12.0',
+      'User-Agent': 'okhttp/4.10.0',
       'X-Requested-With': 'com.hyundai.bluelink.aus',
       offset: this.getTimeZone().slice(0, 3),
       'ccsp-service-id': this.apiConfig.ccspServiceId,
       'ccsp-application-id': this.apiConfig.appId,
+      country: 'au',
     }
     this.authIdHeader = 'ccsp-device-id'
     this.authHeader = 'Authorization'
