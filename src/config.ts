@@ -404,7 +404,8 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
       chargeLimits: {
         type: 'clickable',
         label: 'Charge Limit Profiles',
-        customIcon: 'climate',
+        // charge_limit icon IOS 16 and above
+        customIcon: parseFloat(Device.systemVersion()) >= 16 ? 'charge_limit' : 'charge_limit2',
         faded: true,
         onClickFunction: () => {
           const config = getConfig()

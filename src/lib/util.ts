@@ -103,7 +103,8 @@ const icons: Record<string, icon> = {
     color: Color.dynamic(Color.black(), Color.white()),
   },
   'charge-limit': {
-    iconName: 'bolt.brakesignal',
+    // charge_limit icon IOS 16 and above
+    iconName: parseFloat(Device.systemVersion()) >= 16 ? 'bolt.brakesignal' : 'bolt.horizontal.fill',
     color: Color.dynamic(Color.black(), Color.white()),
   },
 }
