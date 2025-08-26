@@ -274,10 +274,58 @@ export class BluelinkEurope extends Bluelink {
     }
   }
 
+  protected oauthAuthorize(login_url: string, logged_in_url: string, auth_url: string, callback_url: string) {
+    // @ts-ignore
+    return new Promise((resolve, reject) => {
+      const webview = new WebView()
+      webview.shouldAllowRequest = (request) => {
+        if (!request.url.startsWith(callback_url) && !request.url.startsWith(logged_in_url)) return true
+        if (request.url.startsWith(logged_in_url)) {
+          // we have logged in - now wait for redirect to callback URL
+          webview.loadURL(auth_url)
+          return true
+        }
+        resolve(request.url)
+        // HERE - Close the WebView
+        webview.loadHTML(
+          `
+          <!DOCTYPE html>
+          <html>
+          <body style="background-color:#1c1c1e;">
+
+          <center>
+          <h1 style="color: white; font-family: Arial, Helvetica; font-size: xxx-large;">Login Successful</h1>
+          <p style="color: white; font-family: Arial, Helvetica; font-size: xx-large;">This screen should auto-close, if not please close window.</p>
+          </center>
+
+          </body>
+          </html>
+          `,
+        )
+        return false
+      }
+      webview.loadURL(login_url)
+      webview
+        .present(false)
+        .then(() => {
+          reject(new Error('Could not complete login. Please try again.'))
+        })
+        .catch(reject)
+    })
+  }
+
   protected async KiaLogin(): Promise<BluelinkTokens | undefined> {
     // start login - new flow not involving forms anymore
     const respLoginStart = await this.request({
-      url: `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?client_id=${this.apiConfig.clientId}&response_type=code&&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect&lang=${this.lang}&state=ccsp`,
+      url:
+        `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?` +
+        [
+          `client_id=${this.apiConfig.clientId}`,
+          `response_type=code`,
+          `redirect_uri=https://${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}/api/v1/user/oauth2/redirect`,
+          `lang=en`,
+          `state=ccsp`,
+        ].join('&'),
       noAuth: true,
       notJSON: true,
       validResponseFunction: this.requestResponseValid,
@@ -305,42 +353,32 @@ export class BluelinkEurope extends Bluelink {
       throw Error(error)
     }
 
-    // login
-    const respLogin = await this.request({
-      url: `https://${this.apiConfig.authHost}/auth/account/signin`,
-      noAuth: true,
-      notJSON: true,
-      validResponseFunction: this.requestResponseValid,
-      noRedirect: true,
-      data: [
+    const authUrl =
+      `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?` +
+      [
         `client_id=${this.apiConfig.clientId}`,
-        'encryptedPassword=false',
-        'orgHmgSid=',
-        `username=${encodeURIComponent(this.config.auth.username)}`,
-        `password=${encodeURIComponent(this.config.auth.password)}`,
         `redirect_uri=https://${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}/api/v1/user/oauth2/redirect`,
+        'response_type=code',
+        'scope=',
         'state=ccsp',
-        'remember_me=false',
+        `connector_client_id=hmgid1.0-${this.apiConfig.clientId}`,
+        'ui_locales=',
+        'connector_scope=',
         `connector_session_key=${connectorSessionKey}`,
-        '_csrf=',
-      ].join('&'),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Origin: this.apiConfig.authHost,
-      },
-    })
+      ].join('&')
 
-    if (!this.requestResponseValid(respLogin.resp, respLogin.json).valid) {
-      const error = `Failed to perform login ${JSON.stringify(respLogin.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      return undefined // likely username or password incorrect
-    }
+    const callback_url = (await this.oauthAuthorize(
+      'https://idpconnect-eu.kia.com/auth/api/v2/user/oauth2/authorize?ui_locales=en&scope=openid%20profile%20email%20phone&response_type=code&client_id=peukiaidm-online-sales&redirect_uri=https://www.kia.com/api/bin/oneid/login&state=aHR0cHM6Ly93d3cua2lhLmNvbTo0NDMvZGUvP190bT0xNzU2MjE3NzM5MjYyJl90bT0xNzU2MjM3OTAxNTAxJl90bT0xNzU2MjM5NjY0OTU2Jl90bT0xNzU2MjQzNDY3NDUwJl90bT0xNzU2MjQzNjI5MDk3_default',
+      'https://www.kia.com/',
+      authUrl,
+      'https://prd.eu-ccapi.kia.com:8080/api/v1/user/oauth2/redirect',
+    )) as string
 
-    // extract code from Redirect Location Header
-    const codeParams = Url.parse(decodeURI(respLogin.resp.headers.Location), true).query
+    // extract code from callback URL
+    const codeParams = Url.parse(callback_url, true).query
     const code = codeParams.code
     if (!code) {
-      const error = `Failed to extract code ${JSON.stringify(respLogin.resp)}`
+      const error = `Failed to extract code from redirect ${callback_url}`
       if (this.config.debugLogging) this.logger.log(error)
       return undefined // likely username or password incorrect
     }
@@ -367,6 +405,9 @@ export class BluelinkEurope extends Bluelink {
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
+
+    // this causes the script to restart to dismiss the webview
+    this.loginRequiredWebview = true
 
     return {
       accessToken: `Bearer ${respTokens.json.access_token}`,

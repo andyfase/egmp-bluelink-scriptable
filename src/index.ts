@@ -141,6 +141,14 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
     Script.complete()
   } else {
     try {
+      // check if we need to restart script - needed to clear out any login webviews
+      if (bl.needRestart()) {
+        logger.log('Restarting script to clear webview')
+        const scriptUrl = URLScheme.forRunningScript()
+        Safari.open(scriptUrl)
+        return
+      }
+
       const resp = await createApp(blConfig, bl)
       // @ts-ignore - undocumented api
       App.close() // add this back after dev
