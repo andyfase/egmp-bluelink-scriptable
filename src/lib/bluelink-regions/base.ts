@@ -15,6 +15,7 @@ export interface BluelinkTokens {
   expiry: number
   authCookie?: string
   authId?: string
+  additionalTokens?: Record<string, string>
 }
 
 export interface CarOption {
