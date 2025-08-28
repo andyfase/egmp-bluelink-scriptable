@@ -354,8 +354,8 @@ export class BluelinkEurope extends Bluelink {
     // this causes the script to restart to dismiss the webview if this happens on first load
     this.loginRequiredWebview = true
 
-    return {
-      accessToken: `Bearer ${respTokens.json.exchangeableAccessToken}`,
+    return this.tokenExchange({
+      accessToken: '', // set in tokenExchange
       refreshToken: '', // there is no single refresh token - we use additionalTokens for this
       expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expiresIn), // we only get a expireIn not a actual date
       authId: await this.getDeviceId(),
@@ -368,7 +368,40 @@ export class BluelinkEurope extends Bluelink {
         nonCcsRefreshToken: respTokens.json.nonCcsRefreshToken,
         idToken: respTokens.json.idToken,
       },
+    })
+  }
+
+  protected async tokenExchange(tokens: BluelinkTokens): Promise<BluelinkTokens | undefined> {
+    if (!tokens || !tokens.additionalTokens || !isNotEmptyObject(tokens.additionalTokens)) {
+      if (this.config.debugLogging) this.logger.log('Cannot exchange tokens - no additional tokens')
+      return undefined
     }
+
+    if (this.config.debugLogging) this.logger.log('Exchanging tokens using new method')
+
+    const respToken = await this.request({
+      url: 'https://cci-api-eu.kia.com/domain/api/v1/auth/token-exchange?serviceType=CCS',
+      method: 'POST',
+      noAuth: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        'client-id': 'com.kia.oneapp.eu',
+        Authentication: tokens.additionalTokens['idToken'] || '',
+        Authorization: `Bearer ${tokens.additionalTokens['access'] || ''}`,
+        'exchangeable-token': tokens.additionalTokens['exchangeableAccess'] || '',
+        'non-ccs-token': tokens.additionalTokens['nonCcsToken'] || '',
+      },
+    })
+
+    if (this.requestResponseValid(respToken.resp, respToken.json).valid) {
+      tokens.accessToken = `Bearer ${respToken.json.accessToken}`
+      tokens.expiry = Math.floor(Date.now() / 1000) + Number(respToken.json.expiresTime) // we only get a expireIn not a actual date
+      return tokens
+    }
+
+    const error = `Token Exchange Failed: ${JSON.stringify(respToken.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    return undefined
   }
 
   protected async newRefreshTokens(): Promise<BluelinkTokens | undefined> {
@@ -401,8 +434,8 @@ export class BluelinkEurope extends Bluelink {
     })
 
     if (this.requestResponseValid(respTokens.resp, respTokens.json).valid) {
-      return {
-        accessToken: `Bearer ${respTokens.json.exchangeableAccessToken}`,
+      return this.tokenExchange({
+        accessToken: '', // set in tokenExchange
         refreshToken: '', // there is no single refresh token - we use additionalTokens for this
         expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expiresIn), // we only get a expireIn not a actual date
         authId: await this.getDeviceId(),
@@ -411,11 +444,11 @@ export class BluelinkEurope extends Bluelink {
           refresh: respTokens.json.refreshToken,
           exchangeableAccess: respTokens.json.exchangeableAccessToken,
           exchangeableRefresh: respTokens.json.exchangeableRefreshToken,
-          nonCCSToken: respTokens.json.nonCCSToken,
-          nonCCSRefresh: respTokens.json.nonCCSRefreshToken,
+          nonCcsToken: respTokens.json.nonCcsToken,
+          nonCcsRefreshToken: respTokens.json.nonCcsRefreshToken,
           idToken: respTokens.json.idToken,
         },
-      }
+      })
     }
 
     const error = `Refresh Failed: ${JSON.stringify(respTokens.json)} request ${JSON.stringify(this.debugLastRequest)}`
