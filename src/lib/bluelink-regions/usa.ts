@@ -144,10 +144,10 @@ export class BluelinkUSA extends Bluelink {
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.enrolledVehicleDetails.length > 1 && !vin) {
       for (const vehicle of resp.json.enrolledVehicleDetails) {
         this.carOptions.push({
-          vin: vehicle.vin,
-          nickName: vehicle.nickName,
-          modelName: vehicle.modelCode,
-          modelYear: vehicle.modelYear,
+          vin: vehicle.vehicleDetails.vin,
+          nickName: vehicle.vehicleDetails.nickName,
+          modelName: vehicle.vehicleDetails.modelCode,
+          modelYear: vehicle.vehicleDetails.modelYear,
         })
       }
       return undefined
