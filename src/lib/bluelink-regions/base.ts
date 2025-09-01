@@ -15,6 +15,7 @@ export interface BluelinkTokens {
   expiry: number
   authCookie?: string
   authId?: string
+  additionalTokens?: Record<string, string>
 }
 
 export interface CarOption {
@@ -153,6 +154,7 @@ export class Bluelink {
   protected debugLastRequest: DebugLastRequest | undefined
   protected logger: any
   protected loginFailure: boolean
+  protected loginRequiredWebview: boolean
   protected carOptions: CarOption[]
   protected distanceUnit: string
   protected lastCommandSent: number | undefined
@@ -167,6 +169,7 @@ export class Bluelink {
     this.authHeader = 'Authentication'
     this.tokens = undefined
     this.loginFailure = false
+    this.loginRequiredWebview = false
     this.carOptions = []
     this.debugLastRequest = undefined
     this.tempLookup = undefined
@@ -279,6 +282,10 @@ export class Bluelink {
 
   public loginFailed(): boolean {
     return this.loginFailure
+  }
+
+  public needRestart(): boolean {
+    return this.loginRequiredWebview
   }
 
   public getCachedStatus(): Status {

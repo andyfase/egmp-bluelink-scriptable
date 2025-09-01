@@ -20,6 +20,7 @@ interface ControlToken {
 
 interface APIConfig {
   apiDomain: string
+  newApiDomain?: string
   apiPort: number
   appId: string
   authCfb: string
@@ -47,6 +48,7 @@ const API_CONFIG: Record<string, APIConfig> = {
   },
   kia: {
     apiDomain: 'prd.eu-ccapi.kia.com',
+    newApiDomain: 'cci-api-eu.kia.com',
     apiPort: 8080,
     appId: 'a2b8469b-30a3-4361-8e13-6fceea8fbe74',
     authCfb: 'wLTVxwidmH8CfJYBWSnHD6E0huk0ozdiuygB4hLkM5XCgzAL1Dk5sE36d/bx5PFMbZs=',
@@ -274,91 +276,74 @@ export class BluelinkEurope extends Bluelink {
     }
   }
 
+  protected loginWithWebview(start_url: string, callback_url: string) {
+    // @ts-ignore
+    return new Promise((resolve, reject) => {
+      const webview = new WebView()
+      webview.shouldAllowRequest = (request) => {
+        if (!request.url.startsWith(callback_url)) return true
+        // we have been redirected to the callback URL - return URL and update webview to a success page
+        resolve(request.url)
+        webview.loadHTML(
+          `
+          <!DOCTYPE html>
+          <html>
+          <body style="background-color:#1c1c1e;">
+
+          <center>
+          <h1 style="color: white; font-family: Arial, Helvetica; font-size: xxx-large;">Login Successful</h1>
+          <p style="color: white; font-family: Arial, Helvetica; font-size: xx-large;">This screen should auto-close, if not please close window.</p>
+          </center>
+
+          </body>
+          </html>
+          `,
+        )
+        return false
+      }
+      webview.loadURL(start_url)
+      webview
+        .present(false)
+        .then(() => {
+          reject(new Error('Could not complete login. Please try again.'))
+        })
+        .catch(reject)
+    })
+  }
+
   protected async KiaLogin(): Promise<BluelinkTokens | undefined> {
-    // start login - new flow not involving forms anymore
-    const respLoginStart = await this.request({
-      url: `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?client_id=${this.apiConfig.clientId}&response_type=code&&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect&lang=${this.lang}&state=ccsp`,
-      noAuth: true,
-      notJSON: true,
-      validResponseFunction: this.requestResponseValid,
-    })
+    const authUrl =
+      `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?` +
+      [
+        `client_id=01b36c86-79e8-486c-8009-15f2ad88d670`,
+        `redirect_uri=https://oneapp.kia.com/redirect`,
+        'response_type=code',
+        'scope=account.token.transfer%20account.id.generate%20account.puid.userinfos%20account.userinfo%20read%20account.userinfos%20puid%20email%20name%20mobileNum%20birthdate%20lang%20country%20signUpDate%20gender%20nationInfo%20certProfile%20offline',
+        'response_type=code',
+        'state=hmgoneapp',
+        'ui_locales=en-GB',
+      ].join('&')
 
-    if (!this.requestResponseValid(respLoginStart.resp, respLoginStart.json).valid) {
-      const error = `Failed to perform first login action ${JSON.stringify(respLoginStart.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
+    // open webview for user to login - which handles detecting login, settings webview to authURL and finally detecting the redirectURL and returning
+    const callback_url = (await this.loginWithWebview(authUrl, 'https://oneapp.kia.com/redirect')) as string
 
-    // extract connector_session_key from URL
-    const connectorURL = Url.parse(decodeURI(respLoginStart.resp.url), true).query
-    const nextUri = connectorURL.next_uri
-    if (!nextUri || typeof nextUri !== 'string') {
-      const error = `Failed to extract next_uri from login response ${JSON.stringify(respLoginStart.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
-    const connectorParams = Url.parse(decodeURI(nextUri), true).query
-    const connectorSessionKey = connectorParams.connector_session_key
-    if (!connectorSessionKey) {
-      const error = `Failed to extract connector_session_key ${JSON.stringify(respLoginStart.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
-
-    // login
-    const respLogin = await this.request({
-      url: `https://${this.apiConfig.authHost}/auth/account/signin`,
-      noAuth: true,
-      notJSON: true,
-      validResponseFunction: this.requestResponseValid,
-      noRedirect: true,
-      data: [
-        `client_id=${this.apiConfig.clientId}`,
-        'encryptedPassword=false',
-        'orgHmgSid=',
-        `username=${encodeURIComponent(this.config.auth.username)}`,
-        `password=${encodeURIComponent(this.config.auth.password)}`,
-        `redirect_uri=https://${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}/api/v1/user/oauth2/redirect`,
-        'state=ccsp',
-        'remember_me=false',
-        `connector_session_key=${connectorSessionKey}`,
-        '_csrf=',
-      ].join('&'),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Origin: this.apiConfig.authHost,
-      },
-    })
-
-    if (!this.requestResponseValid(respLogin.resp, respLogin.json).valid) {
-      const error = `Failed to perform login ${JSON.stringify(respLogin.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      return undefined // likely username or password incorrect
-    }
-
-    // extract code from Redirect Location Header
-    const codeParams = Url.parse(decodeURI(respLogin.resp.headers.Location), true).query
+    // extract code from callback URL
+    const codeParams = Url.parse(callback_url, true).query
     const code = codeParams.code
     if (!code) {
-      const error = `Failed to extract code ${JSON.stringify(respLogin.resp)}`
+      const error = `Failed to extract code from redirect ${callback_url}`
       if (this.config.debugLogging) this.logger.log(error)
       return undefined // likely username or password incorrect
     }
 
-    // final login to get tokens
+    // swap code for tokens
     const respTokens = await this.request({
-      url: `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/token`,
+      url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/auth/token?code=${code}`,
+      method: 'POST',
       noAuth: true,
       validResponseFunction: this.requestResponseValid,
-      data: [
-        'grant_type=authorization_code',
-        `code=${code}`,
-        `redirect_uri=https://${this.apiConfig.apiDomain}:${this.apiConfig.apiPort}/api/v1/user/oauth2/redirect`,
-        `client_id=${this.apiConfig.clientId}`,
-        'client_secret=secret',
-      ].join('&'),
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'client-id': 'com.kia.oneapp.eu',
       },
     })
 
@@ -368,15 +353,116 @@ export class BluelinkEurope extends Bluelink {
       throw Error(error)
     }
 
-    return {
-      accessToken: `Bearer ${respTokens.json.access_token}`,
-      refreshToken: respTokens.json.refresh_token,
-      expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expires_in), // we only get a expireIn not a actual date
+    // this causes the script to restart to dismiss the webview if this happens on first load
+    this.loginRequiredWebview = true
+
+    return this.tokenExchange({
+      accessToken: '', // set in tokenExchange
+      refreshToken: '', // there is no single refresh token - we use additionalTokens for this
+      expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expiresIn), // we only get a expireIn not a actual date
       authId: await this.getDeviceId(),
+      additionalTokens: {
+        access: respTokens.json.accessToken,
+        refresh: respTokens.json.refreshToken,
+        exchangeableAccess: respTokens.json.exchangeableAccessToken,
+        exchangeableRefresh: respTokens.json.exchangeableRefreshToken,
+        nonCcsToken: respTokens.json.nonCcsToken,
+        nonCcsRefreshToken: respTokens.json.nonCcsRefreshToken,
+        idToken: respTokens.json.idToken,
+      },
+    })
+  }
+
+  protected async tokenExchange(tokens: BluelinkTokens): Promise<BluelinkTokens | undefined> {
+    if (!tokens || !tokens.additionalTokens || !isNotEmptyObject(tokens.additionalTokens)) {
+      if (this.config.debugLogging) this.logger.log('Cannot exchange tokens - no additional tokens')
+      return undefined
     }
+
+    if (this.config.debugLogging) this.logger.log('Exchanging tokens using new method')
+
+    const respToken = await this.request({
+      url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/auth/token-exchange?serviceType=CCS`,
+      method: 'POST',
+      noAuth: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        'client-id': 'com.kia.oneapp.eu',
+        Authentication: tokens.additionalTokens['idToken'] || '',
+        Authorization: `Bearer ${tokens.additionalTokens['access'] || ''}`,
+        'exchangeable-token': tokens.additionalTokens['exchangeableAccess'] || '',
+        'non-ccs-token': tokens.additionalTokens['nonCcsToken'] || '',
+      },
+    })
+
+    if (this.requestResponseValid(respToken.resp, respToken.json).valid) {
+      tokens.accessToken = `Bearer ${respToken.json.accessToken}`
+      tokens.expiry = Math.floor(Date.now() / 1000) + Number(respToken.json.expiresTime) // we only get a expireIn not a actual date
+      return tokens
+    }
+
+    const error = `Token Exchange Failed: ${JSON.stringify(respToken.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    return undefined
+  }
+
+  protected async newRefreshTokens(): Promise<BluelinkTokens | undefined> {
+    if (!this.cache || !this.cache.token.additionalTokens || !isNotEmptyObject(this.cache.token.additionalTokens)) {
+      if (this.config.debugLogging) this.logger.log('No additional tokens - cannot refresh')
+      return undefined
+    }
+
+    if (this.config.debugLogging) this.logger.log('Refreshing tokens using new method')
+
+    const respTokens = await this.request({
+      url: 'https://cci-api-eu.kia.com/domain/api/v2/auth/token-refresh',
+      data: JSON.stringify({
+        accessToken: this.cache.token.additionalTokens['access'],
+        refreshToken: this.cache.token.additionalTokens['refresh'],
+        exchangeableAccessToken: this.cache.token.additionalTokens['exchangeableAccess'],
+        exchangeableRefreshToken: this.cache.token.additionalTokens['exchangeableRefresh'],
+        nonCcsToken: this.cache.token.additionalTokens['nonCcsToken'],
+        nonCcsRefreshToken: this.cache.token.additionalTokens['nonCcsRefreshToken'],
+      }),
+      noAuth: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        'client-id': 'com.kia.oneapp.eu',
+        Authentication: this.cache.token.additionalTokens['idToken'] || '',
+        Authorization: `Bearer ${this.cache.token.additionalTokens['access'] || ''}`,
+        'exchangeable-token': this.cache.token.additionalTokens['exchangeableAccess'] || '',
+        'non-ccs-token': this.cache.token.additionalTokens['nonCcsToken'] || '',
+      },
+    })
+
+    if (this.requestResponseValid(respTokens.resp, respTokens.json).valid) {
+      return this.tokenExchange({
+        accessToken: '', // set in tokenExchange
+        refreshToken: '', // there is no single refresh token - we use additionalTokens for this
+        expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expiresIn), // we only get a expireIn not a actual date
+        authId: await this.getDeviceId(),
+        additionalTokens: {
+          access: respTokens.json.accessToken,
+          refresh: respTokens.json.refreshToken,
+          exchangeableAccess: respTokens.json.exchangeableAccessToken,
+          exchangeableRefresh: respTokens.json.exchangeableRefreshToken,
+          nonCcsToken: respTokens.json.nonCcsToken,
+          nonCcsRefreshToken: respTokens.json.nonCcsRefreshToken,
+          idToken: respTokens.json.idToken,
+        },
+      })
+    }
+
+    const error = `Refresh Failed: ${JSON.stringify(respTokens.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    return undefined
   }
 
   protected async refreshTokens(): Promise<BluelinkTokens | undefined> {
+    if (this.cache && this.cache.token.additionalTokens) {
+      return await this.newRefreshTokens()
+    }
+
     if (!this.cache.token.refreshToken) {
       if (this.config.debugLogging) this.logger.log('No refresh token - cannot refresh')
       return undefined
