@@ -268,6 +268,33 @@ export class Bluelink {
     this.lastCommandSent = Date.now()
   }
 
+  protected defaultNoEVStatus(
+    lastRemoteCheck: Date,
+    status: any,
+    forceUpdate: boolean,
+    odometer?: number,
+    chargeLimit?: ChargeLimit,
+    location?: Location,
+  ): BluelinkStatus {
+    return {
+      lastStatusCheck: Date.now(),
+      lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
+      isCharging: this.cache ? this.cache.status.isCharging : false,
+      isPluggedIn: this.cache ? this.cache.status.isCharging : false,
+      chargingPower: this.cache ? this.cache.status.chargingPower : 0,
+      remainingChargeTimeMins: this.cache ? this.cache.status.remainingChargeTimeMins : 0,
+      range: this.cache ? this.cache.status.range : 0,
+      soc: this.cache ? this.cache.status.soc : 0,
+      locked: status.doorLock,
+      climate: status.airCtrlOn,
+      twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
+      odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
+      location: location ? location : this.cache ? this.cache.status.location : undefined,
+      chargeLimit:
+        chargeLimit && chargeLimit.acPercent > 0 ? chargeLimit : this.cache ? this.cache.status.chargeLimit : undefined,
+    }
+  }
+
   public getDistanceUnit(): string {
     return this.distanceUnit
   }

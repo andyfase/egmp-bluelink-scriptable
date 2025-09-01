@@ -227,29 +227,8 @@ export class BluelinkCanada extends Bluelink {
 
     // For whatever reason sometimes the status will not have the evStatus object
     // deal with that with either cached or zero values
-    if (!status.evStatus) {
-      return {
-        lastStatusCheck: Date.now(),
-        lastRemoteStatusCheck: forceUpdate ? Date.now() : lastRemoteCheck.getTime(),
-        isCharging: this.cache ? this.cache.status.isCharging : false,
-        isPluggedIn: this.cache ? this.cache.status.isCharging : false,
-        chargingPower: this.cache ? this.cache.status.chargingPower : 0,
-        remainingChargeTimeMins: this.cache ? this.cache.status.remainingChargeTimeMins : 0,
-        range: this.cache ? this.cache.status.range : 0,
-        soc: this.cache ? this.cache.status.soc : 0,
-        locked: status.doorLock,
-        climate: status.airCtrlOn,
-        twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
-        odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
-        location: location ? location : this.cache ? this.cache.status.location : undefined,
-        chargeLimit:
-          chargeLimit && chargeLimit.acPercent > 0
-            ? chargeLimit
-            : this.cache
-              ? this.cache.status.chargeLimit
-              : undefined,
-      }
-    }
+    if (!status.evStatus)
+      return this.defaultNoEVStatus(lastRemoteCheck, status, forceUpdate, odometer, chargeLimit, location)
 
     // deal with charging speed - JSON response if variable / inconsistent - hence check for various objects
     let chargingPower = 0

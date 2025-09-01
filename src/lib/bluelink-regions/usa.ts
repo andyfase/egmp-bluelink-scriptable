@@ -187,6 +187,9 @@ export class BluelinkUSA extends Bluelink {
     // format "2025-01-30T00:38:15Z" - which is standard
     const lastRemoteCheck = new Date(status.dateTime)
 
+    if (!status.evStatus)
+      return this.defaultNoEVStatus(lastRemoteCheck, status, forceUpdate, undefined, undefined, location)
+
     // deal with charging speed - JSON response if variable / inconsistent - hence check for various objects
     let chargingPower = 0
     let isCharging = false

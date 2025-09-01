@@ -180,6 +180,8 @@ export class BluelinkUSAKia extends Bluelink {
     df.dateFormat = 'yyyyMMddHHmmssZ'
     const lastRemoteCheck = df.date(lastRemoteCheckString)
 
+    if (!status.evStatus) return this.defaultNoEVStatus(lastRemoteCheck, status, false, undefined, undefined, location)
+
     // check for charge limits
     const chargeLimit: ChargeLimit = {
       dcPercent: 0,
