@@ -20,6 +20,7 @@ interface ControlToken {
 
 interface APIConfig {
   apiDomain: string
+  newApiDomain?: string
   apiPort: number
   appId: string
   authCfb: string
@@ -47,6 +48,7 @@ const API_CONFIG: Record<string, APIConfig> = {
   },
   kia: {
     apiDomain: 'prd.eu-ccapi.kia.com',
+    newApiDomain: 'cci-api-eu.kia.com',
     apiPort: 8080,
     appId: 'a2b8469b-30a3-4361-8e13-6fceea8fbe74',
     authCfb: 'wLTVxwidmH8CfJYBWSnHD6E0huk0ozdiuygB4hLkM5XCgzAL1Dk5sE36d/bx5PFMbZs=',
@@ -336,7 +338,7 @@ export class BluelinkEurope extends Bluelink {
 
     // swap code for tokens
     const respTokens = await this.request({
-      url: `https://cci-api-eu.kia.com/domain/api/v1/auth/token?code=${code}`,
+      url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/auth/token?code=${code}`,
       method: 'POST',
       noAuth: true,
       validResponseFunction: this.requestResponseValid,
@@ -380,7 +382,7 @@ export class BluelinkEurope extends Bluelink {
     if (this.config.debugLogging) this.logger.log('Exchanging tokens using new method')
 
     const respToken = await this.request({
-      url: 'https://cci-api-eu.kia.com/domain/api/v1/auth/token-exchange?serviceType=CCS',
+      url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/auth/token-exchange?serviceType=CCS`,
       method: 'POST',
       noAuth: true,
       validResponseFunction: this.requestResponseValid,

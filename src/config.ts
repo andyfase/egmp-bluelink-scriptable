@@ -291,6 +291,17 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
           includeCancel: false,
         })
       }
+      if (
+        state.region === 'europe' &&
+        state.manufacturer === 'Kia' &&
+        (previousState.region !== 'europe' || previousState.manufacturer !== 'Kia')
+      ) {
+        confirm('Kia in Europe requires login through a webview. Login window will open automatically.', {
+          confirmButtonTitle: 'I understand',
+          includeCancel: false,
+        })
+      }
+
       return state
     },
     isFormValid: ({ username, password, region, pin, tempType, climateTempCold, climateTempWarm }) => {
