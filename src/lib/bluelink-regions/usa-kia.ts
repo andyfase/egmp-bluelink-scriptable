@@ -43,9 +43,9 @@ export class BluelinkUSAKia extends Bluelink {
     this.authIdHeader = 'vinkey'
   }
 
-  static async init(config: Config, vin?: string, statusCheckInterval?: number) {
+  static async init(config: Config, refreshAuth: boolean, vin?: string, statusCheckInterval?: number) {
     const obj = new BluelinkUSAKia(config, statusCheckInterval)
-    await obj.superInit(config)
+    await obj.superInit(config, refreshAuth)
     return obj
   }
 

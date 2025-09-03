@@ -178,10 +178,12 @@ export class Bluelink {
     this.logger = getBluelinkLogger()
   }
 
-  protected async superInit(config: Config, statusCheckInterval?: number) {
+  protected async superInit(config: Config, refreshAuth: boolean, statusCheckInterval?: number) {
     this.vin = this.config.vin
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
 
+    // check for cache - if not this is first login
+    const existingCache = this.cacheExists()
     // loadCache will login user if the cache doesnt exist i.e first app use
     const cache = await this.loadCache()
     if (!cache) {
@@ -189,7 +191,7 @@ export class Bluelink {
       return
     }
     this.cache = cache
-    await this.refreshLogin()
+    if (existingCache && refreshAuth) await this.refreshLogin()
   }
 
   protected async refreshLogin(force?: boolean) {
@@ -322,6 +324,10 @@ export class Bluelink {
     }
   }
 
+  public async refreshAuth(force = false): Promise<void> {
+    return await this.refreshLogin(force)
+  }
+
   public async getStatus(forceUpdate: boolean, noCache: boolean, location: boolean = false): Promise<Status> {
     if (forceUpdate) {
       // getCar first then save then get remote status
@@ -437,6 +443,10 @@ export class Bluelink {
 
   protected saveCache() {
     Keychain.set(this.getCacheKey(true), JSON.stringify(this.cache))
+  }
+
+  protected cacheExists(): boolean {
+    return Keychain.contains(this.getCacheKey())
   }
 
   protected async loadCache(): Promise<Cache | undefined> {

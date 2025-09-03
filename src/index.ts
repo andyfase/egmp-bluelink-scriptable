@@ -27,7 +27,8 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
 
   // Init Bluelink - Deal with region exceptions if needed
   try {
-    bl = await initRegionalBluelink(blConfig)
+    // main app handles refreshing auth in non blocking way
+    bl = await initRegionalBluelink(blConfig, config.runsWithSiri || config.runsInWidget ? true : false)
   } catch (e) {
     const error = e instanceof Error ? e.message : e
     const errorMessage = `Error Initalizing Bluelink: ${error}`

@@ -13,7 +13,10 @@ const regionSupport = {
   genesis: ['canada', 'usa'],
 }
 
-export async function initRegionalBluelink(config: Config): Promise<BluelinkCanada | Bluelink | undefined> {
+export async function initRegionalBluelink(
+  config: Config,
+  refreshAuth = true,
+): Promise<BluelinkCanada | Bluelink | undefined> {
   for (const [manufacturer, regions] of Object.entries(regionSupport)) {
     if (config.manufacturer.toLowerCase() === manufacturer) {
       if (!regions.includes(config.auth.region)) {
@@ -24,15 +27,17 @@ export async function initRegionalBluelink(config: Config): Promise<BluelinkCana
 
   switch (config.auth.region) {
     case 'canada':
-      return await BluelinkCanada.init(config)
+      return await BluelinkCanada.init(config, refreshAuth)
     case 'usa':
-      return config.manufacturer === 'kia' ? await BluelinkUSAKia.init(config) : await BluelinkUSA.init(config)
+      return config.manufacturer === 'kia'
+        ? await BluelinkUSAKia.init(config, refreshAuth)
+        : await BluelinkUSA.init(config, refreshAuth)
     case 'europe':
-      return await BluelinkEurope.init(config)
+      return await BluelinkEurope.init(config, refreshAuth)
     case 'india':
-      return await BluelinkIndia.init(config)
+      return await BluelinkIndia.init(config, refreshAuth)
     case 'australia':
-      return await BluelinkAustralia.init(config)
+      return await BluelinkAustralia.init(config, refreshAuth)
     default:
       throw new Error(
         `Something went wrong determining bluelink region! Please raise an issue on GitHub with details of your vehicle and region.`,

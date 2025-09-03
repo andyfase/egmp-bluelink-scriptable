@@ -48,9 +48,9 @@ export class BluelinkUSA extends Bluelink {
     this.authHeader = 'accessToken'
   }
 
-  static async init(config: Config, vin?: string, statusCheckInterval?: number) {
+  static async init(config: Config, refreshAuth: boolean, vin?: string, statusCheckInterval?: number) {
     const obj = new BluelinkUSA(config, statusCheckInterval)
-    await obj.superInit(config)
+    await obj.superInit(config, refreshAuth)
     return obj
   }
 

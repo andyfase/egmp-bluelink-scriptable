@@ -82,8 +82,11 @@ export async function createApp(config: Config, bl: Bluelink) {
   // if its been at least MIN_API_REFRESH_TIME milliseconds
   const cachedStatus = bl.getCachedStatus()
   if (!cachedStatus || cachedStatus.status.lastStatusCheck < Date.now() + MIN_API_REFRESH_TIME) {
-    bl.getStatus(false, true).then(async (status) => {
-      updateStatus(status)
+    // non blocking refresh of Auth then status call
+    bl.refreshAuth().then(async () => {
+      bl.getStatus(false, true).then(async (status) => {
+        updateStatus(status)
+      })
     })
   }
 

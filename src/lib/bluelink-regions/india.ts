@@ -75,9 +75,9 @@ export class BluelinkIndia extends Bluelink {
     this.europeccs2 = undefined
   }
 
-  static async init(config: Config, vin?: string, statusCheckInterval?: number) {
+  static async init(config: Config, refreshAuth: boolean, vin?: string, statusCheckInterval?: number) {
     const obj = new BluelinkIndia(config, statusCheckInterval)
-    await obj.superInit(config)
+    await obj.superInit(config, refreshAuth)
     return obj
   }
 
