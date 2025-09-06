@@ -76,6 +76,7 @@ export interface RequestProps {
   notJSON?: boolean
   noRedirect?: boolean
   authTokenOverride?: string
+  disableAdditionalHeaders?: boolean
 }
 
 export interface DebugLastRequest {
@@ -245,6 +246,12 @@ export class Bluelink {
     const offset = new Date().getTimezoneOffset()
     const o = Math.abs(offset)
     return (offset < 0 ? '+' : '-') + ('0' + Math.floor(o / 60)).slice(-1)
+  }
+
+  protected getTimeZoneFull(): string {
+    const offset = new Date().getTimezoneOffset()
+    const o = Math.abs(offset)
+    return (offset < 0 ? '+' : '-') + ('0' + Math.floor(o / 60)) + ':00'
   }
 
   protected getApiDomain(lookup: string, domains: Record<string, string>, _default: string): string {
@@ -529,7 +536,7 @@ export class Bluelink {
         this.authIdHeader && {
           [this.authIdHeader]: requestTokens.authId,
         }),
-      ...this.additionalHeaders,
+      ...(this.additionalHeaders && !props.disableAdditionalHeaders && { ...this.additionalHeaders }),
       ...(props.headers && {
         ...props.headers,
       }),
