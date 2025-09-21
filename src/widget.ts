@@ -373,8 +373,13 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
   footerStack.addSpacer(10)
 
   // Add odometer
+  const footerStackOdometer = footerStack.addStack()
+  // const odometerIconElement = footerStackOdometer.addImage(await getTintedIconAsync('odometer'))
+  // odometerIconElement.imageSize = new Size(20, 20)
+  // footerStackOdometer.addSpacer(3)
+
   const odometerText = `${Math.floor(Number(odometer)).toString()} ${bl.getDistanceUnit()}`
-  const odometerElement = footerStack.addText(odometerText)
+  const odometerElement = footerStackOdometer.addText(odometerText)
   odometerElement.font = Font.mediumSystemFont(12)
   odometerElement.textColor = DARK_MODE ? Color.white() : Color.black()
   odometerElement.textOpacity = 0.6
@@ -382,9 +387,14 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
   odometerElement.leftAlignText()
   footerStack.addSpacer()
 
+  const footerStackLastSeen = footerStack.addStack()
   // Add last seen indicator
-  const lastSeenElement = footerStack.addText(
-    'Last Updated: ' + lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown',
+  const lastUpdatedIconElement = footerStackLastSeen.addImage(await getTintedIconAsync('charging-complete-widget'))
+  lastUpdatedIconElement.imageSize = new Size(15, 15)
+  footerStackLastSeen.addSpacer(3)
+
+  const lastSeenElement = footerStackLastSeen.addText(
+    lastSeen.toLocaleString(undefined, dateStringOptions) || 'unknown',
   )
   lastSeenElement.font = Font.mediumSystemFont(12)
   lastSeenElement.textOpacity = 0.6
@@ -606,6 +616,49 @@ export async function createHomeScreenRectangleWidget(config: Config, bl: Blueli
   return widget
 }
 
+export async function createHomeScreenInlineWidget(config: Config, bl: Bluelink) {
+  const refresh = await refreshDataForWidgetWithTimeout(bl, config)
+  const status = refresh.status
+
+  const isCharging = status.status.isCharging
+  const isPluggedIn = status.status.isPluggedIn
+  const batteryPercent = status.status.soc
+  const remainingChargingTime = status.status.remainingChargeTimeMins
+  const lastSeen = new Date(status.status.lastRemoteStatusCheck)
+
+  const widget = new ListWidget()
+  widget.refreshAfterDate = refresh.nextRefresh
+
+  const widgetStack = widget.addStack()
+  widgetStack.layoutHorizontally()
+  const mainStack = widgetStack.addStack()
+  const chargingIcon = getChargingIcon(isCharging, isPluggedIn, true)
+
+  const icon = await progressCircleIconImageWithSymbol(
+    batteryPercent,
+    'hsla(0, 0%, 100%, 1.0)',
+    'hsla(0, 0%, 100%, 0.3)',
+    30,
+    3,
+    chargingIcon ? await getTintedIconAsync(chargingIcon) : SFSymbol.named('car.fill').image,
+    chargingIcon ? 17 : 14,
+  )
+
+  const iconStack = mainStack.addStack()
+  iconStack.addImage(icon)
+
+  //Only one line of text allowed in this style of widget
+  let rangeText = `${status.status.range} ${bl.getDistanceUnit()}`
+  if (isCharging) {
+    const chargeComplete = getChargeCompletionString(lastSeen, remainingChargingTime, 'short', true)
+    rangeText += ` \u{21BA} ${chargeComplete}`
+  }
+  const textStack = mainStack.addStack()
+  textStack.addText(rangeText)
+
+  return widget
+}
+
 async function progressCircle(
   on: ListWidget | WidgetStack,
   value = 50,
@@ -613,6 +666,7 @@ async function progressCircle(
   background = 'hsl(0, 0%, 10%)',
   size = 60,
   barWidth = 5,
+  padding = barWidth * 2,
 ) {
   if (value > 1) {
     value /= 100
@@ -658,13 +712,78 @@ async function progressCircle(
     true,
   )
   const image = Image.fromData(Data.fromBase64String(base64))
-
+  image.size = new Size(size, size)
   const stack = on.addStack()
   stack.size = new Size(size, size)
   stack.backgroundImage = image
   stack.centerAlignContent()
-  const padding = barWidth * 2
+  // const padding = barWidth * 2
   stack.setPadding(padding, padding, padding, padding)
 
   return stack
+}
+
+async function progressCircleIconImageWithSymbol(
+  value = 50,
+  colour = 'hsl(0, 0%, 100%)',
+  background = 'hsl(0, 0%, 10%)',
+  size = 60,
+  barWidth = 5,
+  symbolImage?: Image,
+  symbolSize?: number, // Now optional
+) {
+  if (value > 1) value /= 100
+  if (value < 0) value = 0
+  if (value > 1) value = 1
+
+  let symbolBase64 = undefined
+  let resolvedSymbolSize = symbolSize
+  if (symbolImage) {
+    symbolBase64 = Data.fromPNG(symbolImage).toBase64String()
+    if (!resolvedSymbolSize) resolvedSymbolSize = Math.floor(size * 0.6)
+  }
+
+  const w = new WebView()
+  const html = symbolBase64
+    ? `<canvas id="c"></canvas><img id="icon" src="data:image/png;base64,${symbolBase64}" />`
+    : `<canvas id="c"></canvas>`
+  await w.loadHTML(html)
+
+  const base64 = await w.evaluateJavaScript(
+    `
+  let colour = "${colour}",
+    background = "${background}",
+    size = ${size},
+    lineWidth = ${barWidth},
+    percent = ${value * 100},
+    symbolSize = ${resolvedSymbolSize ?? 0}
+      
+  let canvas = document.getElementById('c'),
+    c = canvas.getContext('2d')
+  canvas.width = size
+  canvas.height = size
+  let posX = canvas.width / 2,
+    posY = canvas.height / 2,
+    onePercent = 360 / 100,
+    result = onePercent * percent
+  c.lineCap = 'round'
+  c.beginPath()
+  c.arc( posX, posY, (size-lineWidth-1)/2, (Math.PI/180) * 270, (Math.PI/180) * (270 + 360) )
+  c.strokeStyle = background
+  c.lineWidth = lineWidth 
+  c.stroke()
+  c.beginPath()
+  c.strokeStyle = colour
+  c.lineWidth = lineWidth
+  c.arc( posX, posY, (size-lineWidth-1)/2, (Math.PI/180) * 270, (Math.PI/180) * (270 + result) )
+  c.stroke()
+  // Draw SFSymbol PNG in center if present
+  let img = document.getElementById('icon')
+  if (img && symbolSize) {
+    c.drawImage(img, posX - symbolSize/2, posY - symbolSize/2, symbolSize, symbolSize)
+  }
+  completion(canvas.toDataURL().replace("data:image/png;base64,",""))`,
+    true,
+  )
+  return Image.fromData(Data.fromBase64String(base64))
 }

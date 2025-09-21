@@ -125,11 +125,11 @@ export const dateStringOptions = {
 //   minute: '2-digit',
 // } as Intl.DateTimeFormatOptions
 
-export function getChargingPowerString(chargingPower: number): string {
+export function getChargingPowerString(chargingPower: number, includeKw: boolean = true): string {
   if (!chargingPower || chargingPower === 0) return '-'
   // if DC charging (power above 11kw) then drop any decimal
   const power = chargingPower >= 12 ? chargingPower.toFixed(0) : chargingPower.toFixed(1)
-  return `${power} kW`
+  return includeKw ? `${power} kW` : power
 }
 
 export function getChargeCompletionString(

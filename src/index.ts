@@ -7,6 +7,7 @@ import {
   createHomeScreenCircleWidget,
   createHomeScreenRectangleWidget,
   createErrorWidget,
+  createHomeScreenInlineWidget,
 } from 'widget'
 import { createApp } from 'app'
 import { getAppLogger } from './lib/util'
@@ -127,6 +128,9 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
         break
       case 'accessoryRectangular':
         widget = await createHomeScreenRectangleWidget(blConfig, bl)
+        break
+      case 'accessoryInline':
+        widget = await createHomeScreenInlineWidget(blConfig, bl)
         break
       case 'small':
         widget = await createSmallWidget(blConfig, bl)
