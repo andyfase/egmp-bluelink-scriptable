@@ -29,7 +29,7 @@ export class Logger {
       const date = new Date()
       const df = new DateFormatter()
       df.dateFormat = 'yyyyMMddHHmmssZ'
-      this.previousFilepath = this.filepath + '.' + df.string(date)
+      this.previousFilepath = this.filepath.slice(0, this.filepath.length - 4) + '_' + df.string(date) + '.log'
       this.fm.move(this.filepath, this.previousFilepath)
     }
   }

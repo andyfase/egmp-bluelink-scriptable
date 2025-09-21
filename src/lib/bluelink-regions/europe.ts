@@ -13,6 +13,8 @@ import { Config } from '../../config'
 import Url from 'url'
 import { isNotEmptyObject } from '../util'
 
+import { returnMockedCarStatus, returnMockedCar } from './mock'
+
 interface ControlToken {
   expiry: number
   token: string
@@ -66,6 +68,7 @@ export class BluelinkEurope extends Bluelink {
   private apiConfig: APIConfig
   private controlToken: ControlToken | undefined
   private europeccs2: number | undefined
+  private additionalAuthHeaders: Record<string, string>
 
   constructor(config: Config, statusCheckInterval?: number) {
     super(config)
@@ -82,6 +85,16 @@ export class BluelinkEurope extends Bluelink {
       offset: this.getTimeZone().slice(0, 3),
       'ccsp-service-id': this.apiConfig.clientId,
       'ccsp-application-id': this.apiConfig.appId,
+    }
+    this.additionalAuthHeaders = {
+      'client-id': 'com.kia.oneapp.eu',
+      'client-name': 'Kia',
+      'client-os-code': 'AOS',
+      'client-os-version': '36',
+      'client-version': '1.0.11',
+      'User-Agent': 'Ktor client',
+      timezone: this.getTimeZoneFull(),
+      locale: 'DE',
     }
     this.authIdHeader = 'ccsp-device-id'
     this.authHeader = 'Authorization'
@@ -311,6 +324,73 @@ export class BluelinkEurope extends Bluelink {
     })
   }
 
+  protected async KiaDeviceRegistration(tokens: BluelinkTokens): Promise<boolean | undefined> {
+    if (!tokens || !tokens.additionalTokens || !isNotEmptyObject(tokens.additionalTokens)) {
+      if (this.config.debugLogging) this.logger.log('Cannot init session - no additional tokens')
+      return undefined
+    }
+
+    const resp = await this.request({
+      url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/notifications/bases/devices`,
+      noAuth: true,
+      disableAdditionalHeaders: true,
+      validResponseFunction: this.requestResponseValid,
+      data: JSON.stringify({
+        appToken: `${this.genRanHex(22)}:${this.genRanHex(44)}_${this.genRanHex(11)}_${this.genRanHex(62)}`,
+        deviceToken: UUID.string(),
+        providerType: 'AOS',
+        deviceModel: 'sdk_gphone64_arm64',
+        deviceOsVer: '36',
+        deviceAppVer: '1.0.11',
+      }),
+      headers: {
+        ...this.additionalAuthHeaders,
+        'app-request-id': UUID.string(),
+        Authentication: tokens.additionalTokens['idToken'] || '',
+        Authorization: `Bearer ${tokens.additionalTokens['access'] || ''}`,
+        'exchangeable-token': tokens.additionalTokens['exchangeableAccess'] || '',
+        'non-ccs-token': tokens.additionalTokens['nonCcsToken'] || '',
+      },
+    })
+
+    if (!this.requestResponseValid(resp.resp, resp.json).valid) {
+      const error = `Failed to perform device registration ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      return undefined
+    }
+
+    const deviceId = resp.json.deviceId
+
+    const respLang = await this.request({
+      url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/notifications/settings/preferences/language`,
+      method: 'PUT',
+      noAuth: true,
+      disableAdditionalHeaders: true,
+      validResponseFunction: this.requestResponseValid,
+      data: JSON.stringify({
+        deviceId: deviceId,
+        countryCd: 'GB',
+        langCd: 'en',
+      }),
+      headers: {
+        ...this.additionalAuthHeaders,
+        'app-request-id': UUID.string(),
+        Authentication: tokens.additionalTokens['idToken'] || '',
+        Authorization: `Bearer ${tokens.additionalTokens['access'] || ''}`,
+        'exchangeable-token': tokens.additionalTokens['exchangeableAccess'] || '',
+        'non-ccs-token': tokens.additionalTokens['nonCcsToken'] || '',
+      },
+    })
+
+    if (!this.requestResponseValid(respLang.resp, respLang.json).valid) {
+      const error = `Failed to perform device registration lang ${JSON.stringify(respLang.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      return undefined
+    }
+
+    return true
+  }
+
   protected async KiaLogin(): Promise<BluelinkTokens | undefined> {
     const authUrl =
       `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?` +
@@ -341,9 +421,11 @@ export class BluelinkEurope extends Bluelink {
       url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/auth/token?code=${code}`,
       method: 'POST',
       noAuth: true,
+      disableAdditionalHeaders: true,
       validResponseFunction: this.requestResponseValid,
       headers: {
-        'client-id': 'com.kia.oneapp.eu',
+        ...this.additionalAuthHeaders,
+        'app-request-id': UUID.string(),
       },
     })
 
@@ -356,7 +438,7 @@ export class BluelinkEurope extends Bluelink {
     // this causes the script to restart to dismiss the webview if this happens on first load
     this.loginRequiredWebview = true
 
-    return this.tokenExchange({
+    const tokens = {
       accessToken: '', // set in tokenExchange
       refreshToken: '', // there is no single refresh token - we use additionalTokens for this
       expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expiresIn), // we only get a expireIn not a actual date
@@ -370,7 +452,62 @@ export class BluelinkEurope extends Bluelink {
         nonCcsRefreshToken: respTokens.json.nonCcsRefreshToken,
         idToken: respTokens.json.idToken,
       },
+    }
+
+    await this.KiaDeviceRegistration(tokens)
+    await this.initKiaSession(tokens)
+    return await this.tokenExchange(tokens)
+  }
+
+  protected async initKiaSession(tokens: BluelinkTokens): Promise<boolean | undefined> {
+    if (!tokens || !tokens.additionalTokens || !isNotEmptyObject(tokens.additionalTokens)) {
+      if (this.config.debugLogging) this.logger.log('Cannot init session - no additional tokens')
+      return undefined
+    }
+
+    const resp = await this.request({
+      url: `https://${this.apiConfig.newApiDomain}/oneapp/api/v1/initialize`,
+      noAuth: true,
+      disableAdditionalHeaders: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        ...this.additionalAuthHeaders,
+        'app-request-id': UUID.string(),
+        Authentication: tokens.additionalTokens['idToken'] || '',
+        Authorization: `Bearer ${tokens.additionalTokens['access'] || ''}`,
+        'exchangeable-token': tokens.additionalTokens['exchangeableAccess'] || '',
+        'non-ccs-token': tokens.additionalTokens['nonCcsToken'] || '',
+      },
     })
+
+    if (!this.requestResponseValid(resp.resp, resp.json).valid) {
+      const error = `Failed to init session ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      return undefined
+    }
+
+    const respVehicle = await this.request({
+      url: `https://${this.apiConfig.newApiDomain}/oneapp/api/v1/initialize/vehicle`,
+      noAuth: true,
+      disableAdditionalHeaders: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        ...this.additionalAuthHeaders,
+        'app-request-id': UUID.string(),
+        Authentication: tokens.additionalTokens['idToken'] || '',
+        Authorization: `Bearer ${tokens.additionalTokens['access'] || ''}`,
+        'exchangeable-token': tokens.additionalTokens['exchangeableAccess'] || '',
+        'non-ccs-token': tokens.additionalTokens['nonCcsToken'] || '',
+      },
+    })
+
+    if (!this.requestResponseValid(respVehicle.resp, respVehicle.json).valid) {
+      const error = `Failed to init vehicle session ${JSON.stringify(respVehicle.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      return undefined
+    }
+
+    return true
   }
 
   protected async tokenExchange(tokens: BluelinkTokens): Promise<BluelinkTokens | undefined> {
@@ -385,9 +522,11 @@ export class BluelinkEurope extends Bluelink {
       url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/auth/token-exchange?serviceType=CCS`,
       method: 'POST',
       noAuth: true,
+      disableAdditionalHeaders: true,
       validResponseFunction: this.requestResponseValid,
       headers: {
-        'client-id': 'com.kia.oneapp.eu',
+        ...this.additionalAuthHeaders,
+        'app-request-id': UUID.string(),
         Authentication: tokens.additionalTokens['idToken'] || '',
         Authorization: `Bearer ${tokens.additionalTokens['access'] || ''}`,
         'exchangeable-token': tokens.additionalTokens['exchangeableAccess'] || '',
@@ -395,15 +534,57 @@ export class BluelinkEurope extends Bluelink {
       },
     })
 
-    if (this.requestResponseValid(respToken.resp, respToken.json).valid) {
-      tokens.accessToken = `Bearer ${respToken.json.accessToken}`
-      tokens.expiry = Math.floor(Date.now() / 1000) + Number(respToken.json.expiresTime) // we only get a expireIn not a actual date
-      return tokens
+    if (!this.requestResponseValid(respToken.resp, respToken.json).valid) {
+      const error = `Token Exchange Failed: ${JSON.stringify(respToken.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      return undefined
+    }
+    // use existing expiry
+    tokens.accessToken = `Bearer ${respToken.json.accessToken}`
+
+    const respCar = await this.request({
+      url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/vehicle/available-vehicles?detail=false`,
+      noAuth: true,
+      disableAdditionalHeaders: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        ...this.additionalAuthHeaders,
+        'app-request-id': UUID.string(),
+        Authentication: tokens.additionalTokens['idToken'] || '',
+        Authorization: `Bearer ${tokens.additionalTokens['access'] || ''}`,
+        'exchangeable-token': tokens.additionalTokens['exchangeableAccess'] || '',
+        'non-ccs-token': tokens.additionalTokens['nonCcsToken'] || '',
+      },
+    })
+
+    if (!this.requestResponseValid(respCar.resp, respCar.json).valid) {
+      const error = `car Failed: ${JSON.stringify(respCar.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      return undefined
     }
 
-    const error = `Token Exchange Failed: ${JSON.stringify(respToken.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) this.logger.log(error)
-    return undefined
+    const termsCar = await this.request({
+      url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/terms/service-terms/agreement`,
+      noAuth: true,
+      disableAdditionalHeaders: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        ...this.additionalAuthHeaders,
+        'app-request-id': UUID.string(),
+        Authentication: tokens.additionalTokens['idToken'] || '',
+        Authorization: `Bearer ${tokens.additionalTokens['access'] || ''}`,
+        'exchangeable-token': tokens.additionalTokens['exchangeableAccess'] || '',
+        'non-ccs-token': tokens.additionalTokens['nonCcsToken'] || '',
+      },
+    })
+
+    if (!this.requestResponseValid(termsCar.resp, termsCar.json).valid) {
+      const error = `termsCar Failed: ${JSON.stringify(termsCar.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      return undefined
+    }
+
+    return tokens
   }
 
   protected async newRefreshTokens(): Promise<BluelinkTokens | undefined> {
@@ -414,8 +595,9 @@ export class BluelinkEurope extends Bluelink {
 
     if (this.config.debugLogging) this.logger.log('Refreshing tokens using new method')
 
+    // token refresh API call
     const respTokens = await this.request({
-      url: 'https://cci-api-eu.kia.com/domain/api/v2/auth/token-refresh',
+      url: `https://${this.apiConfig.newApiDomain}/domain/api/v2/auth/token-refresh`,
       data: JSON.stringify({
         accessToken: this.cache.token.additionalTokens['access'],
         refreshToken: this.cache.token.additionalTokens['refresh'],
@@ -524,65 +706,66 @@ export class BluelinkEurope extends Bluelink {
   }
 
   protected async getCar(): Promise<BluelinkCar | undefined> {
-    let vin = this.vin
-    if (!vin && this.cache) {
-      vin = this.cache.car.vin
-    }
+    return returnMockedCar()
+    // let vin = this.vin
+    // if (!vin && this.cache) {
+    //   vin = this.cache.car.vin
+    // }
 
-    const resp = await this.request({
-      url: this.apiDomain + `/api/v1/spa/vehicles`,
-      validResponseFunction: this.requestResponseValid,
-      headers: {
-        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-      },
-    })
+    // const resp = await this.request({
+    //   url: this.apiDomain + `/api/v1/spa/vehicles`,
+    //   validResponseFunction: this.requestResponseValid,
+    //   headers: {
+    //     Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+    //   },
+    // })
 
-    if (!this.requestResponseValid(resp.resp, resp.json).valid) {
-      const error = `Failed to retrieve vehicles: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
+    // if (!this.requestResponseValid(resp.resp, resp.json).valid) {
+    //   const error = `Failed to retrieve vehicles: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    //   if (this.config.debugLogging) this.logger.log(error)
+    //   throw Error(error)
+    // }
 
     // if multuple cars and we have no vin populate options and return undefined for user selection
-    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 1 && !vin) {
-      for (const vehicle of resp.json.resMsg.vehicles) {
-        this.carOptions.push({
-          vin: vehicle.vin,
-          nickName: vehicle.nickname,
-          modelName: vehicle.vehicleName,
-          modelYear: vehicle.year,
-        })
-      }
-      return undefined
-    }
+    // if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 1 && !vin) {
+    //   for (const vehicle of resp.json.resMsg.vehicles) {
+    //     this.carOptions.push({
+    //       vin: vehicle.vin,
+    //       nickName: vehicle.nickname,
+    //       modelName: vehicle.vehicleName,
+    //       modelYear: vehicle.year,
+    //     })
+    //   }
+    //   return undefined
+    // }
 
-    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 0) {
-      let vehicle = resp.json.resMsg.vehicles[0]
-      if (vin) {
-        for (const v of resp.json.resMsg.vehicles) {
-          if (v.vin === vin) {
-            vehicle = v
-            break
-          }
-        }
-      }
+    // if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 0) {
+    //   let vehicle = resp.json.resMsg.vehicles[0]
+    //   if (vin) {
+    //     for (const v of resp.json.resMsg.vehicles) {
+    //       if (v.vin === vin) {
+    //         vehicle = v
+    //         break
+    //       }
+    //     }
+    //   }
 
-      this.europeccs2 = vehicle.ccuCCS2ProtocolSupport
-      return {
-        id: vehicle.vehicleId,
-        vin: vehicle.vin,
-        nickName: vehicle.nickname,
-        modelName: vehicle.vehicleName,
-        modelYear: vehicle.year,
-        odometer: 0, // not available here
-        modelColour: vehicle.detailInfo.outColor,
-        modelTrim: vehicle.detailInfo.saleCarmdlCd,
-        europeccs2: vehicle.ccuCCS2ProtocolSupport,
-      }
-    }
-    const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) this.logger.log(error)
-    throw Error(error)
+    //   this.europeccs2 = vehicle.ccuCCS2ProtocolSupport
+    //   return {
+    //     id: vehicle.vehicleId,
+    //     vin: vehicle.vin,
+    //     nickName: vehicle.nickname,
+    //     modelName: vehicle.vehicleName,
+    //     modelYear: vehicle.year,
+    //     odometer: 0, // not available here
+    //     modelColour: vehicle.detailInfo.outColor,
+    //     modelTrim: vehicle.detailInfo.saleCarmdlCd,
+    //     europeccs2: vehicle.ccuCCS2ProtocolSupport,
+    //   }
+    // }
+    // const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    // if (this.config.debugLogging) this.logger.log(error)
+    // throw Error(error)
   }
 
   protected returnCarStatus(status: any, updateTime: number): BluelinkStatus {
@@ -659,52 +842,53 @@ export class BluelinkEurope extends Bluelink {
   }
 
   protected async getCarStatus(id: string, forceUpdate: boolean, _location: boolean = false): Promise<BluelinkStatus> {
+    return returnMockedCarStatus()
     // CCS2 endpoint appears to be the only endpoint that works consistantly across all cars
-    if (!forceUpdate) {
-      const resp = await this.request({
-        url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus/latest`,
-        headers: {
-          Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-          ccuCCS2ProtocolSupport: this.getCCS2Header(),
-        },
-        validResponseFunction: this.requestResponseValid,
-      })
+    // if (!forceUpdate) {
+    //   const resp = await this.request({
+    //     url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus/latest`,
+    //     headers: {
+    //       Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+    //       ccuCCS2ProtocolSupport: this.getCCS2Header(),
+    //     },
+    //     validResponseFunction: this.requestResponseValid,
+    //   })
 
-      if (this.requestResponseValid(resp.resp, resp.json).valid) {
-        return this.returnCarStatus(resp.json.resMsg.state.Vehicle, resp.json.resMsg.lastUpdateTime)
-      }
-      const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
+    //   if (this.requestResponseValid(resp.resp, resp.json).valid) {
+    //     return this.returnCarStatus(resp.json.resMsg.state.Vehicle, resp.json.resMsg.lastUpdateTime)
+    //   }
+    //   const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    //   if (this.config.debugLogging) this.logger.log(error)
+    //   throw Error(error)
+    // }
 
-    // force update does not return a useful response hence we send the command and then poll the cached status until it updates
-    const currentTime = Date.now()
-    const resp = await this.request({
-      url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus`,
-      headers: {
-        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-        ccuCCS2ProtocolSupport: this.getCCS2Header(),
-      },
-      validResponseFunction: this.requestResponseValid,
-    })
-    if (this.requestResponseValid(resp.resp, resp.json).valid) {
-      // poll cached status API until the date is above currentTime
-      let attempts = 0
-      let resp = undefined
-      while (attempts <= MAX_COMPLETION_POLLS) {
-        attempts += 1
-        await this.sleep(2000)
-        resp = await this.getCarStatus(id, false)
-        if (currentTime < resp.lastRemoteStatusCheck) {
-          return resp
-        }
-      }
-    }
+    // // force update does not return a useful response hence we send the command and then poll the cached status until it updates
+    // const currentTime = Date.now()
+    // const resp = await this.request({
+    //   url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus`,
+    //   headers: {
+    //     Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+    //     ccuCCS2ProtocolSupport: this.getCCS2Header(),
+    //   },
+    //   validResponseFunction: this.requestResponseValid,
+    // })
+    // if (this.requestResponseValid(resp.resp, resp.json).valid) {
+    //   // poll cached status API until the date is above currentTime
+    //   let attempts = 0
+    //   let resp = undefined
+    //   while (attempts <= MAX_COMPLETION_POLLS) {
+    //     attempts += 1
+    //     await this.sleep(2000)
+    //     resp = await this.getCarStatus(id, false)
+    //     if (currentTime < resp.lastRemoteStatusCheck) {
+    //       return resp
+    //     }
+    //   }
+    // }
 
-    const error = `Failed to retrieve remote vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    if (this.config.debugLogging) this.logger.log(error)
-    throw Error(error)
+    // const error = `Failed to retrieve remote vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    // if (this.config.debugLogging) this.logger.log(error)
+    // throw Error(error)
   }
 
   // named for consistency - but this is a special Authetication token - used instead of the normal Authentication token?
