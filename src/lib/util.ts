@@ -50,6 +50,10 @@ const icons: Record<string, icon> = {
     iconName: 'bolt.fill',
     color: Color.green(),
   },
+  odometer: {
+    iconName: 'shuffle',
+    color: Color.white(),
+  },
   'charging-complete-widget': {
     iconName: 'clock',
     color: Color.white(),

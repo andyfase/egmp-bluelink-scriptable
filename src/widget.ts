@@ -374,9 +374,10 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
 
   // Add odometer
   const footerStackOdometer = footerStack.addStack()
-  // const odometerIconElement = footerStackOdometer.addImage(await getTintedIconAsync('odometer'))
-  // odometerIconElement.imageSize = new Size(20, 20)
-  // footerStackOdometer.addSpacer(3)
+  const odometerIconElement = footerStackOdometer.addImage(await getTintedIconAsync('odometer'))
+  odometerIconElement.imageSize = new Size(15, 15)
+  odometerIconElement.imageOpacity = 0.6
+  footerStackOdometer.addSpacer(3)
 
   const odometerText = `${Math.floor(Number(odometer)).toString()} ${bl.getDistanceUnit()}`
   const odometerElement = footerStackOdometer.addText(odometerText)
@@ -391,6 +392,7 @@ export async function createMediumWidget(config: Config, bl: Bluelink) {
   // Add last seen indicator
   const lastUpdatedIconElement = footerStackLastSeen.addImage(await getTintedIconAsync('charging-complete-widget'))
   lastUpdatedIconElement.imageSize = new Size(15, 15)
+  lastUpdatedIconElement.imageOpacity = 0.6
   footerStackLastSeen.addSpacer(3)
 
   const lastSeenElement = footerStackLastSeen.addText(
