@@ -56,6 +56,7 @@ These widgets can be added to your lockscreen. [See the apple instructions on ho
 {: .fs-5 .fw-300 }
 
 <table border="0" class="noBorder">
+
 <tr>
 <td width="40%">
 <img src="../images/widget_lock_big.png" width="300"/>
@@ -63,10 +64,10 @@ These widgets can be added to your lockscreen. [See the apple instructions on ho
 <td>
 <p><b>Large Size</b></p>
 <p>Will display "battery circle" to reflect battery capacity. Plus display available range, exact percentage of battery capacity and, if charging, when charging will complete.</p>
-
 <p>Note the car image will change based on if the car is charging or not.</p>
 </td>
 </tr>
+
 <tr>
 <td>
 <img src="../images/widget_lock_small.png" width="100"/>
@@ -78,9 +79,18 @@ These widgets can be added to your lockscreen. [See the apple instructions on ho
 </td>
 
 </tr>
+
+<tr >
+<td>
+<img src="../images/widget_lock_inline.png" width="400"/>
+</td>
+<td>
+<p><b>Inline Size</b></p>
+<p>This widget is available for display above the time element on the homescreen</p>
+<p>Will display a modified version of the "battery circle" with icons within it to indicate if charging / plugged in. The text will show range available and if charging when charging will complete</p>
+</td>
+</tr>
+
 </table>
-
-
-
 
 ----
