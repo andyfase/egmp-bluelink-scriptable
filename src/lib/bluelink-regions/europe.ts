@@ -63,6 +63,8 @@ const API_CONFIG: Record<string, APIConfig> = {
   },
 }
 
+const MOCK_API = false
+
 export class BluelinkEurope extends Bluelink {
   private lang = 'en' // hard-code to en as the language doesnt appear to matter from an API perspective.
   private apiConfig: APIConfig
@@ -91,10 +93,13 @@ export class BluelinkEurope extends Bluelink {
       'client-name': 'Kia',
       'client-os-code': 'AOS',
       'client-os-version': '36',
-      'client-version': '1.0.11',
+      'client-version': '1.0.13',
       'User-Agent': 'Ktor client',
+      'Accept-Language': 'en-GB',
+      'Accept-Charset': 'UTF-8',
+      Accept: 'application/json',
       timezone: this.getTimeZoneFull(),
-      locale: 'DE',
+      locale: 'GB',
     }
     this.authIdHeader = 'ccsp-device-id'
     this.authHeader = 'Authorization'
@@ -563,27 +568,6 @@ export class BluelinkEurope extends Bluelink {
       return undefined
     }
 
-    const termsCar = await this.request({
-      url: `https://${this.apiConfig.newApiDomain}/domain/api/v1/terms/service-terms/agreement`,
-      noAuth: true,
-      disableAdditionalHeaders: true,
-      validResponseFunction: this.requestResponseValid,
-      headers: {
-        ...this.additionalAuthHeaders,
-        'app-request-id': UUID.string(),
-        Authentication: tokens.additionalTokens['idToken'] || '',
-        Authorization: `Bearer ${tokens.additionalTokens['access'] || ''}`,
-        'exchangeable-token': tokens.additionalTokens['exchangeableAccess'] || '',
-        'non-ccs-token': tokens.additionalTokens['nonCcsToken'] || '',
-      },
-    })
-
-    if (!this.requestResponseValid(termsCar.resp, termsCar.json).valid) {
-      const error = `termsCar Failed: ${JSON.stringify(termsCar.json)} request ${JSON.stringify(this.debugLastRequest)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      return undefined
-    }
-
     return tokens
   }
 
@@ -706,66 +690,66 @@ export class BluelinkEurope extends Bluelink {
   }
 
   protected async getCar(): Promise<BluelinkCar | undefined> {
-    return returnMockedCar()
-    // let vin = this.vin
-    // if (!vin && this.cache) {
-    //   vin = this.cache.car.vin
-    // }
+    if (MOCK_API) return returnMockedCar()
+    let vin = this.vin
+    if (!vin && this.cache) {
+      vin = this.cache.car.vin
+    }
 
-    // const resp = await this.request({
-    //   url: this.apiDomain + `/api/v1/spa/vehicles`,
-    //   validResponseFunction: this.requestResponseValid,
-    //   headers: {
-    //     Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-    //   },
-    // })
+    const resp = await this.request({
+      url: this.apiDomain + `/api/v1/spa/vehicles`,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+      },
+    })
 
-    // if (!this.requestResponseValid(resp.resp, resp.json).valid) {
-    //   const error = `Failed to retrieve vehicles: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    //   if (this.config.debugLogging) this.logger.log(error)
-    //   throw Error(error)
-    // }
+    if (!this.requestResponseValid(resp.resp, resp.json).valid) {
+      const error = `Failed to retrieve vehicles: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
 
     // if multuple cars and we have no vin populate options and return undefined for user selection
-    // if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 1 && !vin) {
-    //   for (const vehicle of resp.json.resMsg.vehicles) {
-    //     this.carOptions.push({
-    //       vin: vehicle.vin,
-    //       nickName: vehicle.nickname,
-    //       modelName: vehicle.vehicleName,
-    //       modelYear: vehicle.year,
-    //     })
-    //   }
-    //   return undefined
-    // }
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 1 && !vin) {
+      for (const vehicle of resp.json.resMsg.vehicles) {
+        this.carOptions.push({
+          vin: vehicle.vin,
+          nickName: vehicle.nickname,
+          modelName: vehicle.vehicleName,
+          modelYear: vehicle.year,
+        })
+      }
+      return undefined
+    }
 
-    // if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 0) {
-    //   let vehicle = resp.json.resMsg.vehicles[0]
-    //   if (vin) {
-    //     for (const v of resp.json.resMsg.vehicles) {
-    //       if (v.vin === vin) {
-    //         vehicle = v
-    //         break
-    //       }
-    //     }
-    //   }
+    if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 0) {
+      let vehicle = resp.json.resMsg.vehicles[0]
+      if (vin) {
+        for (const v of resp.json.resMsg.vehicles) {
+          if (v.vin === vin) {
+            vehicle = v
+            break
+          }
+        }
+      }
 
-    //   this.europeccs2 = vehicle.ccuCCS2ProtocolSupport
-    //   return {
-    //     id: vehicle.vehicleId,
-    //     vin: vehicle.vin,
-    //     nickName: vehicle.nickname,
-    //     modelName: vehicle.vehicleName,
-    //     modelYear: vehicle.year,
-    //     odometer: 0, // not available here
-    //     modelColour: vehicle.detailInfo.outColor,
-    //     modelTrim: vehicle.detailInfo.saleCarmdlCd,
-    //     europeccs2: vehicle.ccuCCS2ProtocolSupport,
-    //   }
-    // }
-    // const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    // if (this.config.debugLogging) this.logger.log(error)
-    // throw Error(error)
+      this.europeccs2 = vehicle.ccuCCS2ProtocolSupport
+      return {
+        id: vehicle.vehicleId,
+        vin: vehicle.vin,
+        nickName: vehicle.nickname,
+        modelName: vehicle.vehicleName,
+        modelYear: vehicle.year,
+        odometer: 0, // not available here
+        modelColour: vehicle.detailInfo.outColor,
+        modelTrim: vehicle.detailInfo.saleCarmdlCd,
+        europeccs2: vehicle.ccuCCS2ProtocolSupport,
+      }
+    }
+    const error = `Failed to retrieve vehicle list: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
   }
 
   protected returnCarStatus(status: any, updateTime: number): BluelinkStatus {
@@ -842,53 +826,53 @@ export class BluelinkEurope extends Bluelink {
   }
 
   protected async getCarStatus(id: string, forceUpdate: boolean, _location: boolean = false): Promise<BluelinkStatus> {
-    return returnMockedCarStatus()
+    if (MOCK_API) return returnMockedCarStatus()
     // CCS2 endpoint appears to be the only endpoint that works consistantly across all cars
-    // if (!forceUpdate) {
-    //   const resp = await this.request({
-    //     url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus/latest`,
-    //     headers: {
-    //       Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-    //       ccuCCS2ProtocolSupport: this.getCCS2Header(),
-    //     },
-    //     validResponseFunction: this.requestResponseValid,
-    //   })
+    if (!forceUpdate) {
+      const resp = await this.request({
+        url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus/latest`,
+        headers: {
+          Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+          ccuCCS2ProtocolSupport: this.getCCS2Header(),
+        },
+        validResponseFunction: this.requestResponseValid,
+      })
 
-    //   if (this.requestResponseValid(resp.resp, resp.json).valid) {
-    //     return this.returnCarStatus(resp.json.resMsg.state.Vehicle, resp.json.resMsg.lastUpdateTime)
-    //   }
-    //   const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    //   if (this.config.debugLogging) this.logger.log(error)
-    //   throw Error(error)
-    // }
+      if (this.requestResponseValid(resp.resp, resp.json).valid) {
+        return this.returnCarStatus(resp.json.resMsg.state.Vehicle, resp.json.resMsg.lastUpdateTime)
+      }
+      const error = `Failed to retrieve vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
 
-    // // force update does not return a useful response hence we send the command and then poll the cached status until it updates
-    // const currentTime = Date.now()
-    // const resp = await this.request({
-    //   url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus`,
-    //   headers: {
-    //     Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
-    //     ccuCCS2ProtocolSupport: this.getCCS2Header(),
-    //   },
-    //   validResponseFunction: this.requestResponseValid,
-    // })
-    // if (this.requestResponseValid(resp.resp, resp.json).valid) {
-    //   // poll cached status API until the date is above currentTime
-    //   let attempts = 0
-    //   let resp = undefined
-    //   while (attempts <= MAX_COMPLETION_POLLS) {
-    //     attempts += 1
-    //     await this.sleep(2000)
-    //     resp = await this.getCarStatus(id, false)
-    //     if (currentTime < resp.lastRemoteStatusCheck) {
-    //       return resp
-    //     }
-    //   }
-    // }
+    // force update does not return a useful response hence we send the command and then poll the cached status until it updates
+    const currentTime = Date.now()
+    const resp = await this.request({
+      url: `${this.apiDomain}/api/v1/spa/vehicles/${id}/ccs2/carstatus`,
+      headers: {
+        Stamp: this.getStamp(this.apiConfig.appId, this.apiConfig.authCfb),
+        ccuCCS2ProtocolSupport: this.getCCS2Header(),
+      },
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      // poll cached status API until the date is above currentTime
+      let attempts = 0
+      let resp = undefined
+      while (attempts <= MAX_COMPLETION_POLLS) {
+        attempts += 1
+        await this.sleep(2000)
+        resp = await this.getCarStatus(id, false)
+        if (currentTime < resp.lastRemoteStatusCheck) {
+          return resp
+        }
+      }
+    }
 
-    // const error = `Failed to retrieve remote vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
-    // if (this.config.debugLogging) this.logger.log(error)
-    // throw Error(error)
+    const error = `Failed to retrieve remote vehicle status: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    throw Error(error)
   }
 
   // named for consistency - but this is a special Authetication token - used instead of the normal Authentication token?
