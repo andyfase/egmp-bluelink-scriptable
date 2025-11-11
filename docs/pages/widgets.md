@@ -18,7 +18,7 @@ All widgets provide single click access to the main app and all widgets allow fo
 >
 > It should be noted that auto-updating of car data is "opt-in" you are required to check the setting "Enable widget remote refresh" in the settings screen to enable this feature. This feature will auto send intermittent remote status commands to the car to obtain up-to date data on the status of your car.
 >
-> This is required to get the latest data from the car directly, without enabiling this setting it is likely your widget will always display stale data.
+> This is required to get the latest data from the car directly, without enabling this setting it is likely your widget will always display stale data.
 >
 > 12V battery drain can occur if you send too many remote refresh commands. The defaults set in the app are very conservative for this reason. Only play with the advanced widget settings if you understand the potential consequences of sending too many commands.
 {: .fs-5 .fw-300 }
