@@ -1,22 +1,25 @@
 ---
-title: Region / Brand Support
+title: Région et disponibilité
 layout: home
-nav_order: 2
+nav_order: 5
+lang: fr
+translation_key: region
+permalink: /fr/pages/region
 ---
 
-# Region and Brand Support
+# Régions et marques prises en charge
 {: .fs-9 }
 
-The app uses the publically exposed BlueLink API, it is un-documented and varies in specification across both manufacturer and region.
+L'application utilise les API publiées par Bluelink qui ne sont pas documentées et varient en possibilités selon la marque et la région.
 {: .fs-6 .fw-300 }
 
-As such support for each region / manufacturer requires custom development and testing. The current level of support is shown below.
+Par conséquent, le support pour chaque région/fabricant nécessite un développement et des tests personnalisés. Le niveau de support actuel est indiqué ci-dessous.
 {: .fs-5 .fw-300 }
 
-If you can confirm support for any un-tested regions (Noted via question-mark icon) or encounter a bug on a region that is supported, feel free to [DM me on reddit](https://www.reddit.com/user/andyfase/) or [raise a issue on github](https://github.com/andyfase/egmp-bluelink-scriptable/issues).
+Si vous pouvez confirmer le support pour des régions non testées (indiquées par une icône point d'interrogation) ou si vous rencontrez un bug dans une région supportée, n'hésitez pas à m'envoyer un message privé [DM me on reddit](https://www.reddit.com/user/andyfase/) ou à [raise a issue on github](https://github.com/andyfase/egmp-bluelink-scriptable/issues).
 {: .fs-5 .fw-300 }
 
-# Current Known Region Support
+# Région supportées
 {: .fs-7 }
 
 <table class="styled-table">
@@ -113,7 +116,7 @@ If you can confirm support for any un-tested regions (Noted via question-mark ic
 </tbody>
 </table>
 
-If your region is not supported and your willing to provide secondary driver access to your bluelink account, so I can obtain network traces to support your region please [DM me on reddit](https://www.reddit.com/user/andyfase/). As I am much more likely to work on the support of your region If I have access to the APIs and offical app to trace and test with.
+Si votre région n'est pas prise en charge et que vous êtes prêt(e) à fournir un accès conducteur secondaire à votre compte Bluelink afin que je puisse obtenir des traces réseau pour prendre en charge votre région, veuillez m'envoyer un message privé sur Reddit [DM me on reddit](https://www.reddit.com/user/andyfase/). Il est beaucoup plus probable que je travaille sur le support de votre région si j'ai accès aux API et à l'application officielle pour effectuer le traçage et les tests nécessaires. 
 {: .fs-3 .fw-300 }
 
 ----
