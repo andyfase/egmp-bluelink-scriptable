@@ -18,7 +18,7 @@ const LOGIN_EXPIRY = 24 * 60 * 60 * 1000
 
 interface MFAResponse {
   rmtoken: string
-  sid: string
+  sid?: string
 }
 
 export class BluelinkUSAKia extends Bluelink {
@@ -143,6 +143,13 @@ export class BluelinkUSAKia extends Bluelink {
   }
 
   protected async login(mfaToken: MFAResponse | undefined = undefined): Promise<BluelinkTokens | undefined> {
+    // check for previous MFA token
+    if (this.cache && this.cache.token.additionalTokens && this.cache.token.additionalTokens.rmToken) {
+      mfaToken = {
+        rmtoken: this.cache.token.additionalTokens.rmToken,
+      }
+    }
+
     const resp = await this.request({
       url: this.apiDomain + 'prof/authUser',
       data: JSON.stringify({
@@ -155,10 +162,14 @@ export class BluelinkUSAKia extends Bluelink {
       }),
       headers: {
         date: this.getDateString(),
-        ...(mfaToken && {
-          rmtoken: mfaToken.rmtoken,
-          sid: mfaToken.sid,
-        }),
+        ...(mfaToken &&
+          mfaToken.rmtoken && {
+            rmtoken: mfaToken.rmtoken,
+          }),
+        ...(mfaToken &&
+          mfaToken.sid && {
+            sid: mfaToken.sid,
+          }),
       },
       noAuth: true,
       validResponseFunction: this.requestResponseValid,
@@ -176,6 +187,11 @@ export class BluelinkUSAKia extends Bluelink {
         accessToken: sid || '',
         refreshToken: '', // seemingly KIA us doesnt support refresh?
         expiry: Math.floor(Date.now() / 1000) + Number(LOGIN_EXPIRY), // we also dont get an expiry?
+        ...(mfaToken && {
+          additionalTokens: {
+            rmToken: mfaToken.rmtoken,
+          },
+        }),
       }
       const car = await this.getCar(true)
       if (car) this.tokens.authId = car.id
