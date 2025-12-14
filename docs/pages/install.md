@@ -4,58 +4,56 @@ layout: home
 nav_order: 4
 ---
 
-# Install Guide
+# Guide d'installation
 {: .fs-9 }
 
 {: .info-title }
-> This is not an "App Store" app
+> Ce n'est pas une application de l'App Store
 >
-> Bluelink Scriptable is a "scriptable app". Its a "script" runs within the [scriptable IOS app](https://scriptable.app/), think of it as an app within a app. This means you install the scriptable app from the app store and then download the JS (Javascript) file into the scriptable directory on your phone.
+> Bluelink Scriptable est une "app scriptable". C'est un "script" qui s'exécute dans l'[app Scriptable iOS](https://scriptable.app/), pensez-y comme une app dans l'app. Cela signifie que vous installez l'app Scriptable depuis l'App Store, puis vous téléchargez le fichier JS (JavaScript) dans le répertoire Scriptable de votre téléphone.
 >
->Using scriptable meant a vastly reduced amount of development time was required, no pesky app store rejections and quick fix times when Hyundai or Kia change their APIs! You still get close to the look and feel of a native app including widgets, Automations, Siri support and more!
+> L'utilisation de Scriptable a permis de **réduire considérablement le temps de développement**, d’éviter les rejets de l'App Store et de corriger rapidement les changements lorsque Hyundai ou Kia modifient leurs API ! Vous bénéficiez toujours d'une expérience proche d'une app native, avec widgets, automatisations, support Siri et plus encore.
 
+L'installation est un processus **unique**. Une fois installée, l'application vous notifiera lors de la sortie de nouvelles mises à jour. L'application inclut un processus de mise à jour en **un clic** pour plus de simplicité.
+{: .fs-5 .fw-300 }
 
-Instalation is a one time process. Once installed the app will prompt you when updates are released. The app includes a one-click upgrade process for ease of use.
-{: .fs-5 .fw-300 } 
+## Étapes d'installation
 
-## Install Steps
+**Étape 1 :** [Installez l'application Scriptable](https://apps.apple.com/us/app/scriptable/id1405459188?uo=4) et ouvrez-la.
+{: .fs-4 .fw-300 }
 
-Step 1: [Install the scriptable app](https://apps.apple.com/us/app/scriptable/id1405459188?uo=4)
-and open it.
-{: .fs-4 .fw-300 } 
-
-Step 2: [Download the latest egmp-bluelink.js file](https://github.com/andyfase/egmp-bluelink-scriptable/releases) using your iPhone.
+**Étape 2 :** [Téléchargez le dernier fichier egmp-bluelink.js](https://github.com/andyfase/egmp-bluelink-scriptable/releases) depuis votre iPhone.
 {: .fs-4 .fw-300 }
 
 ![image](../images/download.png)
 
-Step 3: Using the IOS **Apple Files** app, move the `egmp-bluelink.js` file from the Downloads directory into the "iCloud Drive" -> "Scriptable" directory.
+**Étape 3 :** Avec l'application iOS **Fichiers**, déplacez le fichier `egmp-bluelink.js` du répertoire Téléchargements vers **iCloud Drive → Scriptable**.
 {: .fs-4 .fw-300 }
 
-Step 4: Open the scriptable app and choose "egmp-bluelink". This launches the app for the first time and a settings screen will popup asking you to fill in your Bluelink login credentials, and set your preferences. 
+**Étape 4 :** Ouvrez l'application Scriptable et choisissez "egmp-bluelink". Cela lance l'application pour la première fois et un écran de paramètres s'ouvrira, vous demandant de saisir vos identifiants Bluelink et de définir vos préférences.
 {: .fs-4 .fw-300 }
 
-> Note: Your Bluelink credentials are securely kept on your IOS keychain, the bluelink scriptable app never sends your credentials to anywhere except the Bluelink API, just like the offical app.
+> Note : Vos identifiants Bluelink sont **stockés en toute sécurité** dans le trousseau iOS. L'app Bluelink Scriptable n'envoie jamais vos identifiants nulle part, sauf à l'API Bluelink, exactement comme l'application officielle.
 
-Step 5: Once you enter your credentials and press "Save" the app will close. Click on "egmp-bluelink" again and the app will open and be available for use.
+**Étape 5 :** Une fois vos identifiants saisis et "Enregistrer" pressé, l'application se ferme. Cliquez de nouveau sur "egmp-bluelink" pour l'ouvrir et l'utiliser.
 {: .fs-5 .fw-300 }
 
-Step 6: Create a new widget on your homescreen or lockscreen . [See the apple guide if you need help](https://support.apple.com/en-ca/118610). The [Widget Page](./widgets.md) shows the available widgets to choose from 
+**Étape 6 :** Créez un nouveau widget sur votre écran d'accueil ou écran de verrouillage. [Voir le guide Apple si besoin](https://support.apple.com/en-ca/118610). La [page Widgets](./widgets.md) montre les widgets disponibles.
 {: .fs-5 .fw-300 }
 
-When configuring the widget, make sure you:
+Lors de la configuration du widget, assurez-vous de :
 {: .fs-5 .fw-300 }
 
-- Choose **"Scriptable"** from the list of widgets
-- Choose the medium size (the only one supported)
-- Click on the widget on your homescreen to configure it. 
-- For **"Script"** choose **egmp-bluelink**
-- For **"When Interacting"** choose **Run Script**
+- Choisir **"Scriptable"** dans la liste des widgets
+- Choisir la taille **moyenne** (la seule supportée)
+- Cliquer sur le widget sur votre écran d'accueil pour le configurer
+- Pour **"Script"**, choisissez **egmp-bluelink**
+- Pour **"Lors de l'interaction"**, choisissez **Exécuter le script**
 
-Step 7: (Optional but Recommended) Continue to install the [Siri IOS Shortcuts](./siri.md) and the [Control Center controls](./control-center.md)
+**Étape 7 :** (Optionnel mais recommandé) Continuez avec l'installation des [Raccourcis iOS Siri](./siri.md) et des [contrôles du Centre de contrôle](./control-center.md)
 {: .fs-5 .fw-300 }
 
-Thats it you're done. Enjoy bluelink-scriptable!
+Et voilà, vous avez terminé ! Profitez de Bluelink Scriptable.
 {: .fs-5 .fw-300 }
 
 ----

@@ -1,38 +1,34 @@
 ---
-title: App Features
+title: Fonctionnalités de l'App
 layout: home
 nav_order: 3
 ---
 
-# Bluelink Scriptable feature set
+# Ensemble des fonctionnalités de Bluelink Scriptable
 {: .fs-9 }
 
-The app is designed to perform a subset of the main Hyundai / Kia app, but the subset that makes up for 99% of your normal usage. 
+L’application est conçue pour effectuer un sous-ensemble des fonctions principales des apps Hyundai / Kia, mais ce sous-ensemble couvre **99 % de votre utilisation quotidienne**.
 {: .fs-6 .fw-300 }
 
-
-The app is driven through the main widget, which can sit on either your lockscreen or homescreen - clicking on the widget opens the app automatically, swiping away closes it. The widget automatically updates the data displayed regularly, attempting to balance freshness of data while limiting the amount of remote connections to the car.
+L’application est pilotée via le **widget principal**, qui peut être placé soit sur l’écran de verrouillage, soit sur l’écran d’accueil. Cliquer sur le widget ouvre automatiquement l’app, tandis que le glisser la ferme. Le widget met automatiquement à jour les données affichées de manière régulière, en essayant de **trouver un équilibre entre fraîcheur des données et limitation des connexions distantes avec la voiture**.
 {: .fs-5 .fw-300 }
 
-[Multiple widget sizes are available](./widgets.md), data displayed varies based on the size available, but common items include:
+[Plusieurs tailles de widgets sont disponibles](./widgets.md). Les données affichées varient selon la taille, mais les éléments communs incluent :
 {: .fs-5 .fw-300 }
 
-- Current battery state of charge
-- Icons to indicate charging, or charger connected
-- If charging, day/time charging will complete and the power level the car is charging at
-- Last date/time the car was queried for its current state
+- État actuel de charge de la batterie
+- Icônes indiquant si la voiture est en charge ou si un chargeur est connecté
+- Si la voiture est en charge, date/heure prévue de fin de charge et niveau de puissance de charge
+- Dernière date/heure à laquelle la voiture a été interrogée pour son état actuel
 {: .fs-4 .fw-300 }
 
-Using the main app and through the [IOS Control Center](./control-center.md) you can:
+Depuis l’application principale et via le [Centre de contrôle iOS](./control-center.md), vous pouvez :
 {: .fs-5 .fw-300 }
 
-- Lock and Unlock the car
-- Pre warm/cool the car or use your own preset climate configurations
-- Start and Stop charging of the car
-- Change charge limits using your own pre-defined charge limit configurations
+- Verrouiller et déverrouiller la voiture
+- Pré-chauffer ou pré-refroidir la voiture, ou utiliser vos propres configurations climatiques prédéfinies
+- Démarrer et arrêter la charge de la voiture
+- Modifier les limites de charge en utilisant vos propres configurations prédéfinies
 {: .fs-5 .fw-300 }
 
-The app also supports the use of [Siri Shortcuts](./siri.md), allowing you to ask siri to ***"get the status of the car"***, or ***"start warming the car"***. See the Siri Shortcuts section for more info.
-{: .fs-5 .fw-300 }
-
-----
+L’application prend également en charge l’utilisation des [Raccourcis Siri](./siri.md), ce qui vous permet de demander à Siri de **« obtenir le statut de la voiture »** ou de **« commencer à chauffer la voiture »**. Voir la section Raccourcis Siri pour plus de détail

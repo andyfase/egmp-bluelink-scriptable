@@ -20,7 +20,7 @@ export async function initRegionalBluelink(
   for (const [manufacturer, regions] of Object.entries(regionSupport)) {
     if (config.manufacturer.toLowerCase() === manufacturer) {
       if (!regions.includes(config.auth.region)) {
-        throw new Error(`${config.manufacturer} is not supported in this region`)
+        throw new Error(`${config.manufacturer} n'est pas disponible dans cette région`)     /*  */
       }
     }
   }
@@ -40,7 +40,7 @@ export async function initRegionalBluelink(
       return await BluelinkAustralia.init(config, refreshAuth)
     default:
       throw new Error(
-        `Something went wrong determining bluelink region! Please raise an issue on GitHub with details of your vehicle and region.`,
+        `Une erreur est survenue lors de la détermination de la région Bluelink ! Veuillez créer un problème (issue) sur GitHub en précisant les détails de votre véhicule et votre région`,  /*  */
       )
   }
 }

@@ -24,7 +24,7 @@ const keychain_keys = ['egmp-bluelink-config', 'egmp-bluelink-cache', 'egmp-blue
 function reset() {
   return Div(
     [
-      P('Click me to Reset All Settings?', {
+      P('Cliquer ici pour réinitialisé les paramètres par défault?', {      /*  */
         font: (n) => Font.boldSystemFont(n),
         fontSize: 25,
         align: 'center',
@@ -32,10 +32,10 @@ function reset() {
     ],
     {
       onTap() {
-        destructiveConfirm('Confirm Setting Reset - ALL settings/data will be removed', {
-          confirmButtonTitle: 'Delete all Settings/Data',
+        destructiveConfirm('Confirmer la réinitialisation des paramètres — toutes les données et tous les réglages seront supprimés', {
+          confirmButtonTitle: 'EFFACER TOUS',
           onConfirm: () => {
-            textInput('Confirm script name to reset', {
+            textInput('Confirmer le nom du script pour réinitialisé', {
               initValue: 'egmp-bluelink',
               submitText: 'Reset',
               onSubmit: (name) => {

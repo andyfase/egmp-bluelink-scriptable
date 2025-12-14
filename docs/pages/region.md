@@ -1,29 +1,29 @@
 ---
-title: Region / Brand Support
+title: Support par Région / Marque
 layout: home
 nav_order: 2
 ---
 
-# Region and Brand Support
+# Support par Région et Marque
 {: .fs-9 }
 
-The app uses the publically exposed BlueLink API, it is un-documented and varies in specification across both manufacturer and region.
+L'application utilise l'API BlueLink publique, non documentée, dont la spécification varie selon le constructeur et la région.
 {: .fs-6 .fw-300 }
 
-As such support for each region / manufacturer requires custom development and testing. The current level of support is shown below.
+Ainsi, le support pour chaque région / constructeur nécessite un développement et des tests personnalisés. Le niveau de support actuel est présenté ci-dessous.
 {: .fs-5 .fw-300 }
 
-If you can confirm support for any un-tested regions (Noted via question-mark icon) or encounter a bug on a region that is supported, feel free to [DM me on reddit](https://www.reddit.com/user/andyfase/) or [raise a issue on github](https://github.com/andyfase/egmp-bluelink-scriptable/issues).
+Si vous pouvez confirmer le support pour des régions non testées (indiquées par l'icône point d'interrogation) ou si vous rencontrez un bug dans une région supportée, n'hésitez pas à [m'envoyer un message sur Reddit](https://www.reddit.com/user/andyfase/) ou à [ouvrir un ticket sur GitHub](https://github.com/andyfase/egmp-bluelink-scriptable/issues).
 {: .fs-5 .fw-300 }
 
-# Current Known Region Support
+# Support Actuel par Région
 {: .fs-7 }
 
 <table class="styled-table">
 <thead>
   <tr>
-    <th class="styled-table-col">Brand</th>
-    <th>Region</th>
+    <th class="styled-table-col">Marque</th>
+    <th>Région</th>
     <th>Support</th>
   </tr>
 </thead>
@@ -42,16 +42,13 @@ If you can confirm support for any un-tested regions (Noted via question-mark ic
 <td><img src="../images/checkmark.png" width="30"/></td>
 </tr>
 <tr>
-<td>Australia</td>
+<td>Australie</td>
 <td><img src="../images/checkmark.png" width="30"/></td>
 </tr>
-
 <tr  class="styled-table-row">
-<td>India</td>
+<td>Inde</td>
 <td><img src="../images/checkmark.png" width="30"/></td>
 </tr>
-
-
 
 <tr>
 <td rowspan=5 class="styled-table-col">Kia</td>
@@ -64,19 +61,17 @@ If you can confirm support for any un-tested regions (Noted via question-mark ic
 </tr>
 <tr>
 <td>Europe</td>
-<td><img src="../images/checkmark.png" width="30"/>
-</td>
+<td><img src="../images/checkmark.png" width="30"/></td>
 </tr>
 <tr>
-<td>Australia</td>
+<td>Australie</td>
 <td>
 <img src="../images/checkmark.png" width="30"/>
 <img src="../images/question.png" width="30"/>
 </td>
 </tr>
-
 <tr  class="styled-table-row">
-<td>India</td>
+<td>Inde</td>
 <td><img src="../images/cross.png" width="30"/></td>
 </tr>
 
@@ -94,26 +89,21 @@ If you can confirm support for any un-tested regions (Noted via question-mark ic
 </tr>
 <tr>
 <td>Europe</td>
-<td><img src="../images/cross.png" width="30"/>
-</td>
-</tr>
-<tr>
-<td>Australia</td>
-<td>
-<img src="../images/cross.png" width="30"/>
-</td>
-</tr>
-
-<tr>
-<td>India</td>
 <td><img src="../images/cross.png" width="30"/></td>
 </tr>
-
+<tr>
+<td>Australie</td>
+<td><img src="../images/cross.png" width="30"/></td>
+</tr>
+<tr>
+<td>Inde</td>
+<td><img src="../images/cross.png" width="30"/></td>
+</tr>
 
 </tbody>
 </table>
 
-If your region is not supported and your willing to provide secondary driver access to your bluelink account, so I can obtain network traces to support your region please [DM me on reddit](https://www.reddit.com/user/andyfase/). As I am much more likely to work on the support of your region If I have access to the APIs and offical app to trace and test with.
+Si votre région n'est pas supportée et que vous êtes prêt à fournir un accès secondaire à votre compte Bluelink, afin que je puisse obtenir des traces réseau pour supporter votre région, veuillez [m'envoyer un message sur Reddit](https://www.reddit.com/user/andyfase/). Je suis beaucoup plus susceptible de travailler sur le support de votre région si j'ai accès aux APIs et à l'application officielle pour tracer et tester.
 {: .fs-3 .fw-300 }
 
 ----

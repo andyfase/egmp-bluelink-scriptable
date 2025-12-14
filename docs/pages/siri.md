@@ -1,189 +1,186 @@
 ---
-title: Siri / Shortcuts
+title: Siri / Raccourcis
 layout: home
 nav_order: 5
 ---
 
-# Siri Shortcuts Support
+# Support Siri et Raccourcis
 {: .fs-9 }
 
-The app supports direct Siri interaction via the "Shortcuts" IOS app. A collection of Shortcut download link are provided below. These can be used both while talking to Siri, or through interaction through the [IOS control center](./control-center.md).
+L'application supporte l'interaction directe avec Siri via l'application IOS "Raccourcis". Une collection de liens de téléchargement de Raccourcis est fournie ci-dessous. Ceux-ci peuvent être utilisés à la fois en parlant à Siri ou via l'[interaction avec le Centre de Contrôle IOS](./control-center.md).
 {: .fs-5 .fw-300 }
 
-## Common Commmands Shortcuts
+## Raccourcis Communs
 
-These shortcuts can be used via Siri or through [Control Center](./control-center.md).
+Ces raccourcis peuvent être utilisés via Siri ou via le [Centre de Contrôle](./control-center.md).
 
-### Lock the Car - "Hey Siri, Lock the car"
-[Install "Lock Car" Shortcut](https://www.icloud.com/shortcuts/5b569f78ef00452b9d7fe4455635d36d)
+### Verrouiller la voiture - "Hey Siri, verrouille la voiture"
+[Installer le raccourci "Lock Car"](https://www.icloud.com/shortcuts/5b569f78ef00452b9d7fe4455635d36d)
 {: .fs-5 .fw-300 }
 
-### UnLock the Car - "Hey Siri, Unlock the car"
-[Install "Unlock the Car" Shortcut](https://www.icloud.com/shortcuts/631cb0865dfc4358837485410eb2a46f)
+### Déverrouiller la voiture - "Hey Siri, déverrouille la voiture"
+[Installer le raccourci "Unlock the Car"](https://www.icloud.com/shortcuts/631cb0865dfc4358837485410eb2a46f)
 {: .fs-5 .fw-300 }
 
-### Warm the Car - "Hey Siri, warm the car"
-[Install "Warm the Car" Shortcut](https://www.icloud.com/shortcuts/ea24582e07e44edea66b0d7a9773ea75)
+### Chauffer la voiture - "Hey Siri, chauffe la voiture"
+[Installer le raccourci "Warm the Car"](https://www.icloud.com/shortcuts/ea24582e07e44edea66b0d7a9773ea75)
 {: .fs-5 .fw-300 }
 
-### Cool the Car - "Hey Siri, Cool the car"
-[Install "Cool the Car" Shortcut](https://www.icloud.com/shortcuts/486487c8d3c841feb9d4b46476eef294)
+### Refroidir la voiture - "Hey Siri, refroidis la voiture"
+[Installer le raccourci "Cool the Car"](https://www.icloud.com/shortcuts/486487c8d3c841feb9d4b46476eef294)
 {: .fs-5 .fw-300 }
 
-
-
-## Ask the Car Shortcut
-[Install "Ask the Car" Shortcut](https://www.icloud.com/shortcuts/b3bd704fa2bf4c6dabceec096c291342)
+## Raccourci "Demande à la voiture"
+[Installer le raccourci "Ask the Car"](https://www.icloud.com/shortcuts/b3bd704fa2bf4c6dabceec096c291342)
 {: .fs-5 .fw-300 }
 
-Once installed, interact with the shortcut by saying **"Hey Siri, Ask the car"**. Siri will respond by asking **"Whats the Command?"** and you can reply with a natural text string, which will be passed to the app. The app identifies the commands by matching specific keywords, listed below.
+Une fois installé, interagissez avec le raccourci en disant **"Hey Siri, demande à la voiture"**. Siri répondra par **"Quelle commande ?"** et vous pourrez répondre avec une phrase en langage naturel, qui sera transmise à l'application. L'application identifie les commandes en détectant certains mots-clés, listés ci-dessous.
 {: .fs-5 .fw-300 }
 
-A interaction starts by you asking Siri to run the shortcut name, in this case its named "Start the Car", hence an interaction is like: 
+Une interaction commence lorsque vous demandez à Siri d'exécuter le nom du raccourci, ici nommé "Demande à la voiture". Par exemple :
 {: .fs-5 .fw-300 }
 
-**You: "Hey Siri, Ask the car"**  *(This runs the shortcut)*  
-**Siri: "Whats the Command?"**  *(The shortcut prompts for some input)*    
-**You: "What's the status of the car?"**  *(Your input will be sent to the app)*   
-**Siri: "Your Ioniq 5's battery is at 75% and locked. Your car is also charging at 6kw and will be finished at 9pm"** *(This is the response from the app that Siri will read to you)*
+**Vous : "Hey Siri, demande à la voiture"**  *(Lancer le raccourci)*  
+**Siri : "Quelle commande ?"**  *(Le raccourci demande une entrée)*  
+**Vous : "Quel est le statut de la voiture ?"**  *(Votre entrée est envoyée à l'application)*  
+**Siri : "La batterie de votre Ioniq 5 est à 75 % et la voiture est verrouillée. Elle est en charge à 6 kW et sera terminée à 21h."** *(Réponse de l'application lue par Siri)*
 {: .fs-5 .fw-400 }
 
-You can change the name of the shortcut, or the command prompt - just remember if you change the name - thats what you have to say to start the interation.
+Vous pouvez changer le nom du raccourci ou le texte du prompt — mais si vous changez le nom, c’est ce que vous devrez dire pour démarrer l’interaction.
 {: .fs-5 .fw-300 }
 
-## Supported Keywords
+## Mots-clés supportés
 
-The following keywords are supported:
+Les mots-clés suivants sont supportés :
 {: .fs-5 .fw-400 }
 
-### Status
+### Statut
 
-This will return the latest status of the car from the Bluelink API. Typically this will be a sentence stating charge status, if the car is locked and if the car is charging (and if it is when it will finish charging).
+Retourne le statut le plus récent de la voiture depuis l’API Bluelink. Typiquement, une phrase indiquant l’état de charge, si la voiture est verrouillée et si elle est en charge (et si oui, quand la charge sera terminée).
 {: .fs-5 .fw-400 }
 
-Example: "What's the **status** of the car?"
+Exemple : "Quel est le **statut** de la voiture ?"
 {: .fs-5 .fw-400 }
 
-### Remote Status
+### Statut à distance
 
-This will issue a remote status command to the car to get the latest updated information. Once issued a normal status command will need to be issued approx 30 seconds later to retrieve this information
+Envoie une commande de statut à distance pour obtenir les informations les plus récentes. Après cela, il faudra attendre environ 30 secondes pour exécuter une commande de statut normale pour récupérer les données.
 {: .fs-5 .fw-400 }
 
-Example: "What's the **remote status** of the car?"
+Exemple : "Quel est le **statut à distance** de la voiture ?"
 {: .fs-5 .fw-400 }
 
-### Lock
+### Verrouiller
 
-This will issue a remote lock command to the car
+Envoie une commande de verrouillage à distance.
 {: .fs-5 .fw-400 }
 
-Example: "Please **lock** the car?"
+Exemple : "Veuillez **verrouiller** la voiture"
 {: .fs-5 .fw-400 }
 
-### Unlock
+### Déverrouiller
 
-This will issue a remote un-lock command to the car
+Envoie une commande de déverrouillage à distance.
 {: .fs-5 .fw-400 }
 
-Example: "Please **unlock** the car?"
+Exemple : "Veuillez **déverrouiller** la voiture"
 {: .fs-5 .fw-400 }
 
-### Cool
+### Refroidir
 
-This will issue a remote command to pre-cool the car.
+Envoie une commande de pré-refroidissement de la voiture.
 {: .fs-5 .fw-400 }
 
-Example: "Can you start **cooling** the car?"
+Exemple : "Pouvez-vous commencer à **refroidir** la voiture ?"
 {: .fs-5 .fw-400 }
 
-### Warm
+### Chauffer
 
-This will issue a remote command to pre-heat the car.
+Envoie une commande de pré-chauffage de la voiture.
 {: .fs-5 .fw-400 }
 
-Example: "Can you start **warming** the car?"
+Exemple : "Pouvez-vous commencer à **chauffer** la voiture ?"
 {: .fs-5 .fw-400 }
 
-### Climate off
+### Climat off
 
-This will issue a remote command to stop the climate controls in the car.
+Envoie une commande pour arrêter la climatisation.
 {: .fs-5 .fw-400 }
 
-Example: "Turn the **climate off** please"
+Exemple : "Éteins la **climatisation** s'il te plaît"
 {: .fs-5 .fw-400 }
 
-### Custom Climate Start
+### Climat personnalisé
 
-this will issue a remote command to start the climate controls based on your confiured custom climate configuration (created within the settings screens). This option is triggered based on the word "climate" plus the name of the custom climate configuration. 
+Envoie une commande pour démarrer la climatisation selon votre configuration personnalisée (créée dans les paramètres). Cette option se déclenche avec le mot "climat" suivi du nom de la configuration.
 
-As an example, given a custom climate configuration named "Super Hot" you would say:
-
-Example "Turn on **climate super hot** please"
-
-### Start charging
-
-This will issue a remote command to start charging the car.
+Exemple : pour une configuration nommée "Super Chaud", vous diriez :  
+"Allume la **climatisation super chaud** s'il te plaît"
 {: .fs-5 .fw-400 }
 
-Example: "**Start charging** the car"
+### Démarrer la charge
+
+Envoie une commande pour démarrer la charge de la voiture.
 {: .fs-5 .fw-400 }
 
-### Stop charging
-
-This will issue a remote command to stop charging the car.
+Exemple : "**Démarrer la charge** de la voiture"
 {: .fs-5 .fw-400 }
 
-Example: "**Stop charging** the car"
+### Arrêter la charge
+
+Envoie une commande pour arrêter la charge de la voiture.
 {: .fs-5 .fw-400 }
 
-### Set Charge Limits
-This will issue a remote command to set the named charge limit of the car (i.e. percentage of battery to stop charging at).
+Exemple : "**Arrêter la charge** de la voiture"
 {: .fs-5 .fw-400 }
 
-Example: "Set **Charge Limit RoadTrip**"
+### Définir les limites de charge
+
+Envoie une commande pour définir la limite de charge de la voiture (pourcentage de batterie où arrêter la charge).
 {: .fs-5 .fw-400 }
 
-### Data
-This is a advanced keyword that can be used in IOS Shortcuts so that the status of the car can be extracted into a Shortcut Dictionary for further use. This data can then be used in whatever condition is desired. For example you could define a shortcut that checks every night the cars range against known calendar entries and alerts if a road-trip is planned and the range is low.
+Exemple : "Définir **Limite de charge RoadTrip**"
 {: .fs-5 .fw-400 }
 
-The data extracted is in the following format 
+### Données
 
-```
+Mot-clé avancé pour extraire le statut de la voiture dans un dictionnaire de Raccourci pour utilisation ultérieure (ex. vérifier l’autonomie pour un road-trip).  
+
+Le format des données extraites :  
+
 {
-    "car": {
-        "id": string,
-        "vin": string,
-        "nickName": string,
-        "modelName": string,
-        "modelYear": string,
-        "modelColour": string,
-        "modelTrim": string
-    },
-    "status": {
-        "lastStatusCheck": int # epoch_milliseconds_since_last_api_status,
-        "lastRemoteStatusCheck": int # <epoch_milliseconds_since_last_remote_api_status>,
-        "isCharging": boolean,
-        "isPluggedIn": boolean,
-        "chargingPower": int,
-        "remainingChargeTimeMins": int,
-        "range": int,
-        "locked": boolean,
-        "climate": boolean,
-        "soc": int,
-        "twelveSoc": int,
-        "odometer": float,
-        "location": {
-            "latitude": string,
-            "longitude": string
-        },
-        "chargeLimit": {
-            "dcPercent": int,
-            "acPercent": int
-        }
-    }
+"car": {
+"id": string,
+"vin": string,
+"nickName": string,
+"modelName": string,
+"modelYear": string,
+"modelColour": string,
+"modelTrim": string
+},
+"status": {
+"lastStatusCheck": int,
+"lastRemoteStatusCheck": int,
+"isCharging": boolean,
+"isPluggedIn": boolean,
+"chargingPower": int,
+"remainingChargeTimeMins": int,
+"range": int,
+"locked": boolean,
+"climate": boolean,
+"soc": int,
+"twelveSoc": int,
+"odometer": float,
+"location": {
+"latitude": string,
+"longitude": string
+},
+"chargeLimit": {
+"dcPercent": int,
+"acPercent": int
 }
-```
+}
+}
 
-Example: "**data**"
+Exemple : "**données**"
 {: .fs-5 .fw-400 }

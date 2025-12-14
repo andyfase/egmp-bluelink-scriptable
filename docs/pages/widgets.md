@@ -4,28 +4,28 @@ layout: home
 nav_order: 2
 ---
 
-# Widget Support
+# Support des Widgets
 {: .fs-9 }
 
-Bluelink Scriptable supports  both Lockscreen and Homescreen widgets. 
+Bluelink Scriptable supporte les widgets à la fois pour l'écran verrouillé et l'écran d'accueil.
 {: .fs-6 .fw-300 }
 
-All widgets provide single click access to the main app and all widgets allow for auto-updating of car data in the background.
+Tous les widgets permettent un accès en un clic à l'application principale et tous permettent la mise à jour automatique des données de la voiture en arrière-plan.
 {: .fs-5 .fw-300 }
 
 {: .info-title }
-> Remote Widget Refresh
+> Actualisation distante du widget
 >
-> It should be noted that auto-updating of car data is "opt-in" you are required to check the setting "Enable widget remote refresh" in the settings screen to enable this feature. This feature will auto send intermittent remote status commands to the car to obtain up-to date data on the status of your car.
+> Il est important de noter que la mise à jour automatique des données de la voiture est "optionnelle" : vous devez cocher l'option "Activer l'actualisation distante du widget" dans l'écran des paramètres pour activer cette fonctionnalité. Cela enverra automatiquement des commandes de statut à distance intermittentes pour obtenir les données les plus récentes de votre voiture.
 >
-> This is required to get the latest data from the car directly, without enabling this setting it is likely your widget will always display stale data.
+> Cela est nécessaire pour obtenir les données les plus récentes directement depuis la voiture. Sans cette option, votre widget affichera probablement toujours des données obsolètes.
 >
-> 12V battery drain can occur if you send too many remote refresh commands. The defaults set in the app are very conservative for this reason. Only play with the advanced widget settings if you understand the potential consequences of sending too many commands.
+> Une consommation de la batterie 12V peut survenir si trop de commandes d'actualisation sont envoyées. Les valeurs par défaut de l'application sont très conservatrices pour cette raison. Ne modifiez les paramètres avancés du widget que si vous comprenez les conséquences potentielles d'envoyer trop de commandes.
 {: .fs-5 .fw-300 }
 
-## Home Screen Widgets
+## Widgets Écran d'Accueil
 
-These widgets can be added to your homescreen. [See the apple instructions on how to do this](https://support.apple.com/en-ca/118610). These are larger widgets that can display more information and be placed on any homescreen of your choosing.
+Ces widgets peuvent être ajoutés à votre écran d'accueil. [Voir les instructions Apple pour le faire](https://support.apple.com/en-ca/118610). Ce sont des widgets plus grands qui peuvent afficher plus d'informations et être placés sur n'importe quel écran d'accueil.
 {: .fs-5 .fw-300 }
 
 <table border="0" class="noBorder">
@@ -34,8 +34,8 @@ These widgets can be added to your homescreen. [See the apple instructions on ho
 <img src="../images/widget_home_big.png" width="500"/>
 </td>
 <td>
-<p><b>Medium Size</b></p>
-<p>Will display Car Name (Nick name if set, otherwise Model name) a large car image and  infromation on battery capacity and car range. If car is charging or plugged in - icons will display accordingly and the charging power and expected charge completion time will display. Finally the odometer and the last remote status check date/time will also be visible.</p>
+<p><b>Taille Moyenne</b></p>
+<p>Affiche le nom de la voiture (surnom si défini, sinon nom du modèle), une grande image de la voiture et les informations sur la capacité de batterie et l'autonomie. Si la voiture est en charge ou branchée, les icônes s'affichent en conséquence, et la puissance de charge ainsi que l'heure prévue de fin de charge seront indiquées. Enfin, l'odomètre et la date/heure de la dernière vérification de statut à distance seront également visibles.</p>
 </td>
 </tr>
 <tr>
@@ -43,16 +43,15 @@ These widgets can be added to your homescreen. [See the apple instructions on ho
 <img src="../images/widget_home_small.png" width="150"/>
 </td>
 <td>
-<p><b>Small Size</b></p>
-<p>Will display a small car image and infromation on battery capacity and car range. If car is charging or plugged in - icons will display accordingly and the charging power and expected charge completion time will display. Finally the last remote status check date/time will also be visible.</p>
+<p><b>Petite Taille</b></p>
+<p>Affiche une petite image de la voiture et les informations sur la capacité de batterie et l'autonomie. Si la voiture est en charge ou branchée, les icônes s'affichent en conséquence, et la puissance de charge ainsi que l'heure prévue de fin de charge seront indiquées. La date/heure de la dernière vérification de statut à distance sera également visible.</p>
 </td>
-
 </tr>
 </table>
 
-## Lock Screen Widgets
+## Widgets Écran Verrouillé
 
-These widgets can be added to your lockscreen. [See the apple instructions on how to do this](https://support.apple.com/en-ca/118610). These widgets are small, transparent and will match other apple lockscreen widgets (weather etc).
+Ces widgets peuvent être ajoutés à votre écran verrouillé. [Voir les instructions Apple pour le faire](https://support.apple.com/en-ca/118610). Ce sont de petits widgets transparents, assortis aux autres widgets de l'écran verrouillé Apple (météo, etc.).
 {: .fs-5 .fw-300 }
 
 <table border="0" class="noBorder">
@@ -62,9 +61,9 @@ These widgets can be added to your lockscreen. [See the apple instructions on ho
 <img src="../images/widget_lock_big.png" width="300"/>
 </td>
 <td>
-<p><b>Large Size</b></p>
-<p>Will display "battery circle" to reflect battery capacity. Plus display available range, exact percentage of battery capacity and, if charging, when charging will complete.</p>
-<p>Note the car image will change based on if the car is charging or not.</p>
+<p><b>Grande Taille</b></p>
+<p>Affiche le "cercle de batterie" pour refléter la capacité de la batterie. Affiche également l'autonomie disponible, le pourcentage exact de la batterie et, si la voiture est en charge, l'heure prévue de fin de charge.</p>
+<p>Note : l'image de la voiture change selon qu'elle est en charge ou non.</p>
 </td>
 </tr>
 
@@ -73,21 +72,20 @@ These widgets can be added to your lockscreen. [See the apple instructions on ho
 <img src="../images/widget_lock_small.png" width="100"/>
 </td>
 <td>
-<p><b>Small Size</b></p>
-<p>Will display just the "battery circle" to reflect battery capacity.</p>
-<p>Note the car image will change based on if the car is charging or not.</p>
+<p><b>Petite Taille</b></p>
+<p>Affiche uniquement le "cercle de batterie" pour refléter la capacité de la batterie.</p>
+<p>Note : l'image de la voiture change selon qu'elle est en charge ou non.</p>
 </td>
-
 </tr>
 
-<tr >
+<tr>
 <td>
 <img src="../images/widget_lock_inline.png" width="400"/>
 </td>
 <td>
-<p><b>Inline Size</b></p>
-<p>This widget is available for display above the time element on the homescreen</p>
-<p>Will display a modified version of the "battery circle" with icons within it to indicate if charging / plugged in. The text will show range available and if charging when charging will complete</p>
+<p><b>Taille Inline</b></p>
+<p>Ce widget peut être affiché au-dessus de l'élément heure sur l'écran verrouillé.</p>
+<p>Affiche une version modifiée du "cercle de batterie" avec des icônes indiquant si la voiture est en charge ou branchée. Le texte montre l'autonomie disponible et, si en charge, l'heure de fin de charge.</p>
 </td>
 </tr>
 

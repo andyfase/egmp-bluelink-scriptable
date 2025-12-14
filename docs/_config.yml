@@ -1,35 +1,35 @@
-# Welcome to Jekyll!
+# Bienvenue dans Jekyll !
 #
-# This config file is meant for settings that affect your whole blog, values
-# which you are expected to set up once and rarely edit after that. If you find
-# yourself editing this file very often, consider using Jekyll's data files
-# feature for the data you need to update frequently.
+# Ce fichier de configuration est destiné aux paramètres qui affectent tout votre site,
+# des valeurs que vous êtes censé définir une seule fois et rarement modifier par la suite.
+# Si vous vous surprenez à éditer ce fichier très souvent, envisagez d'utiliser les fichiers de données Jekyll
+# pour les informations que vous devez mettre à jour fréquemment.
 #
-# For technical reasons, this file is *NOT* reloaded automatically when you use
-# 'bundle exec jekyll serve'. If you change this file, please restart the server process.
+# Pour des raisons techniques, ce fichier *n'est PAS* rechargé automatiquement lorsque vous utilisez
+# 'bundle exec jekyll serve'. Si vous modifiez ce fichier, veuillez redémarrer le serveur.
 #
-# If you need help with YAML syntax, here are some quick references for you:
+# Si vous avez besoin d'aide pour la syntaxe YAML, voici quelques références rapides :
 # https://learn-the-web.algonquindesign.ca/topics/markdown-yaml-cheat-sheet/#yaml
 # https://learnxinyminutes.com/docs/yaml/
 #
-# Site settings
-# These are used to personalize your new site. If you look in the HTML files,
-# you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
-# You can create any custom variable you would like, and they will be accessible
-# in the templates via {{ site.myvariable }}.
+# Paramètres du site
+# Ils sont utilisés pour personnaliser votre site. Si vous regardez dans les fichiers HTML,
+# vous les verrez accessibles via {{ site.title }}, {{ site.email }}, etc.
+# Vous pouvez créer n'importe quelle variable personnalisée, accessible via {{ site.ma_variable }}.
 
 title: Bluelink Scriptable
-email: andrewfase@gmail.com
-description: >- # this means to ignore newlines until "baseurl:"
-  A scriptable app for IOS that allows you to control your Hyundai / Kia E-GMP car using the Bluelink API.
-  Consider it a companion app to the official Bluelink app, with a fresher UI, more responsive and extended feature such as Widget and Siri support
-github_username:  andyfase
+email: bleeband@gmail.com
+description: >- # ignore les retours à la ligne jusqu'à "baseurl:"
+  Une application Scriptable pour IOS qui vous permet de contrôler votre voiture Hyundai / Kia E-GMP
+  via l'API Bluelink. Considérez-la comme une application compagnon à l'app officielle Bluelink,
+  avec une interface plus moderne, plus réactive et des fonctionnalités étendues comme les Widgets et le support Siri.
+github_username: andyfase
 
-domain: bluelink.andyfase.com       # if you want to force HTTPS, specify the domain without the http at the start, e.g. example.com
-url: https://bluelink.andyfase.com  # the base hostname and protocol for your site, e.g. http://example.com
-#baseurl: "/docs"      # place folder name if the site is served in a subfolder
+domain: bluelink.andyfase.com       # Si vous souhaitez forcer HTTPS, spécifiez le domaine sans "http", ex. example.com
+url: https://bluelink.andyfase.com  # Nom de domaine et protocole de base pour votre site, ex. http://example.com
+#baseurl: "/docs"      # mettre le nom du dossier si le site est servi depuis un sous-dossier
 
-# Build settings
+# Paramètres de construction
 remote_theme: just-the-docs/just-the-docs
 # remote_theme: pages-themes/cayman@v0.2.0
 plugins:
@@ -37,13 +37,13 @@ plugins:
   - jekyll-default-layout
   # - jekyll-remote-theme
 
-# Exclude from processing.
-# The following items will not be processed, by default.
-# Any item listed under the `exclude:` key here will be automatically added to
-# the internal "default list".
+# Exclusion du traitement
+# Les éléments listés ici ne seront pas traités par défaut.
+# Tout élément listé sous la clé `exclude:` sera automatiquement ajouté
+# à la "liste par défaut" interne.
 #
-# Excluded items can be processed by explicitly listing the directories or
-# their entries' file path in the `include:` list.
+# Les éléments exclus peuvent être traités en les listant explicitement
+# dans la section `include:`.
 #
 # exclude:
 #   - .sass-cache/
@@ -56,9 +56,10 @@ plugins:
 #   - vendor/cache/
 #   - vendor/gems/
 #   - vendor/ruby/
+
 callouts:
   warning:
-    title: Warning
+    title: Avertissement
     color: red
   info:
     title: Info

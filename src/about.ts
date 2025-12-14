@@ -11,7 +11,7 @@ export function doDowngrade(appFile = `${Script.name()}.js`) {
     fm.remove(`${SCRIPTABLE_DIR}/${appFile}`)
     fm.move(`${SCRIPTABLE_DIR}/${appFile}.backup`, `${SCRIPTABLE_DIR}/${appFile}`)
   } else {
-    OK('Downgrade Dailed', { message: `There is no previous version of ${appFile}` })
+    OK('Downgrade Dailed', { message: `Aucune version précédente de: ${appFile}` })       /*  */
   }
 }
 
@@ -31,7 +31,7 @@ async function doUpgrade(url: string, appFile = `${Script.name()}.js`) {
     }
     fm.write(`${SCRIPTABLE_DIR}/${appFile}`, data)
   } else {
-    OK('Download Error', { message: `Failed to download release: ${req.response.statusCode}` })
+    OK('Erreur de téléchargement', { message: `Échec du téléchargement de la version: ${req.response.statusCode}` })         /*  */
   }
 }
 
@@ -40,12 +40,12 @@ const { present, connect, setState } = getTable<{
   currentVersion: string
   coffeeImage: Image | undefined
 }>({
-  name: 'About App',
+  name: "À propos de l'APP" ,      /*  */
 })
 
 export async function loadAboutScreen() {
   // load version async
-  const version = new Version('andyfase', 'egmp-bluelink-scriptable')
+  const version = new Version('bleeband', 'egmp-bluelink-scriptable')
   version.getRelease().then((release) => setState({ release: release }))
 
   // load image async
@@ -75,7 +75,7 @@ export async function loadAboutScreen() {
 
 const pageTitle = connect(() => {
   return Div([
-    P('e-GMP Bluelink app', {
+    P('e-GMP Bluelink app', {                       /*  */
       font: (n) => Font.boldSystemFont(n),
       fontSize: 35,
       align: 'left',
@@ -86,7 +86,7 @@ const pageTitle = connect(() => {
 const appDescription = connect(() => {
   return Div(
     [
-      P('A scriptable app for IOS that allows you to control your Hyundai / Kia electric car using the Bluelink API.', {
+      P('Une application Scriptable pour iOS qui vous permet de contrôler votre voiture électrique Hyundai/Kia via l’API Bluelink.', {     /*  */
         font: (n) => Font.mediumRoundedSystemFont(n),
         fontSize: 20,
         align: 'left',
@@ -100,7 +100,7 @@ const appDescription = connect(() => {
 
 const author = connect(({ state: { coffeeImage } }) => {
   const divArray = [
-    P('Author: Andy Fase', {
+    P('Auteur: Andy Fase', {                              /*  */
       font: (n) => Font.mediumRoundedSystemFont(n),
       fontSize: 20,
       align: 'left',
@@ -113,8 +113,8 @@ const author = connect(({ state: { coffeeImage } }) => {
 })
 
 const currentVersion = connect(({ state: { currentVersion } }) => {
-  return Div([
-    P(`Current Version:`, {
+    return Div([
+      P(`Version:`, {                                     /*  */
       font: (n) => Font.mediumRoundedSystemFont(n),
       fontSize: 20,
       align: 'left',
@@ -131,7 +131,7 @@ const latestVersion = connect(({ state: { currentVersion, release } }) => {
   if (!release) return Spacer()
 
   return Div([
-    P(`Latest Version Available:`, {
+    P(`Dernère version disponible:`, {                /*  */
       font: (n) => Font.mediumRoundedSystemFont(n),
       fontSize: 20,
       align: 'left',
@@ -154,7 +154,7 @@ const upgrade = connect(({ state: { currentVersion, release } }) => {
 
   return Div(
     [
-      P(`Click to Auto Install ${release.version}`, {
+      P(`Cliquer ici pour lancer l'installation de ${release.version}`, {           /*  */
         font: (n) => Font.mediumRoundedSystemFont(n),
         fontSize: 20,
         color: Color.blue(),
@@ -165,7 +165,7 @@ const upgrade = connect(({ state: { currentVersion, release } }) => {
       onTap: async () => {
         const appFile = `${Script.name()}.js`
         quickOptions(['Install', 'Cancel'], {
-          title: `Confirm Install - App will update "${appFile}" and auto-close`,
+          title: `Confirmer la mise a jour de "${appFile}" et se fermera automatiquement`,         /*  */
           onOptionSelect: async (opt) => {
             if (opt === 'Install') {
               await doUpgrade(release.url, appFile)
@@ -185,7 +185,7 @@ const upgradeNotes = connect(({ state: { currentVersion, release } }) => {
 
   return Div(
     [
-      P(`Release Details:\n\n ${release.name}:\n\n ${release.notes}`, {
+      P(`Détails de la version:\n\n ${release.name}:\n\n ${release.notes}`, {       /*  */
         font: (n) => Font.mediumRoundedSystemFont(n),
         fontSize: 17,
         align: 'left',

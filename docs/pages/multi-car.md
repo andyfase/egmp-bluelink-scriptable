@@ -1,29 +1,27 @@
 ---
-title: Multi Car
+title: Multi Voiture
 layout: home
 nav_order: 7
 ---
 
-# Multiple Car Support
+# Support Multi-Véhicule
 {: .fs-9 }
 
 {: .info-title }
-> Multiple Widgets one for each of your EVs.
+> Plusieurs widgets, un pour chaque véhicule électrique.
 >
-> For households with more than one Hyundai or Kia EV you can effectively run multiple copies of the egmp-bluelink app, each one configured to fetch data on a specifically targeted car.
+> Pour les foyers possédant plus d'une Hyundai ou Kia électrique, vous pouvez exécuter plusieurs copies de l'application egmp-bluelink, chacune configurée pour récupérer les données d'une voiture spécifique.
 >
-> Each car requires its own configuration and can be within the same Bluelink account or across different accounts or even Manufacturers
+> Chaque voiture nécessite sa propre configuration et peut être sur le même compte Bluelink ou sur des comptes différents, voire des fabricants différents.
 {: .fs-5 .fw-300 }
 
-## Enabling Multi-Car Support
+## Activer le support Multi-Véhicule
 
-Since v1.2.0 multi-car support is enabled by default. Simply setup the [script as normal](./install.md) for your first car. 
+Depuis la version v1.2.0, le support multi-voitures est activé par défaut. Configurez simplement le [script comme d'habitude](./install.md) pour votre première voiture. 
 {: .fs-5 .fw-300 }
 
-Once setup, within the Scriptable app press and hold the "egmp-bluelink" row and select "Duplicate", this will bring up a code window - just click on "done". This will produce a script likely called "egmp-bluelink 1", feel free to rename to something more appropiate (press and hold and choose rename)
+Une fois configuré, dans l'application Scriptable, **appuyez longuement** sur la ligne "egmp-bluelink" et sélectionnez "Dupliquer". Une fenêtre de code apparaîtra - cliquez simplement sur "Terminé". Cela produira un script probablement appelé "egmp-bluelink 1". Vous pouvez le renommer à votre convenance (appuyez longuement et choisissez "Renommer").
 {: .fs-5 .fw-300 }
 
-Now open the new script, it will prompt for Bluelink settings as per the first install, proceed to configure the same settings but your second car. Once setup you can configure a new widget for this second car - just ensure when you configure the widget you select the new scriptable script.
+Ouvrez maintenant le nouveau script, il vous demandera les paramètres Bluelink comme lors de la première installation. Configurez les mêmes paramètres mais pour votre **deuxième voiture**. Une fois configuré, vous pouvez créer un nouveau widget pour cette deuxième voiture - assurez-vous simplement de sélectionner le **nouveau script Scriptable** lors de la configuration du widget.
 {: .fs-5 .fw-300 }
-
-

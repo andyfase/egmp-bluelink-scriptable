@@ -1,75 +1,74 @@
 ---
-title: Automations
+title: Automatisations
 layout: home
 nav_order: 6
 ---
 
-# Automations
+# Automatisations
 {: .fs-9 }
 
-Using IOS Shortcuts it is possible to configure a number of automations. A automation is a combination of a defined shortcut and then an IOS automation that will trigger that shortcut [based on a IOS supported event](https://support.apple.com/en-ca/guide/shortcuts/apd932ff833f/ios). Both the shortcut itself and the automation are created within the Shortcuts app.
+Avec les raccourcis iOS, il est possible de configurer un certain nombre d’automatisations. Une automatisation est une combinaison d’un raccourci défini et d’une automatisation iOS qui déclenchera ce raccourci [en fonction d’un événement supporté par iOS](https://support.apple.com/en-ca/guide/shortcuts/apd932ff833f/ios). Tant le raccourci que l’automatisation sont créés dans l’application Raccourcis.
 {: .fs-5 .fw-300 }
 
-Any shortcut automation will need to invoke the app with a given command - as a text string. The list of commands are described on the [Siri](./siri.md) page.
+Toute automatisation de raccourci devra invoquer l’application avec une commande donnée — sous forme de chaîne de texte. La liste des commandes est décrite sur la page [Siri](./siri.md).
 {: .fs-5 .fw-300 }
 
-## Example Automations
+## Exemples d’automatisations
 
-Below are a few example automations, and downloadable Shortcut scripts. The provided shortcuts are examples, and should be modified by you to be appropiate for what you want to achieve.
+Voici quelques exemples d’automatisations, avec des scripts Raccourcis téléchargeables. Les raccourcis fournis sont des exemples et doivent être modifiés pour correspondre à ce que vous souhaitez accomplir.
 {: .fs-5 .fw-300 }
 
-### Walk Away Lock
+### Verrouillage en s’éloignant
 
 {: .warning-title }
-> Warning: You can lock yourself out of your car with this feature
+> Attention : Vous pouvez vous enfermer hors de votre voiture avec cette fonctionnalité
 >
-> Locking via bluelink always locks regardless of your keys location. Thus auto-locking via bluelink means if you turn off the car, leave your keys in the car and leave the car - with the doors closed - you can get locked out.
+> Le verrouillage via Bluelink verrouille toujours la voiture, quel que soit l’emplacement de vos clés. Ainsi, le verrouillage automatique via Bluelink signifie que si vous éteignez la voiture, laissez vos clés à l’intérieur et quittez la voiture avec les portes fermées, vous pouvez vous retrouver enfermé à l’extérieur.
 >
-> If using this feature never leave the car without one of your keys or your phone with the app installed (so you can un-lock when needed)
+> Si vous utilisez cette fonctionnalité, ne quittez jamais la voiture sans avoir une de vos clés ou votre téléphone avec l’application installée (pour pouvoir déverrouiller si nécessaire).
 
-This automation will send a lock command to the car, after a delay. The triggering event can either be disconnecting from CarPlay or disconnecting from the Car's Bluetooth.
+Cette automatisation enverra une commande de verrouillage à la voiture après un délai. L’événement déclencheur peut être la déconnexion de CarPlay ou la déconnexion du Bluetooth de la voiture.
 
-[Install "Auto Lock Car" Shortcut](https://www.icloud.com/shortcuts/2b49acde29904725b31c64f8195074ce)
+[Installer le raccourci "Auto Lock Car"](https://www.icloud.com/shortcuts/2b49acde29904725b31c64f8195074ce)
 {: .fs-5 .fw-300 }
 
-To setup the automation, perform the following:
+Pour configurer l’automatisation, procédez comme suit :
 
-- Click on the Automations tab
-- Click on the plus
-- Choose either "Bluetooth" or "Carplay"
-- Select "Is Disconnected" as the trigger (not connected), select the device (i.e. the cars bluetooth or Carplay name). Finally select "Run Immediately"
+- Cliquez sur l’onglet Automatisations
+- Cliquez sur le plus (+)
+- Choisissez soit "Bluetooth" soit "CarPlay"
+- Sélectionnez "Est déconnecté" comme déclencheur (non connecté), choisissez l’appareil (ex. le Bluetooth de la voiture ou le nom de CarPlay). Enfin, sélectionnez "Exécuter immédiatement".
 
-### Work Day, Auto Warm the Car If its cold
+### Jour de travail : préchauffage automatique si la voiture est froide
 
-This automation will send a warm command to the car, on a defined schedule (7am, on a weekday), if the outside temperature is below a given value. 
+Cette automatisation enverra une commande de chauffage à la voiture selon un horaire défini (7h, en semaine), si la température extérieure est inférieure à une valeur donnée.
 
-[Install "Auto Warm Car" Shortcut](https://www.icloud.com/shortcuts/804d551c2816436698ba97838ea66c26)
+[Installer le raccourci "Auto Warm Car"](https://www.icloud.com/shortcuts/804d551c2816436698ba97838ea66c26)
 {: .fs-5 .fw-300 }
 
-To setup the automation, perform the following:
+Pour configurer l’automatisation, procédez comme suit :
 
-- Click on the Automations tab
-- Click on the plus
-- Choose "Time of Day"
-- Select the time you wish this automation to run, choose "Weekly" and select the days of the week you want it to run. Finally select "Run Immediately"
+- Cliquez sur l’onglet Automatisations
+- Cliquez sur le plus (+)
+- Choisissez "Heure de la journée"
+- Sélectionnez l’heure à laquelle cette automatisation doit s’exécuter, choisissez "Hebdomadaire" et sélectionnez les jours de la semaine où vous souhaitez qu’elle s’exécute. Enfin, sélectionnez "Exécuter immédiatement".
 
-### Set Charge Limit to 100% once per month
+### Régler la limite de charge à 100 % une fois par mois
 
-Hyundai / Kia recommend charging to 100% once a month, this can be annoying to remember to do. This Automation can be used if you typically charge daily (or regularly) and you want to automate setting the charge limit to 100% once per month, and then back to your normal value afterwards 
+Hyundai/Kia recommande de charger à 100 % une fois par mois, ce qui peut être facile à oublier. Cette automatisation peut être utilisée si vous chargez quotidiennement (ou régulièrement) et que vous souhaitez automatiser le réglage de la limite de charge à 100 % une fois par mois, puis revenir à votre valeur normale ensuite.
 
-This automation will send a charge limit command to the car, on a defined schedule. Duplicate this to set it back to normal the day after 
+Cette automatisation enverra une commande de limite de charge à la voiture selon un horaire défini. Dupliquez-la pour la remettre à la valeur normale le jour suivant.
 
-[Install "Auto Charge Limit" Shortcut](https://www.icloud.com/shortcuts/2c499728f55d43aa90ba9b68792fe9df)
+[Installer le raccourci "Auto Charge Limit"](https://www.icloud.com/shortcuts/2c499728f55d43aa90ba9b68792fe9df)
 {: .fs-5 .fw-300 }
 
-Alter the script to set the charge setting of your choice, by default this is set to "RoadTrip", you're likely want to create your own charge limit setting in the configuration settings of the app first.
+Modifiez le script pour définir la limite de charge de votre choix. Par défaut, elle est définie sur "RoadTrip". Vous voudrez probablement créer votre propre réglage de limite de charge dans les paramètres de configuration de l’application d’abord.
 
-To setup the automation, perform the following:
+Pour configurer l’automatisation, procédez comme suit :
 
-- Click on the Automations tab
-- Click on the plus
-- Choose "Time of Day"
-- Select the time you wish this automation to run, choose "Monthly" and select the day of the month you want it to run. Finally select "Run Immediately"
+- Cliquez sur l’onglet Automatisations
+- Cliquez sur le plus (+)
+- Choisissez "Heure de la journée"
+- Sélectionnez l’heure à laquelle cette automatisation doit s’exécuter, choisissez "Mensuel" et sélectionnez le jour du mois où vous souhaitez qu’elle s’exécute. Enfin, sélectionnez "Exécuter immédiatement".
 
-Duplicate the script and automation to set the charge limit back to its normal value.
-
+Dupliquez le script et l’automatisation pour remettre la limite de charge à sa valeur normale.

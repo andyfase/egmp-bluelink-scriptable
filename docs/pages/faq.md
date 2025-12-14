@@ -1,65 +1,65 @@
 ---
-title: Help
+title: Aide
 layout: home
 nav_order: 8
 ---
 
-# Help / FAQ
+# Aide / FAQ
 {: .fs-9 }
 
-Below is a list of common questions and/or issues that can be encountered with resolutions
+Ci-dessous se trouve une liste des questions et problèmes courants ainsi que leurs résolutions.
 {: .fs-5 .fw-300 }
 
-### Is this a real app, and if not why not?
+### Est-ce une vraie application, et sinon pourquoi ?
 
-No, this is not an app that sits in the Apple App Store. This is a [Scriptable](https://scriptable.app/) "app" or script. Hence you need to install the Scriptable app from the app store and then install the JavaScript build file for bluelink-scriptable. This is all documented in the [Installation page](./install.md).
+Non, ce n’est pas une application disponible sur l’Apple App Store. Il s’agit d’une "app" ou script pour [Scriptable](https://scriptable.app/). Vous devez donc installer l’application Scriptable depuis l’App Store, puis installer le fichier JavaScript de Bluelink-Scriptable. Tout cela est documenté sur la page [Installation](./install.md).
 {: .fs-4 .fw-400 }
 
-For why, a combination of it being easier to develop this way, and also not being beholden to Apple App Store rules on what is allowed. This app uses un-documentated Hyundai and Kia APIs, is it quite likely a official IOS app will be either rejected or asked to be removed from the App Store - this cannot occur via Scriptable.
+Pourquoi ? C’est plus simple à développer ainsi, et cela permet de ne pas être limité par les règles de l’App Store concernant ce qui est autorisé. Cette application utilise des API Hyundai et Kia non documentées, et il est probable qu’une app iOS officielle serait rejetée ou retirée de l’App Store — ce qui n’est pas le cas via Scriptable.
 {: .fs-4 .fw-400 }
 
-### Is Android Support or planned?
+### Le support Android est-il prévu ?
 
-No, this app is IOS only and I have no ability or desire to produce a Android version. [Scriptable](https://scriptable.app/) only exists on IOS, the nearest Android equivalent is Tasker, but that lacks  the ability to actually create custom app screens and widgets from what i can tell. 
+Non, cette application est uniquement iOS et je n’ai ni la possibilité ni l’envie de produire une version Android. [Scriptable](https://scriptable.app/) n’existe que sur iOS. L’équivalent Android le plus proche serait Tasker, mais il ne permet pas de créer de manière simple des écrans et widgets personnalisés.
 
-Likely for this to work on Android someone would need to develop a [React Native app](https://reactnative.dev/) which would then need to be made available to side load. Obviously this codebase is open souce and available for anyone who wishes to take on this challenge :-)
+Pour qu’une version fonctionne sur Android, quelqu’un devrait développer une [application React Native](https://reactnative.dev/) qui pourrait ensuite être installée manuellement. Évidemment, ce code est open source et disponible pour toute personne souhaitant relever ce défi. :-)
 
-### Do a require a Kia / Hyundai Bluelink subscription to use this?
+### Ai-je besoin d’un abonnement Kia / Hyundai Bluelink pour utiliser ceci ?
 
-Yes, or likely so. This app uses the same Hyundai and Kia APIs that back the offical App Store apps, no checks are made within the code to check for accss to Bluelink, but it is assumed the APIs will not work if you do not have a valid subscription.
+Oui, ou probablement oui. Cette application utilise les mêmes API Hyundai et Kia que les applications officielles App Store. Aucun contrôle n’est effectué dans le code pour vérifier l’accès à Bluelink, mais on suppose que les API ne fonctionneront pas sans un abonnement valide.
 
-### Are my Bluelink credentials safe to enter into this app?
+### Mes identifiants Bluelink sont-ils sécurisés ?
 
-Yes, all configuration (including your Bluelink username, password and pin) are stored locally within the IOS keychain. The only time these credentials are exposed is if you enable Debug Logging in which case the credentials could be recorded to the logs files generated - which are only available to yourself within your own iCloud Files directory.
+Oui. Toute la configuration (nom d’utilisateur, mot de passe et code PIN Bluelink) est stockée localement dans le trousseau iOS. Ces informations ne sont exposées que si vous activez le mode Debug Logging, auquel cas elles pourraient être enregistrées dans les fichiers de logs — lesquels restent accessibles uniquement dans votre propre répertoire iCloud.
 
-### Which Countries / Manufacturer's are supported?
+### Quels pays / constructeurs sont supportés ?
 
-See the [Regions](./region.md) page for supported regions.
+Voir la page [Régions](./region.md) pour les régions supportées.
 
-### Are ICE cars supported?
+### Les voitures à moteur thermique (ICE) sont-elles supportées ?
 
-No not yet. This app was written specifically to support Hyundai and Kia E-GMP EVs. I have been asked to support ICE vehicles, and its something I can considering adding support for. If you desire this feature, let me know by adding or commenting on an existing [Github Issue](https://github.com/andyfase/egmp-bluelink-scriptable/issues) 
+Pas encore. Cette application a été écrite spécifiquement pour les véhicules électriques Hyundai et Kia E-GMP. J’ai été sollicité pour ajouter le support des véhicules ICE, ce que je pourrais envisager. Si vous souhaitez cette fonctionnalité, faites-le savoir en ajoutant ou commentant un [issue GitHub](https://github.com/andyfase/egmp-bluelink-scriptable/issues).
 
-### I entered my credentials incorrectly and the app wont open / does nothing
+### J’ai saisi mes identifiants incorrectement et l’app ne s’ouvre pas / ne fait rien
 
-You will need to reset the stored configuration. I provide a "reset" script within all [GitHub Releases](https://github.com/andyfase/egmp-bluelink-scriptable/releases). Download the "egmp-reset.js" file under `Assets` into your Scriptable directory and run it, when prompted reset your configuration which will reset the main apps configuration.
+Vous devrez réinitialiser la configuration stockée. Je fournis un script "reset" dans toutes les [releases GitHub](https://github.com/andyfase/egmp-bluelink-scriptable/releases). Téléchargez le fichier `egmp-reset.js` dans votre répertoire Scriptable et exécutez-le. Lorsque demandé, réinitialisez votre configuration principale.
 
-### I think i've found a bug and would like to get it fixed.
+### Je pense avoir trouvé un bug et souhaite qu’il soit corrigé
 
-Please raise a [Github Issue](https://github.com/andyfase/egmp-bluelink-scriptable/issues) and provide all the information around the issue you have encountered. 
+Merci de créer un [issue GitHub](https://github.com/andyfase/egmp-bluelink-scriptable/issues) et de fournir toutes les informations sur le problème rencontré.
 
-You will likely need to provide debug logs. See the below question on details on how to provide these logs.
+Vous devrez probablement fournir les logs de debug. Voir la question suivante pour savoir comment obtenir ces logs.
 
-### How do I enable and obtain debug logs
+### Comment activer et obtenir les logs de debug
 
-Make sure you are running [v1.2.0](https://github.com/andyfase/egmp-bluelink-scriptable/releases) or above, as this version of the app allows for much easier access to obtain debug logs. 
+Assurez-vous d’utiliser [v1.2.0](https://github.com/andyfase/egmp-bluelink-scriptable/releases) ou une version supérieure, car cette version facilite l’accès aux logs.
 
-Once you have confirmed your on a appropiate version, go into the app settings screen and enable the "Debug logs" setting. Once enabled every API request and response sent from the app is then logged to a file. 
+Dans l’écran des paramètres de l’application, activez l’option "Debug logs". Une fois activée, chaque requête et réponse API sera enregistrée dans un fichier.
 
-Now perform the series of actions you need logs for (i.e simulate the bug you are seeing). Once done, triple-tap the setting icon and choose "Share Debug Logs", a share screen will open allowing you to select your email app of choice to send the logs. The logs are automatically redacted of any personal information i.e. username, password, pin etc.
+Effectuez ensuite les actions pour lesquelles vous souhaitez obtenir les logs (simulez le bug). Ensuite, triple-cliquez sur l’icône des paramètres et choisissez "Share Debug Logs". Une fenêtre de partage s’ouvrira, vous permettant de sélectionner votre application mail pour envoyer les logs. Les informations personnelles (nom d’utilisateur, mot de passe, PIN, etc.) sont automatiquement masquées.
 
-### How do I get the full list of all debug logs?
+### Comment obtenir la liste complète des logs de debug ?
 
-If you wish to look at the logs outside of the app, they are stored within the Scriptable directory ojn iCloud drive. The in-use file is called `egmp-bluelink.log`. Log files are automatically renamed when they get to 100kb in size, hence you will see older log files named `egmp-bluelink.log.20250318150755-0700` or similar. The timestamp is the date the file was renamed.
+Si vous souhaitez consulter les logs en dehors de l’app, ils sont stockés dans le répertoire Scriptable sur iCloud Drive. Le fichier en cours d’utilisation s’appelle `egmp-bluelink.log`. Les fichiers sont automatiquement renommés lorsqu’ils atteignent 100 Ko, par exemple : `egmp-bluelink.log.20250318150755-0700`.
 
-All log files are stored within the same Scriptable directory as the scripts themselves. Note as detailed above these log files do contain your credentials. If you are asked, or provide them either directly to myself through email or via a Github issue please ensure you open the log files and redact any of your credentials (login and password)
+Tous les fichiers de logs sont dans le même répertoire Scriptable que les scripts. Comme indiqué ci-dessus, ces fichiers peuvent contenir vos identifiants. Si vous les fournissez par mail ou via un issue GitHub, assurez-vous de **masquer vos identifiants** avant envoi (login et mot de passe).

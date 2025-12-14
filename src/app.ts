@@ -165,7 +165,7 @@ const settings = (bl: Bluelink) => {
   return Div(
     [
       Img(getTintedIcon('settings'), { align: 'left' }),
-      P('Settings', {
+      P('Réglages', {                                                       /* Settings */
         font: (n) => Font.boldSystemFont(n),
         fontSize: 20,
         align: 'left',
@@ -299,13 +299,13 @@ const pageIcons = connect(
       chargingRow.push(P(batteryText, { align: 'left', width: '70%' }))
     }
 
-    const conditioningText = isClimateOn ? 'Climate On' : 'Climate Off'
+    const conditioningText = isClimateOn ? 'Ventilation On' : 'Ventilation Off'      /*  */
     const conditioningIcon = isClimateOn ? 'climate-on' : 'climate-off'
 
-    const lockedText = locked ? 'Car Locked' : 'Car Unlocked'
+    const lockedText = locked ? 'Voiture barrée' : 'Voiture débarrée'      /*  */
     const lockedIcon = locked ? 'locked' : 'unlocked'
 
-    const twelveSocText = twelveSoc > 0 ? `12v battery at ${twelveSoc}%` : '12v battery status unknown'
+    const twelveSocText = twelveSoc > 0 ? `Batterie 12v à ${twelveSoc}%` : 'Status batterie 12v inconnu'      /*  */
 
     // find charge limit name based on current values
     let chargeLimitName = undefined
@@ -320,7 +320,7 @@ const pageIcons = connect(
     const chargeLimitText = chargeLimitPercentText
       ? chargeLimitName
         ? `${chargeLimitName} Charge Limit`
-        : `Charge Limit: ${chargeLimitPercentText}`
+        : `Limite de charge: ${chargeLimitPercentText}`      /*  */
       : 'Set Charge Limit'
 
     return Div([
@@ -348,9 +348,9 @@ const pageIcons = connect(
                   bl: bl,
                   actions: updatingActions,
                   actionKey: 'charge',
-                  updatingText: opt === 'Charge' ? 'Starting charging ...' : 'Stopping charging ...',
-                  successText: opt === 'Charge' ? 'Car charging started!' : 'Car charging stopped!',
-                  failureText: `Failed to ${opt === 'Charge' ? 'start charging' : 'stop charging'} car!!!`,
+                  updatingText: opt === 'Charge' ? 'Début de la recharge...' : 'Arrêt de la recharge...',      /*  */
+                  successText: opt === 'Charge' ? 'La charge a bien débutée!' : 'La charge a arrêtée!',      /*  */
+                  failureText: `Erreur ${opt === 'Charge' ? 'début de charge' : 'arrêt de charge'} sur votre voiture!!!`,      /*  */
                   successCallback: (data) => {
                     updateStatus({
                       ...bl.getCachedStatus(),
@@ -449,20 +449,20 @@ const pageIcons = connect(
                     actions: updatingActions,
                     actionKey: 'climate',
                     updatingText: payload
-                      ? `Starting custom climate ...`
+                      ? `Je part la vent custom...`      /* Starting custom climate ... */
                       : opt === 'Warm'
-                        ? 'Starting pre-heat ...'
+                        ? 'Je part le chauffage...'      /* Starting pre-heat ... */
                         : opt === 'Cool'
-                          ? 'Starting cool ...'
-                          : 'Stopping climate ...',
+                          ? 'Je part la clim...'      /* Starting cool ... */
+                          : 'Arrêt de la clim!',      /* Stopping climate ... */
                     successText: payload
-                      ? `Custom climate Started!`
+                      ? `ventilation custom activé`      /* Custom climate Started! */
                       : opt === 'Warm'
-                        ? 'Climate heating!'
+                        ? 'Chauffage actif!'      /* Climate heating! */
                         : opt === 'Cool'
-                          ? 'Climate cooling!'
-                          : 'Climate stopped!',
-                    failureText: `Failed to ${opt === 'Off' ? 'Stop' : 'Start'} climate!!!`,
+                          ? 'Clim activé!'      /* Climate cooling! */
+                          : 'Arrêt de la clim!',      /* Climate stopped! */
+                    failureText: `Erreur ${opt === 'Off' ? 'Arrêr' : 'Début'} sur la ventilation!!!`,      /* `Failed to ${opt === 'Off' ? 'Stop' : 'Start'} climate!!!` */
                     successCallback: (data) => {
                       updateStatus({
                         ...bl.getCachedStatus(),
@@ -504,9 +504,9 @@ const pageIcons = connect(
                   bl: bl,
                   actions: updatingActions,
                   actionKey: 'lock',
-                  updatingText: opt === 'Lock' ? 'Locking car ...' : 'Unlocking car ...',
-                  successText: opt === 'Lock' ? 'Car locked!' : 'Car unlocked!',
-                  failureText: `Failed to ${opt === 'Lock' ? 'lock' : 'unlock'} car!!!`,
+                  updatingText: opt === 'Lock' ? 'Je barre votre voiture...' : 'Je débarre votre voiture...',       /* 'Locking car ...' : 'Unlocking car ...' */
+                  successText: opt === 'Lock' ? 'Voiture barrée!' : 'Voiture débarrée!',              /* 'Car locked!' : 'Car unlocked!' */
+                  failureText: `Erreur ${opt === 'Lock' ? 'BARRÉE' : 'DÉBARRÉE'} sur votre voiture!!!`,       /* `Failed to ${opt === 'Lock' ? 'lock' : 'unlock'} car!!!` */
                   successCallback: (data) => {
                     updateStatus({
                       ...bl.getCachedStatus(),
@@ -557,9 +557,9 @@ const pageIcons = connect(
                   payload: payload,
                   actions: updatingActions,
                   actionKey: 'chargeLimit',
-                  updatingText: `Setting charge limit ...`,
-                  successText: `Charge limit ${payload.name} set!`,
-                  failureText: `Failed to set charge limit!!!`,
+                  updatingText: `Réglage de la limite de charge...`,                       /* `Setting charge limit ...` */
+                  successText: `Limite de charge ${payload.name} réglée!`,                       /* `Charge limit ${payload.name} set!` */
+                  failureText: `Erreur lors du réglage de la limte de charge!!!`,                       /* `Failed to set charge limit!!!` */
                   successCallback: (data) => {
                     updateStatus({
                       ...bl.getCachedStatus(),
@@ -598,9 +598,9 @@ const pageIcons = connect(
                 bl: bl,
                 actions: updatingActions,
                 actionKey: 'status',
-                updatingText: 'Updating Status...',
-                successText: 'Status Updated!',
-                failureText: 'Status Failed to Update!!!',
+                updatingText: 'mise a jour du status...',             /* 'Updating Status...' */
+                successText: 'Status a jour!',                  /* 'Status Updated!' */
+                failureText: 'Erreur lors de la mise a jour du statut!!!',       /* 'Status Failed to Update!!!' */
                 successCallback: (data) => {
                   updateStatus({
                     ...data,
@@ -636,9 +636,9 @@ const pageImage = connect(({ state: { appIcon, updatingActions } }, bl: Bluelink
               bl: bl,
               actions: updatingActions,
               actionKey: 'status',
-              updatingText: 'Getting Location...',
-              successText: 'Got Location!',
-              failureText: 'Failed to get location!!!',
+              updatingText: 'Recherche de la position...',                         /*'Getting Location...'  */
+              successText: 'Position actualiser!',                                 /* 'Got Location!', */
+              failureText: 'Erreur lors de la recherche de la position !!!',         /* 'Failed to get location!!!' */
               successCallback: (status: Status) => {
                 updateStatus(status)
                 if (status.status.location) {
