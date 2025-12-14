@@ -30,4 +30,12 @@ build() {
 
 build_and_watch() {
   build "$1" --watch
+
+# ---- entrypoint ----
+if has_param '--watch' "$@"; then
+  build_and_watch "$@"
+else
+  build "$@"
+fi
+
 }

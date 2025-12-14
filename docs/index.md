@@ -48,10 +48,10 @@ function lightbox_close() {
 <a href="./pages/install" class="btn btn-primary fs-5 mb-4 mb-md-0 mr-2">Instruction pour l'installation</a>
 </p>
 <p>
-<a href="https://github.com/andyfase/egmp-bluelink-scriptable" class="btn fs-5 mb-4 mb-md-0">Vooir sur GitHub&#160;&#160;</a>
+<a href="https://github.com/bleeband/egmp-bluelink-scriptable" class="btn fs-5 mb-4 mb-md-0">Vooir sur GitHub&#160;&#160;</a>
 </p>
 <p>
-<a href="https://buymeacoffee.com/andyfase"><img src="./images/coffee.png" width="188"></a>
+<!-- <a href="https://buymeacoffee.com/andyfase"><img src="./images/coffee.png" width="188"></a> -->
 </p>
 
 </td>

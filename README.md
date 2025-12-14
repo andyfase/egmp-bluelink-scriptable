@@ -1,43 +1,47 @@
-# E-GMP Bluelink Scriptable
+E-GMP Bluelink Scriptable
+C’est quoi ça?
 
-## What is this?
+C’est une autre app Bluelink pour contrôler ta Hyundai/Kia électrique E-GMP, mais en version Scriptable pour iOS. Ça te permet de piloter ton char avec l’API Bluelink, pis ça fait pas planter ton téléphone.
 
-An alternative Bluelink app to use on Hyundai / Kia E-GMP Electric Cars. Its a [scriptable app](https://scriptable.app/) for IOS that allows you to control your Hyundai / Kia electric car using the Bluelink API. 
+Features (les affaires cool)
 
-## Features
+Widgets Home Screen et Lock Screen qui se mettent à jour tout seuls
 
-* Auto-Updating Homescreen and Lockscreen Widgets
-* Fresh and more responsive app UI
-* Single click options for common commands (lock, warm, charge etc) in both app and in IOS Control Center
-* Siri voice support "Hey Siri, Warm the car"
-* Automations via IOS Shortcuts like walk-away lock
-* Unlimited Custom Climate configurations 
+UI plus fraîche et réactive que l’app normale
 
-## Docs
+Un clic pour locker, chauffer, charger ton char, pis ça marche même dans le Control Center iOS
 
-See [https://bluelink.andyfase.com](https://bluelink.andyfase.com) for all documentation on feature set, installation instructions and usgae of the app.
+Siri supporté : « Hey Siri, chauffe le char »
 
-## In-use
+Automatisations via Shortcuts iOS, genre verrouillage automatique quand tu t’éloignes
 
-[<img src="./docs/images/widget_charging.png" width="400px"/>](https://bluelink.andyfase.com/images/egmp-scriptable-in-use.mp4)
-<center>(click to view video)</center>
+Climatisation custom illimitée, parce qu’on est fancy
 
-## Dev Instructions
+Docs
 
-### Repo Structure / Codebase
+Tout ce que t’as besoin de savoir, comment installer pis utiliser l’app est ici :
+https://bluelink.andyfase.com
 
-The code is written in typescipt and transpiled to Javascript, which the scriptable app requires. 
+En action
 
-`/src` is the main source code of the app  
-`/docs` is a Jekyll static CMS, which Gtihub pages supports.  
-`/.github/docs.yml` is the GitHub Action pipeline that builds and deploys the Github Pages  
-`/exampleData` is a set of exampke API payloads 
+<img src="./docs/images/widget_charging.png" width="400px"/>
 
-### Building the code
+<center>(Clique pour voir la vidéo)</center>
+Pour les devs (ou les curieux)
+Structure du repo / Code
 
-```
+Le code est en TypeScript, transpillé en JavaScript parce que Scriptable aime ça comme ça.
+
+/src — code principal de l’app
+
+/docs — site Jekyll pour la doc (GitHub Pages friendly)
+
+/.github/docs.yml — pipeline GitHub Actions pour build et deploy la doc
+
+/exampleData — exemples de payloads API
+
+Pour build le code
+
 cd src
-npm i
+npm install
 npm run build ./src/index.ts egmp-bluelink
-```
-

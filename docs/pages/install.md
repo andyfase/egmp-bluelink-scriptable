@@ -22,7 +22,7 @@ L'installation est un processus **unique**. Une fois installée, l'application v
 **Étape 1 :** [Installez l'application Scriptable](https://apps.apple.com/us/app/scriptable/id1405459188?uo=4) et ouvrez-la.
 {: .fs-4 .fw-300 }
 
-**Étape 2 :** [Téléchargez le dernier fichier egmp-bluelink.js](https://github.com/andyfase/egmp-bluelink-scriptable/releases) depuis votre iPhone.
+**Étape 2 :** [Téléchargez le dernier fichier egmp-bluelink.js](https://github.com/bleeband/egmp-bluelink-scriptable/releases) depuis votre iPhone.
 {: .fs-4 .fw-300 }
 
 ![image](../images/download.png)

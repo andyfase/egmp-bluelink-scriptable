@@ -32,7 +32,7 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
     bl = await initRegionalBluelink(blConfig, config.runsWithSiri || config.runsInWidget ? true : false)
   } catch (e) {
     const error = e instanceof Error ? e.message : e
-    const errorMessage = `Erreur initialisation Bluelink: ${error}`       /*  */
+    const errorMessage = `Erreur initialisation Bluelink: ${error}` /*  */
     const errorMessageShort = errorMessage.replace(/\{.*\}/, '')
     logger.log(errorMessage)
     if (!config.runsWithSiri && !config.runsInWidget) {
@@ -89,7 +89,7 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
         await quickOptions(
           carOptionsNames.map((car) => car.name),
           {
-            title: 'Veuillez choisir vottre véhicule',       /*  */
+            title: 'Veuillez choisir vottre véhicule' /*  */,
             onOptionSelect: (opt) => {
               const selectedCar = carOptionsNames.find((car) => car.name === opt)
               if (selectedCar) {
@@ -100,8 +100,8 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
           },
         )
       } else {
-        await confirm('Échec de la connexion — veuillez vérifier vos identifiants', {          /*  */
-          confirmButtonTitle: 'Ok',
+        await confirm('Échec de la connexion — veuillez vérifier vos identifiants', {
+          /*  */ confirmButtonTitle: 'Ok',
           includeCancel: false,
         })
         await loadConfigScreen()
@@ -111,8 +111,8 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
 
     if (!bl) {
       logger.log('Bluelink instance is undefined')
-      await confirm('Une erreur est survenue lors de l’initialisation de Bluelink — veuillez réessayer plus tard', {      /*  */
-        confirmButtonTitle: 'Ok',
+      await confirm('Une erreur est survenue lors de l’initialisation de Bluelink — veuillez réessayer plus tard', {
+        /*  */ confirmButtonTitle: 'Ok',
         includeCancel: false,
       })
       return

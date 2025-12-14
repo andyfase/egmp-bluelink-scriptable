@@ -51,7 +51,7 @@ export async function processSiriRequest(config: Config, bl: Bluelink, shortcutP
       return response
     }
   }
-  return "Vous m'avez demander ${shortcutParameter} mais je ne peux l'exécuter"      /*  */
+  return "Vous m'avez demander ${shortcutParameter} mais je ne peux l'exécuter" /*  */
 }
 
 async function getStatus(bl: Bluelink): Promise<string> {
@@ -60,21 +60,22 @@ async function getStatus(bl: Bluelink): Promise<string> {
 
   const carName = status.car.nickName || `${status.car.modelYear}`
 
-  let response = "La batterie de ${carName} est a ${status.status.soc}% et ${status.status.locked ? 'locked' : 'un-locked'}"    /*  */
-  if (status.status.climate) response += ', et la ventilation fonctionne'     /*  */
+  let response =
+    "La batterie de ${carName} est a ${status.status.soc}% et ${status.status.locked ? 'locked' : 'un-locked'}" /*  */
+  if (status.status.climate) response += ', et la ventilation fonctionne' /*  */
 
   if (status.status.isCharging) {
     const chargeCompleteTime = getChargeCompletionString(lastSeen, status.status.remainingChargeTimeMins, 'long')
-    response += `. Aussi, votre voiture recharge à ${status.status.chargingPower}kw et la charge sera complete dans ${chargeCompleteTime}`    /*  */
+    response += `. Aussi, votre voiture recharge à ${status.status.chargingPower}kw et la charge sera complete dans ${chargeCompleteTime}` /*  */
   } else if (status.status.isPluggedIn) {
-    response += '. Aussi, votre voiture est branchée sur la borne.'     /*  */
+    response += '. Aussi, votre voiture est branchée sur la borne.' /*  */
   }
   const lastSeenShort = lastSeen.toLocaleString(undefined, {
     weekday: 'long',
     hour: 'numeric',
     minute: 'numeric',
   })
-  response += `. Ceci était le résumé de ${carName} sur ${lastSeenShort}.`      /*  */
+  response += `. Ceci était le résumé de ${carName} sur ${lastSeenShort}.` /*  */
   return response
 }
 
@@ -103,9 +104,9 @@ async function getRemoteStatus(bl: Bluelink): Promise<string> {
   //wait for getCar command to be completed + another 200ms to ensure the remote status command is sent
   const result = await waitForCommandSent(bl, 200)
   if (!result)
-    return "J'ai envoyé une demande de statut à distance, mais il semble que la commande n'ait pas été envoyée."      /*  */
+    return "J'ai envoyé une demande de statut à distance, mais il semble que la commande n'ait pas été envoyée." /*  */
   await sleep(200)
-  return "J'ai envoyé une demande de statut à distance. Redemandez-moi le statut normal dans 30 secondes et je vous donnerai la réponse."     /*  */
+  return "J'ai envoyé une demande de statut à distance. Redemandez-moi le statut normal dans 30 secondes et je vous donnerai la réponse." /*  */
 }
 
 async function warm(bl: Bluelink): Promise<string> {
@@ -114,7 +115,7 @@ async function warm(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'climate',
-    `J'ai envoyé une demande de préchauffage à ${status.car.nickName || `votre ${status.car.modelName}`}.`,            /*  */
+    `J'ai envoyé une demande de préchauffage à ${status.car.nickName || `votre ${status.car.modelName}`}.` /*  */,
     {
       enable: true,
       frontDefrost: true,
@@ -140,7 +141,7 @@ async function cool(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'climate',
-    `J'ai envoyé une demande de climatisation à ${status.car.nickName || `votre ${status.car.modelName}`}.`,          /*  */
+    `J'ai envoyé une demande de climatisation à ${status.car.nickName || `votre ${status.car.modelName}`}.` /*  */,
     {
       enable: true,
       frontDefrost: false,
@@ -166,7 +167,7 @@ async function climateOff(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'climate',
-    `J'ai envoyé une demande pour éteindre le climatiseur à ${status.car.nickName || `votre ${status.car.modelName}`}.`,           /*  */
+    `J'ai envoyé une demande pour éteindre le climatiseur à ${status.car.nickName || `votre ${status.car.modelName}`}.` /*  */,
     {
       enable: false,
       frontDefrost: false,
@@ -183,7 +184,7 @@ async function customClimate(bl: Bluelink, data: CustomClimateConfig): Promise<s
   return await blRequest(
     bl,
     'climate',
-    `J'ai envoyé une demande pour activer le profil ${data.name} à ${status.car.nickName || `votre ${status.car.modelName}`}.`,       /*  */
+    `J'ai envoyé une demande pour activer le profil ${data.name} à ${status.car.nickName || `votre ${status.car.modelName}`}.` /*  */,
     {
       ...data,
       enable: true,
@@ -205,7 +206,7 @@ async function lock(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'lock',
-    `J'ai envoyé une demande pour barrer les portes à ${status.car.nickName || `votre ${status.car.modelName}`}.`,   /*  */
+    `J'ai envoyé une demande pour barrer les portes à ${status.car.nickName || `votre ${status.car.modelName}`}.` /*  */,
   )
 }
 
@@ -214,7 +215,7 @@ async function unlock(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'unlock',
-    `J'ai envoyé une demande pour débarrer les portes à ${status.car.nickName || `votre ${status.car.modelName}`}.`,    /*  */
+    `J'ai envoyé une demande pour débarrer les portes à ${status.car.nickName || `votre ${status.car.modelName}`}.` /*  */,
   )
 }
 
@@ -223,7 +224,7 @@ async function startCharge(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'startCharge',
-    `J'ai envoyé une demande pour démarrer la charge à ${status.car.nickName || `votre ${status.car.modelName}`}.`,      /*  */
+    `J'ai envoyé une demande pour démarrer la charge à ${status.car.nickName || `votre ${status.car.modelName}`}.` /*  */,
   )
 }
 
@@ -232,7 +233,7 @@ async function setChargeLimit(bl: Bluelink, data: ChargeLimitConfig): Promise<st
   return await blRequest(
     bl,
     'chargeLimit',
-    `J'ai envoyé une demande pour régler la charge à ${data.name} sur ${status.car.nickName || `votre ${status.car.modelName}`}.`,      /*  */
+    `J'ai envoyé une demande pour régler la charge à ${data.name} sur ${status.car.nickName || `votre ${status.car.modelName}`}.` /*  */,
     {
       acPercent: data.acPercent,
       dcPercent: data.dcPercent,
@@ -245,7 +246,7 @@ async function stopCharge(bl: Bluelink): Promise<string> {
   return await blRequest(
     bl,
     'stopCharge',
-    `J'ai envoyé une demande pour arreter la charge à ${status.car.nickName || `votre ${status.car.modelName}`}.`,      /*  */
+    `J'ai envoyé une demande pour arreter la charge à ${status.car.nickName || `votre ${status.car.modelName}`}.` /*  */,
   )
 }
 

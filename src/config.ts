@@ -286,8 +286,9 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
         }
       }
       if (state.allowWidgetRemoteRefresh && !previousState.allowWidgetRemoteRefresh) {
-        confirm('Activer la fonction actualisation en arrière-plan peut avoir un impacte sur la batterie 12v ', {          /* Enabling background remote refresh may impact your 12v battery  */
-          confirmButtonTitle: 'Je comprends',       /* I understand */
+        confirm('Activer la fonction actualisation en arrière-plan peut avoir un impacte sur la batterie 12v ', {
+          /* Enabling background remote refresh may impact your 12v battery  */
+          confirmButtonTitle: 'Je comprends' /* I understand */,
           includeCancel: false,
         })
       }
@@ -296,8 +297,9 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
         state.manufacturer === 'Kia' &&
         (previousState.region !== 'europe' || previousState.manufacturer !== 'Kia')
       ) {
-        confirm('Kia in Europe requires login through a webview. Login window will open automatically.', {        /* 'Kia in Europe requires login through a webview. Login window will open automatically.' */
-          confirmButtonTitle: 'Je comprends',       /* I understand */
+        confirm('Kia in Europe requires login through a webview. Login window will open automatically.', {
+          /* 'Kia in Europe requires login through a webview. Login window will open automatically.' */
+          confirmButtonTitle: 'Je comprends' /* I understand */,
           includeCancel: false,
         })
       }
@@ -336,85 +338,85 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
       },
       region: {
         type: 'dropdown',
-        label: 'Choisir votre région',      /*  */
+        label: 'Choisir votre région' /*  */,
         options: SUPPORTED_REGIONS,
         allowCustom: false,
         isRequired: true,
       },
       manufacturer: {
         type: 'dropdown',
-        label: 'Choisir le fabricants',     /*  */
+        label: 'Choisir le fabricants' /*  */,
         options: SUPPORTED_MANUFACTURERS,
         allowCustom: false,
         isRequired: true,
       },
       vin: {
         type: 'textInput',
-        label: '# de série',     /*  */
+        label: '# de série' /*  */,
         isRequired: false,
       },
       tempType: {
         type: 'dropdown',
-        label: "Choisir l'unité de température",    /*  */
+        label: "Choisir l'unité de température" /*  */,
         options: ['C', 'F'],
         allowCustom: false,
         isRequired: true,
       },
       distanceUnit: {
         type: 'dropdown',
-        label: "Choisir l'unité de distance",     /*  */
+        label: "Choisir l'unité de distance" /*  */,
         options: ['km', 'mi'],
         allowCustom: false,
         isRequired: true,
       },
       climateTempWarm: {
         type: 'numberValue',
-        label: 'Réglages du préchauffage',      /* Climate temp when pre-heating (whole number or .5) */
+        label: 'Réglages du préchauffage' /* Climate temp when pre-heating (whole number or .5) */,
         isRequired: true,
       },
       climateTempCold: {
         type: 'numberValue',
-        label: 'Réglages de la climatisation',      /* Climate temp when pre-cooling (whole number or .5)' */
+        label: 'Réglages de la climatisation' /* Climate temp when pre-cooling (whole number or .5)' */,
         isRequired: true,
       },
       climateSeatLevel: {
         type: 'dropdown',
-        label: 'Niveau du banc chauffant',      /*  */
+        label: 'Niveau du banc chauffant' /*  */,
         isRequired: true,
         options: Object.keys(ClimateSeatSettingCool),
       },
       carColor: {
         type: 'dropdown',
-        label: 'Couleur de votre voirure',      /*  */
+        label: 'Couleur de votre voirure' /*  */,
         options: CAR_COLORS,
         allowCustom: false,
         isRequired: true,
       },
       allowWidgetRemoteRefresh: {
         type: 'checkbox',
-        label: 'Actualisation en arrières plan',        /*  */
+        label: 'Actualisation en arrières plan' /*  */,
         isRequired: false,
       },
       debugLogging: {
         type: 'checkbox',
-        label: 'Enable debug logging',        /*  */
+        label: 'Enable debug logging' /*  */,
         isRequired: false,
       },
       promptForUpdate: {
         type: 'checkbox',
-        label: 'Vérifier les mises à jour',        /*  */
+        label: 'Vérifier les mises à jour' /*  */,
         isRequired: false,
       },
       widgetConfig: {
         type: 'clickable',
-        label: 'Réglages avancés',     /* Optional Advanced Widget Settings */
+        label: 'Réglages avancés' /* Optional Advanced Widget Settings */,
         customIcon: 'gear',
         faded: true,
         onClickFunction: loadWidgetConfigScreen,
       },
       chargeLimits: {
         type: 'clickable',
-        label: 'Profil de limite de charge',     /*  */
+        label: 'Profil de limite de charge' /*  */,
         // charge_limit icon IOS 16 and above
         customIcon: parseFloat(Device.systemVersion()) >= 16 ? 'charge_limit' : 'charge_limit2',
         faded: true,
@@ -433,14 +435,14 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
       },
       customClimates: {
         type: 'clickable',
-        label: 'Réglage personnalisé de ventilation',        /* Optional Custom Climates */
+        label: 'Réglage personnalisé de ventilation' /* Optional Custom Climates */,
         customIcon: 'gear',
         faded: true,
         onClickFunction: () => {
           const config = getConfig()
           const customClimateNames = Object.values(config.customClimates).map((x) => x.name)
           quickOptions(['New'].concat(customClimateNames), {
-            title: 'Créer ou editer un proifil de climatisation',      /* Create New Custom Climate or Edit Existing */
+            title: 'Créer ou editer un proifil de climatisation' /* Create New Custom Climate or Edit Existing */,
             onOptionSelect: (opt) => {
               loadCustomClimateConfig(
                 opt !== 'New' ? Object.values(config.customClimates).filter((x) => x.name === opt)[0] : undefined,
@@ -451,12 +453,12 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
       },
       hideDefaultClimates: {
         type: 'checkbox',
-        label: 'Cacher les valeurs par défaults (vent)',    /*  */
+        label: 'Cacher les valeurs par défaults (vent)' /*  */,
         isRequired: false,
       },
       multiCar: {
         type: 'checkbox',
-        label: 'Activer mode multi-voiture',        /*  */
+        label: 'Activer mode multi-voiture' /*  */,
         isRequired: false,
       },
     },
@@ -465,8 +467,8 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
 
 export async function loadWidgetConfigScreen() {
   return await form<WidgetConfig>({
-    title: 'Widget Poll Periods',                         /* Widget Poll Periods */
-    subtitle: 'Toutes les périodes sont calculées en heures',        /* All periods are measured in hours */
+    title: 'Widget Poll Periods' /* Widget Poll Periods */,
+    subtitle: 'Toutes les périodes sont calculées en heures' /* All periods are measured in hours */,
     onSubmit: ({
       standardPollPeriod,
       remotePollPeriod,
@@ -510,7 +512,7 @@ export async function loadWidgetConfigScreen() {
       }
       return true
     },
-    submitButtonText: 'Sauvegarde',       /*  */
+    submitButtonText: 'Sauvegarde' /*  */,
     fields: {
       standardPollPeriod: {
         type: 'numberValue',
@@ -563,8 +565,8 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
   else climateConfig = { ...defaultClimateConfig, ...climateConfig } // merge with default config
 
   return await form<CustomClimateConfig & { delete: boolean }>({
-    title: 'Configuration personnalisée',                                                                          /*  */
-    subtitle: previousName ? `Éditer la configutation: ${previousName}` : 'Créer une nouvelle configuration',     /*  */
+    title: 'Configuration personnalisée' /*  */,
+    subtitle: previousName ? `Éditer la configutation: ${previousName}` : 'Créer une nouvelle configuration' /*  */,
     onSubmit: ({
       name,
       tempType,
@@ -623,66 +625,67 @@ export async function loadCustomClimateConfig(climateConfig: CustomClimateConfig
       if (customClimateNames.includes(name)) return false
       return true
     },
-    submitButtonText: 'Sauvegarder',                               /*  */
+    submitButtonText: 'Sauvegarder' /*  */,
     fields: {
       name: {
         type: 'textInput',
-        label: 'Nom',                               /*  */
+        label: 'Nom' /*  */,
         isRequired: true,
       },
       tempType: {
         type: 'dropdown',
-        label: "Choisir l'unité de température",                               /*  */
+        label: "Choisir l'unité de température" /*  */,
         options: ['C', 'F'],
         allowCustom: false,
         isRequired: true,
       },
       temp: {
         type: 'numberValue',
-        label: 'Chosir la température désirée',                               /*  */
+        label: 'Chosir la température désirée' /*  */,
         isRequired: true,
       },
       frontDefrost: {
         type: 'checkbox',
-        label: 'Activer le dégivreur avant?',                               /*  */
+        label: 'Activer le dégivreur avant?' /*  */,
         isRequired: false,
       },
       rearDefrost: {
         type: 'checkbox',
-        label: 'Activer le dégivreur arrière?',                               /*  */
+        label: 'Activer le dégivreur arrière?' /*  */,
         isRequired: false,
       },
       steering: {
         type: 'checkbox',
-        label: 'Activer le volant chauffant?',                               /*  */
+        label: 'Activer le volant chauffant?' /*  */,
         isRequired: false,
       },
       durationMinutes: {
         type: 'numberValue',
-        label: 'Nombre de minutes',                               /*  */
+        label: 'Nombre de minutes' /*  */,
         isRequired: true,
       },
       seatClimate: {
         type: 'dropdown',
-        label: 'Réglages du niveau du banc chauffant',                               /*  */
+        label: 'Réglages du niveau du banc chauffant' /*  */,
         isRequired: true,
         options: Object.keys(ClimateSeatSetting),
       },
       seatClimateSettings: {
         type: 'dropdown',
-        label: 'Banc chauffant "Sélection des bancs"',                               /*  */
+        label: 'Banc chauffant "Sélection des bancs"' /*  */,
         isRequired: true,
         options: ['DRIVER', 'FRONT', 'ALL'],
       },
       delete: {
         type: 'clickable',
-        label: 'Effacer la configuration',                               /*  */
+        label: 'Effacer la configuration' /*  */,
         customIcon: 'delete',
         faded: true,
         dismissOnTap: true,
         onClickFunction: () => {
           if (!previousName) return
-          destructiveConfirm(`Effacer la configuration suivante: ${previousName}?`, {                               /*  */
+          destructiveConfirm(`Effacer la configuration suivante: ${previousName}?`, {
+            /*  */
             onConfirm: () => {
               const config = getConfig()
               const customClimateNames = Object.values(config.customClimates).map((x) => x.name)
@@ -708,8 +711,8 @@ export async function loadChargeLimitConfig(chargeLimit: ChargeLimitConfig | und
   }
 
   return await form<ChargeLimitConfig & { delete: boolean }>({
-    title: 'Configurer une limite de charge',        /*  */
-    subtitle: previousName ? `Editer: ${previousName}` : 'Créer une nouvelle configuration',     /*  */
+    title: 'Configurer une limite de charge' /*  */,
+    subtitle: previousName ? `Editer: ${previousName}` : 'Créer une nouvelle configuration' /*  */,
     onSubmit: ({ name, acPercent, dcPercent }) => {
       const config = getConfig()
       const newConfig = {
@@ -739,32 +742,33 @@ export async function loadChargeLimitConfig(chargeLimit: ChargeLimitConfig | und
       if (chargeLimitNames.includes(name)) return false
       return true
     },
-    submitButtonText: 'Sauvegarder',     /*  */
+    submitButtonText: 'Sauvegarder' /*  */,
     fields: {
       name: {
         type: 'textInput',
-        label: 'Nom',          /*  */
+        label: 'Nom' /*  */,
         isRequired: true,
       },
       acPercent: {
         type: 'numberValue',
-        label: 'Réglage de la charge limite AC (Lente) (0-100 in 10% increments)',      /*  */
+        label: 'Réglage de la charge limite AC (Lente) (0-100 in 10% increments)' /*  */,
         isRequired: true,
       },
       dcPercent: {
         type: 'numberValue',
-        label: 'Réglage de la charge limite DC (Rapide) (0-100 in 10% increments)',        /*  */
+        label: 'Réglage de la charge limite DC (Rapide) (0-100 in 10% increments)' /*  */,
         isRequired: true,
       },
       delete: {
         type: 'clickable',
-        label: 'Effacer la configuration de la charge limite',     /*  */
+        label: 'Effacer la configuration de la charge limite' /*  */,
         customIcon: 'delete',
         faded: true,
         dismissOnTap: true,
         onClickFunction: () => {
           if (!previousName) return
-          destructiveConfirm(`Effacer la charge limite: ${previousName}?`, {          /*  */
+          destructiveConfirm(`Effacer la charge limite: ${previousName}?`, {
+            /*  */
             onConfirm: () => {
               const config = getConfig()
               const chargeLimitNames = Object.values(config.chargeLimits).map((x) => x.name)

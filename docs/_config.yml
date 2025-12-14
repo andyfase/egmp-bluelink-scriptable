@@ -25,8 +25,8 @@ description: >- # ignore les retours à la ligne jusqu'à "baseurl:"
   avec une interface plus moderne, plus réactive et des fonctionnalités étendues comme les Widgets et le support Siri.
 github_username: andyfase
 
-domain: bluelink.andyfase.com       # Si vous souhaitez forcer HTTPS, spécifiez le domaine sans "http", ex. example.com
-url: https://bluelink.andyfase.com  # Nom de domaine et protocole de base pour votre site, ex. http://example.com
+domain: bleeband.github.io       # Si vous souhaitez forcer HTTPS, spécifiez le domaine sans "http", ex. example.com
+url: https://bleeband.github.io/  # Nom de domaine et protocole de base pour votre site, ex. http://example.com
 #baseurl: "/docs"      # mettre le nom du dossier si le site est servi depuis un sous-dossier
 
 # Paramètres de construction

@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "testing",
   "main": "index.js",
-  "scripts": {
-    "build": "source ./build.sh; build",
-    "prebuild": "npm run lint",
-    "lint": "npm run prettier && eslint \"*.ts\" \"src/**/*.ts\" --fix",
-    "watch": "source ./build.sh; build_and_watch",
-    "prettier": "prettier --log-level warn --write \"*.ts\" \"src/**/*.ts\""
-  },
+"scripts": {
+  "build": "bash ./build.sh ./src/index.ts egmp-bluelink",
+  "watch": "bash ./build.sh --watch",
+  "prebuild": "npm run lint",
+  "lint": "npm run prettier && eslint \"*.ts\" \"src/**/*.ts\" --fix",
+  "prettier": "prettier --log-level warn --write \"*.ts\" \"src/**/*.ts\""
+},
   "author": "",
   "license": "ISC",
   "devDependencies": {
