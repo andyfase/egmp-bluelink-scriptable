@@ -406,7 +406,9 @@ export class BluelinkUSA extends Bluelink {
           value: config.temp.toString(),
           unit: this.config.tempType === 'F' ? 1 : 0,
         },
-        // igniOnDuration: config.durationMinutes, // not supported in US
+        ...(!retryWithNoSeat && {
+          igniOnDuration: config.durationMinutes, // not supported in US
+        }),
         heating1: this.getHeatingValue(config.rearDefrost, config.steering),
         ...(config.seatClimateOption &&
           isNotEmptyObject(config.seatClimateOption) &&
@@ -430,7 +432,7 @@ export class BluelinkUSA extends Bluelink {
       const transactionId = this.caseInsensitiveParamExtraction('tmsTid', resp.resp.headers)
       if (transactionId) return await this.pollForCommandCompletion(resp, transactionId)
     } else {
-      // Kia/Hyundai US seems pretty particular with seat settings, hence if fail retry without them,
+      // Kia/Hyundai US seems pretty particular with seat / duration settings, hence if fail retry without them,
       if (!retryWithNoSeat) return this.climateOn(_id, config, true)
     }
     const error = `Failed to send climateOn command: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
