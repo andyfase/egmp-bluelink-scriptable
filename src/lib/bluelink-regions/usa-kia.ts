@@ -177,7 +177,7 @@ export class BluelinkUSAKia extends Bluelink {
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
       const sid = this.caseInsensitiveParamExtraction('sid', resp.resp.headers)
       const xid = this.caseInsensitiveParamExtraction('xid', resp.resp.headers)
-      if (!sid && xid && !mfaToken) {
+      if (!sid && xid && (!mfaToken || !mfaToken.sid)) {
         // If no SID and we havent attempted MFA yet - try it, loging will be called again from MFA function
         return await this.mfa(resp.json.payload.phoneVerifyStatus ? 'SMS' : 'EMAIL', resp.json.payload.otpKey, xid)
       }
