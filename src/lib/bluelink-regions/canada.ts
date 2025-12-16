@@ -267,7 +267,7 @@ export class BluelinkCanada extends Bluelink {
       locked: status.doorLock,
       climate: status.airCtrlOn,
       soc: status.evStatus.batteryStatus,
-      twelveSoc: status.battery.batSoc ? status.battery.batSoc : 0,
+      twelveSoc: status.battery && status.battery.batSoc ? status.battery.batSoc : 0,
       odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
       location: location ? location : this.cache ? this.cache.status.location : undefined,
       chargeLimit:
