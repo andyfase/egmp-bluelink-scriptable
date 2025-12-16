@@ -30,14 +30,16 @@ export class BluelinkCanada extends Bluelink {
     this.statusCheckInterval = statusCheckInterval || DEFAULT_STATUS_CHECK_INTERVAL
     this.additionalHeaders = {
       deviceid: UUID.string(), // native scriptable UUID method
-      from: 'SPA',
+      from: config.manufacturer === 'hyundai' ? 'SPA' : 'CWP',
       client_id: 'HATAHSPACA0232141ED9722C67715A0B',
       client_secret: 'CLISCR01AHSPA',
       language: '0',
       // brand: this.apiHost === 'mybluelink.ca' ? 'H' : 'kia', // seems to be ignored by API
       offset: this.getTimeZone().slice(0, 3),
       'User-Agent':
-        config.manufacturer === 'hyundai' ? 'MyHyundai/2.0.25 (iPhone; iOS 18.3; Scale/3.00)' : 'okhttp/4.12.0',
+        config.manufacturer === 'hyundai'
+          ? 'MyHyundai/2.0.25 (iPhone; iOS 18.3; Scale/3.00)'
+          : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
     }
     this.authHeader = 'Accesstoken'
     this.tempLookup = {
