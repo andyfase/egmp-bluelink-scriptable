@@ -11,9 +11,15 @@ import {
 } from './base'
 import { Config } from '../../config'
 import { isNotEmptyObject } from '../util'
+import { textInput } from '../scriptable-utils/'
 
 const DEFAULT_API_DOMAIN = 'api.owners.kia.com'
 const LOGIN_EXPIRY = 24 * 60 * 60 * 1000
+
+interface MFAResponse {
+  rmtoken: string
+  sid?: string
+}
 
 export class BluelinkUSAKia extends Bluelink {
   constructor(config: Config, statusCheckInterval?: number) {
@@ -78,7 +84,72 @@ export class BluelinkUSAKia extends Bluelink {
     return { valid: false, retry: true }
   }
 
-  protected async login(): Promise<BluelinkTokens | undefined> {
+  protected async mfa(type: 'EMAIL' | 'SMS', code: string, xid: string): Promise<BluelinkTokens | undefined> {
+    const mfaSendResp = await this.request({
+      url: this.apiDomain + 'cmm/sendOTP',
+      data: '{}',
+      headers: {
+        date: this.getDateString(),
+        otpkey: code,
+        notifytype: type,
+        xid: xid,
+      },
+      noAuth: true,
+      validResponseFunction: this.requestResponseValid,
+    })
+    if (!this.requestResponseValid(mfaSendResp.resp, mfaSendResp.json).valid) {
+      const error = `MFA Send Failed: ${JSON.stringify(mfaSendResp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      return undefined
+    }
+
+    // prompt user for code
+    const mfaCode = await textInput(`MFA code sent via ${type.toLocaleLowerCase()}.`, {
+      submitText: 'Enter Code',
+      flavor: 'number',
+    })
+
+    if (!mfaCode) {
+      //  user cancelled most likely
+      if (this.config.debugLogging) this.logger.log(`MFA Verify Failed / Cancelled`)
+      return undefined
+    }
+
+    if (this.config.debugLogging) this.logger.log(`MFA Code entered: ${mfaCode}`)
+    if (mfaCode) {
+      const mfaVerifyResp = await this.request({
+        url: this.apiDomain + 'cmm/verifyOTP',
+        data: JSON.stringify({ otp: mfaCode }),
+        headers: {
+          date: this.getDateString(),
+          otpkey: code,
+          xid: xid,
+        },
+        noAuth: true,
+        validResponseFunction: this.requestResponseValid,
+      })
+
+      if (this.requestResponseValid(mfaVerifyResp.resp, mfaVerifyResp.json).valid) {
+        return await this.login({
+          rmtoken: this.caseInsensitiveParamExtraction('rmtoken', mfaVerifyResp.resp.headers) || '',
+          sid: this.caseInsensitiveParamExtraction('sid', mfaVerifyResp.resp.headers) || '',
+        })
+      }
+
+      const error = `MFA Verify Failed: ${JSON.stringify(mfaVerifyResp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      return undefined
+    }
+  }
+
+  protected async login(mfaToken: MFAResponse | undefined = undefined): Promise<BluelinkTokens | undefined> {
+    // check for previous MFA token
+    if (this.cache && this.cache.token.additionalTokens && this.cache.token.additionalTokens.rmToken) {
+      mfaToken = {
+        rmtoken: this.cache.token.additionalTokens.rmToken,
+      }
+    }
+
     const resp = await this.request({
       url: this.apiDomain + 'prof/authUser',
       data: JSON.stringify({
@@ -91,16 +162,36 @@ export class BluelinkUSAKia extends Bluelink {
       }),
       headers: {
         date: this.getDateString(),
+        ...(mfaToken &&
+          mfaToken.rmtoken && {
+            rmtoken: mfaToken.rmtoken,
+          }),
+        ...(mfaToken &&
+          mfaToken.sid && {
+            sid: mfaToken.sid,
+          }),
       },
       noAuth: true,
       validResponseFunction: this.requestResponseValid,
     })
     if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      const sid = this.caseInsensitiveParamExtraction('sid', resp.resp.headers)
+      const xid = this.caseInsensitiveParamExtraction('xid', resp.resp.headers)
+      if (!sid && xid && (!mfaToken || !mfaToken.sid)) {
+        // If no SID and we havent attempted MFA yet - try it, loging will be called again from MFA function
+        return await this.mfa(resp.json.payload.phoneVerifyStatus ? 'SMS' : 'EMAIL', resp.json.payload.otpKey, xid)
+      }
+
       // update tokens used in this session as we call getCar before we write the new tokens to cache
       this.tokens = {
-        accessToken: this.caseInsensitiveParamExtraction('sid', resp.resp.headers) || '',
+        accessToken: sid || '',
         refreshToken: '', // seemingly KIA us doesnt support refresh?
         expiry: Math.floor(Date.now() / 1000) + Number(LOGIN_EXPIRY), // we also dont get an expiry?
+        ...(mfaToken && {
+          additionalTokens: {
+            rmToken: mfaToken.rmtoken,
+          },
+        }),
       }
       const car = await this.getCar(true)
       if (car) this.tokens.authId = car.id
