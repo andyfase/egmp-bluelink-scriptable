@@ -16,7 +16,7 @@ import { returnMockedCarStatus, returnMockedCar } from './mock'
 
 const DEFAULT_API_DOMAIN = 'api.owners.kia.com'
 const LOGIN_EXPIRY = 24 * 60 * 60 * 1000
-const MOCK_API = true
+const MOCK_API = false
 
 interface MFAResponse {
   rmtoken: string
@@ -62,6 +62,9 @@ export class BluelinkUSAKia extends Bluelink {
   protected getAdditionalHeaders(): Record<string, string> {
     if (this.cache && this.cache.token.additionalTokens && this.cache.token.additionalTokens.deviceId) {
       this.additionalHeaders.deviceId = this.cache.token.additionalTokens.deviceId
+    }
+    if (this.cache && this.cache.token.additionalTokens && this.cache.token.additionalTokens.clientuuid) {
+      this.additionalHeaders.clientuuid = this.cache.token.additionalTokens.clientuuid
     }
     return this.additionalHeaders
   }
@@ -155,7 +158,7 @@ export class BluelinkUSAKia extends Bluelink {
 
   protected async login(mfaToken: MFAResponse | undefined = undefined): Promise<BluelinkTokens | undefined> {
     // check for previous MFA token
-    if (this.cache && this.cache.token.additionalTokens && this.cache.token.additionalTokens.rmToken) {
+    if (!mfaToken && this.cache && this.cache.token.additionalTokens && this.cache.token.additionalTokens.rmToken) {
       mfaToken = {
         rmtoken: this.cache.token.additionalTokens.rmToken,
       }
@@ -166,6 +169,7 @@ export class BluelinkUSAKia extends Bluelink {
       data: JSON.stringify({
         deviceKey: this.getAdditionalHeaders().deviceId,
         deviceType: 2,
+        tncFlag: 1,
         userCredential: {
           userId: this.config.auth.username,
           password: this.config.auth.password,
@@ -202,6 +206,7 @@ export class BluelinkUSAKia extends Bluelink {
           additionalTokens: {
             rmToken: mfaToken.rmtoken,
             deviceId: this.getAdditionalHeaders().deviceId || '',
+            clientuuid: this.getAdditionalHeaders().clientuuid || '',
           },
         }),
       }
