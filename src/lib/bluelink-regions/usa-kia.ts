@@ -36,7 +36,8 @@ export class BluelinkUSAKia extends Bluelink {
       offset: this.getTimeZone().slice(0, 3),
       appType: 'L',
       appVersion: '7.22.0',
-      clientuuid: UUID.string().toLocaleLowerCase(), // native scriptable UUID method
+      // clientuuid will be overridden from cache if exists
+      clientuuid: UUID.string().toLocaleLowerCase(),
       clientId: 'SPACL716-APL',
       phonebrand: 'iPhone',
       osType: 'iOS',
@@ -45,6 +46,7 @@ export class BluelinkUSAKia extends Bluelink {
       to: 'APIGW',
       tokentype: 'A',
       'User-Agent': 'KIAPrimo_iOS/37 CFNetwork/1335.0.3.4 Darwin/21.6.0',
+      // deviceId will be overridden from cache if exists
       deviceId: `${this.genRanHex(22)}:${this.genRanHex(9)}_${this.genRanHex(10)}-${this.genRanHex(5)}_${this.genRanHex(22)}_${this.genRanHex(8)}-${this.genRanHex(18)}-_${this.genRanHex(22)}_${this.genRanHex(17)}`,
       Host: DEFAULT_API_DOMAIN,
     }
@@ -60,6 +62,7 @@ export class BluelinkUSAKia extends Bluelink {
   }
 
   protected getAdditionalHeaders(): Record<string, string> {
+    // inject previous deviceId and clientuuid from cache if exists
     if (this.cache && this.cache.token.additionalTokens && this.cache.token.additionalTokens.deviceId) {
       this.additionalHeaders.deviceId = this.cache.token.additionalTokens.deviceId
     }
@@ -157,6 +160,12 @@ export class BluelinkUSAKia extends Bluelink {
   }
 
   protected async login(mfaToken: MFAResponse | undefined = undefined): Promise<BluelinkTokens | undefined> {
+    /*
+      Kia US Login/Refresh process requires initial MFA to extract SID.
+      The rmtoken returned in the initial login appears to be long lived and can be used for subsequent logins without MFA,
+      However to do that the deviceId and clientuuid used in the initial login must also be reused.
+      Hence these are cached along with the rmtoken for future logins and used if exists in cache
+    */
     // check for previous MFA token
     if (!mfaToken && this.cache && this.cache.token.additionalTokens && this.cache.token.additionalTokens.rmToken) {
       mfaToken = {
@@ -194,7 +203,7 @@ export class BluelinkUSAKia extends Bluelink {
       const xid = this.caseInsensitiveParamExtraction('xid', resp.resp.headers)
       if (!sid && xid && (!mfaToken || !mfaToken.sid)) {
         // If no SID and we havent attempted MFA yet - try it, loging will be called again from MFA function
-        return await this.mfa(resp.json.payload.phoneVerifyStatus ? 'EMAIL' : 'EMAIL', resp.json.payload.otpKey, xid)
+        return await this.mfa(resp.json.payload.phoneVerifyStatus ? 'SMS' : 'EMAIL', resp.json.payload.otpKey, xid)
       }
 
       // update tokens used in this session as we call getCar before we write the new tokens to cache
