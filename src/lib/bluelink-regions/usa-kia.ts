@@ -12,9 +12,11 @@ import {
 import { Config } from '../../config'
 import { isNotEmptyObject } from '../util'
 import { textInput } from '../scriptable-utils/'
+import { returnMockedCarStatus, returnMockedCar } from './mock'
 
 const DEFAULT_API_DOMAIN = 'api.owners.kia.com'
 const LOGIN_EXPIRY = 24 * 60 * 60 * 1000
+const MOCK_API = true
 
 interface MFAResponse {
   rmtoken: string
@@ -33,14 +35,16 @@ export class BluelinkUSAKia extends Bluelink {
       language: '0',
       offset: this.getTimeZone().slice(0, 3),
       appType: 'L',
-      appVersion: '7.12.1',
-      clientId: 'MWAMOBILE',
-      osType: 'Android',
-      osVersion: '14',
-      secretKey: '98er-w34rf-ibf3-3f6h',
+      appVersion: '7.22.0',
+      clientuuid: UUID.string().toLocaleLowerCase(), // native scriptable UUID method
+      clientId: 'SPACL716-APL',
+      phonebrand: 'iPhone',
+      osType: 'iOS',
+      osVersion: '15.8.5',
+      secretKey: 'sydnat-9kykci-Kuhtep-h5nK',
       to: 'APIGW',
-      tokenType: 'G',
-      'User-Agent': 'okhttp/4.10.0',
+      tokentype: 'A',
+      'User-Agent': 'KIAPrimo_iOS/37 CFNetwork/1335.0.3.4 Darwin/21.6.0',
       deviceId: `${this.genRanHex(22)}:${this.genRanHex(9)}_${this.genRanHex(10)}-${this.genRanHex(5)}_${this.genRanHex(22)}_${this.genRanHex(8)}-${this.genRanHex(18)}-_${this.genRanHex(22)}_${this.genRanHex(17)}`,
       Host: DEFAULT_API_DOMAIN,
     }
@@ -53,6 +57,13 @@ export class BluelinkUSAKia extends Bluelink {
     const obj = new BluelinkUSAKia(config, statusCheckInterval)
     await obj.superInit(config, refreshAuth)
     return obj
+  }
+
+  protected getAdditionalHeaders(): Record<string, string> {
+    if (this.cache && this.cache.token.additionalTokens && this.cache.token.additionalTokens.deviceId) {
+      this.additionalHeaders.deviceId = this.cache.token.additionalTokens.deviceId
+    }
+    return this.additionalHeaders
   }
 
   private getDateString(): string {
@@ -153,7 +164,7 @@ export class BluelinkUSAKia extends Bluelink {
     const resp = await this.request({
       url: this.apiDomain + 'prof/authUser',
       data: JSON.stringify({
-        deviceKey: '',
+        deviceKey: this.getAdditionalHeaders().deviceId,
         deviceType: 2,
         userCredential: {
           userId: this.config.auth.username,
@@ -179,7 +190,7 @@ export class BluelinkUSAKia extends Bluelink {
       const xid = this.caseInsensitiveParamExtraction('xid', resp.resp.headers)
       if (!sid && xid && (!mfaToken || !mfaToken.sid)) {
         // If no SID and we havent attempted MFA yet - try it, loging will be called again from MFA function
-        return await this.mfa(resp.json.payload.phoneVerifyStatus ? 'SMS' : 'EMAIL', resp.json.payload.otpKey, xid)
+        return await this.mfa(resp.json.payload.phoneVerifyStatus ? 'EMAIL' : 'EMAIL', resp.json.payload.otpKey, xid)
       }
 
       // update tokens used in this session as we call getCar before we write the new tokens to cache
@@ -190,6 +201,7 @@ export class BluelinkUSAKia extends Bluelink {
         ...(mfaToken && {
           additionalTokens: {
             rmToken: mfaToken.rmtoken,
+            deviceId: this.getAdditionalHeaders().deviceId || '',
           },
         }),
       }
@@ -204,6 +216,7 @@ export class BluelinkUSAKia extends Bluelink {
   }
 
   protected async getCar(noRetry = false): Promise<BluelinkCar | undefined> {
+    if (MOCK_API) return returnMockedCar()
     let vin = this.vin
     if (!vin && this.cache) {
       vin = this.cache.car.vin
@@ -319,6 +332,7 @@ export class BluelinkUSAKia extends Bluelink {
     location: boolean = false,
     retry = true,
   ): Promise<BluelinkStatus> {
+    if (MOCK_API) return returnMockedCarStatus()
     if (!forceUpdate) {
       // as the request payload contains the authId - which is a auth param we disable retry and manage retry ourselves
       const resp = await this.request({

@@ -195,6 +195,11 @@ export class Bluelink {
     if (existingCache && refreshAuth) await this.refreshLogin()
   }
 
+  // this can be overridden in sub-classes to perfporm additional header manupulation
+  protected getAdditionalHeaders(): Record<string, string> {
+    return this.additionalHeaders
+  }
+
   protected async refreshLogin(force?: boolean) {
     if (!this.cache) return // we have no cache - likely failed on first load - ignore
     // if we are here we have logged in successfully at least once and can refresh if supported
@@ -536,7 +541,7 @@ export class Bluelink {
         this.authIdHeader && {
           [this.authIdHeader]: requestTokens.authId,
         }),
-      ...(this.additionalHeaders && !props.disableAdditionalHeaders && { ...this.additionalHeaders }),
+      ...(this.getAdditionalHeaders() && !props.disableAdditionalHeaders && { ...this.getAdditionalHeaders() }),
       ...(props.headers && {
         ...props.headers,
       }),

@@ -101,7 +101,7 @@ export class BluelinkCanada extends Bluelink {
 
   protected async getSessionCookie(): Promise<string> {
     const req = new Request(`https://${this.apiHost}/login`)
-    req.headers = this.additionalHeaders
+    req.headers = this.getAdditionalHeaders()
     req.method = 'GET'
     await req.load()
     if (req.response.cookies) {
