@@ -63,6 +63,7 @@ export interface Config {
   climateTempCold: number
   climateSeatLevel: string
   allowWidgetRemoteRefresh: boolean
+  mfaPreference: 'sms' | 'email'
   carColor: string
   debugLogging: boolean
   multiCar: boolean
@@ -91,6 +92,7 @@ export interface FlattenedConfig {
   region: string
   tempType: 'C' | 'F'
   distanceUnit: 'km' | 'mi'
+  mfaPreference: 'sms' | 'email'
   climateTempWarm: number
   climateTempCold: number
   climateSeatLevel: string
@@ -131,6 +133,7 @@ const DEFAULT_CONFIG = {
   },
   tempType: 'C',
   distanceUnit: 'km',
+  mfaPreference: 'sms',
   climateTempCold: DEFAULT_TEMPS.C.cold,
   climateTempWarm: DEFAULT_TEMPS.C.warm,
   climateSeatLevel: 'Off',
@@ -231,6 +234,7 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
       region,
       pin,
       tempType,
+      mfaPreference,
       distanceUnit,
       climateTempWarm,
       climateTempCold,
@@ -257,6 +261,7 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
           },
           tempType: tempType,
           distanceUnit: distanceUnit,
+          mfaPreference: mfaPreference,
           climateTempCold: climateTempCold,
           climateTempWarm: climateTempWarm,
           climateSeatLevel: climateSeatLevel,
@@ -364,6 +369,13 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
         type: 'dropdown',
         label: 'Choose your preferred distance unit',
         options: ['km', 'mi'],
+        allowCustom: false,
+        isRequired: true,
+      },
+      mfaPreference: {
+        type: 'dropdown',
+        label: 'Choose your preferred MFA method for login',
+        options: ['sms', 'email'],
         allowCustom: false,
         isRequired: true,
       },

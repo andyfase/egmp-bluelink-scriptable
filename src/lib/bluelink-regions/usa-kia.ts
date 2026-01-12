@@ -47,7 +47,7 @@ export class BluelinkUSAKia extends Bluelink {
       tokentype: 'A',
       'User-Agent': 'KIAPrimo_iOS/37 CFNetwork/1335.0.3.4 Darwin/21.6.0',
       // deviceId will be overridden from cache if exists
-      deviceId: `${this.genRanHex(22)}:${this.genRanHex(9)}_${this.genRanHex(10)}-${this.genRanHex(5)}_${this.genRanHex(22)}_${this.genRanHex(8)}-${this.genRanHex(18)}-_${this.genRanHex(22)}_${this.genRanHex(17)}`,
+      deviceId: this.generateDeviceId(),
       Host: DEFAULT_API_DOMAIN,
     }
 
@@ -59,6 +59,10 @@ export class BluelinkUSAKia extends Bluelink {
     const obj = new BluelinkUSAKia(config, statusCheckInterval)
     await obj.superInit(config, refreshAuth)
     return obj
+  }
+
+  protected generateDeviceId(): string {
+    return `${this.genRanHex(22)}:${this.genRanHex(9)}_${this.genRanHex(10)}-${this.genRanHex(5)}_${this.genRanHex(22)}_${this.genRanHex(8)}-${this.genRanHex(18)}-_${this.genRanHex(22)}_${this.genRanHex(17)}`
   }
 
   protected getAdditionalHeaders(): Record<string, string> {
@@ -203,7 +207,11 @@ export class BluelinkUSAKia extends Bluelink {
       const xid = this.caseInsensitiveParamExtraction('xid', resp.resp.headers)
       if (!sid && xid && (!mfaToken || !mfaToken.sid)) {
         // If no SID and we havent attempted MFA yet - try it, loging will be called again from MFA function
-        return await this.mfa(resp.json.payload.phoneVerifyStatus ? 'SMS' : 'EMAIL', resp.json.payload.otpKey, xid)
+        return await this.mfa(
+          resp.json.payload.phoneVerifyStatus && this.config.mfaPreference === 'sms' ? 'SMS' : 'EMAIL',
+          resp.json.payload.otpKey,
+          xid,
+        )
       }
 
       // update tokens used in this session as we call getCar before we write the new tokens to cache
@@ -222,6 +230,18 @@ export class BluelinkUSAKia extends Bluelink {
       const car = await this.getCar(true)
       if (car) this.tokens.authId = car.id
       return this.tokens
+    }
+
+    // if we reach here login failed - regenerate deviceId if we have it cached
+    if (
+      this.cache &&
+      this.cache.token &&
+      this.cache.token.additionalTokens &&
+      this.cache.token.additionalTokens.deviceId
+    ) {
+      this.cache.token.additionalTokens.deviceId = this.generateDeviceId()
+      this.cache.token.additionalTokens.clientuuid = UUID.string().toLocaleLowerCase()
+      this.saveCache()
     }
 
     const error = `Login Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
