@@ -398,6 +398,11 @@ export class BluelinkAustralia extends Bluelink {
         Boolean(status.Cabin.Door.Row2.Driver.Open) &&
         Boolean(status.Cabin.Door.Row2.Passenger.Open)
       ),
+      doorOpen:
+        Boolean(status.Cabin.Door.Row1.Driver.Open) ||
+        Boolean(status.Cabin.Door.Row1.Passenger.Open) ||
+        Boolean(status.Cabin.Door.Row2.Driver.Open) ||
+        Boolean(status.Cabin.Door.Row2.Passenger.Open),
       climate: Boolean(status.Cabin.HVAC.Row1.Driver.Blower.SpeedLevel > 0),
       soc: status.Green.BatteryManagement.BatteryRemain.Ratio,
       twelveSoc: status.Electronics.Battery.Level ? status.Electronics.Battery.Level : 0,

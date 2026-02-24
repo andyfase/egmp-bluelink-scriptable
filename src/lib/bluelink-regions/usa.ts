@@ -235,6 +235,18 @@ export class BluelinkUSA extends Bluelink {
             ? this.cache.status.range
             : 0,
       locked: status.doorLock,
+      doorOpen: (() => {
+        const d = status?.doorOpen
+        if (!d) return this.cache ? this.cache.status.doorOpen : false
+        return (
+          d.frontLeft !== 0 ||
+          d.frontRight !== 0 ||
+          d.backLeft !== 0 ||
+          d.backRight !== 0 ||
+          !!status.trunkOpen ||
+          !!status.hoodOpen
+        )
+      })(),
       climate: status.airCtrlOn,
       soc: status.evStatus.batteryStatus,
       twelveSoc: status.battery && status.battery.batSoc ? status.battery.batSoc : 0,

@@ -36,6 +36,7 @@ export function returnMockedCarStatus(): BluelinkStatus {
     range: 200,
     soc: 80,
     locked: true,
+    doorOpen: false,
     climate: false,
     twelveSoc: 90,
     odometer: 10000,

@@ -495,24 +495,38 @@ const pageIcons = connect(
             if (isUpdating) {
               return
             }
-            quickOptions(['Lock', 'Unlock', 'Cancel'], {
+            quickOptions(['Lock', 'WalkawayLock', 'Unlock', 'Cancel'], {
               title: 'Confirm lock action',
               onOptionSelect: (opt) => {
                 if (opt === 'Cancel') return
+                const command = opt === 'Lock' ? 'lock' : opt === 'WalkawayLock' ? 'walkawayLock' : 'unlock'
+                const updatingText =
+                  opt === 'Lock'
+                    ? 'Locking car ...'
+                    : opt === 'WalkawayLock'
+                      ? 'WalkawayLock (waiting for doors closed) ...'
+                      : 'Unlocking car ...'
+                const successText = opt === 'Lock' || opt === 'WalkawayLock' ? 'Car locked!' : 'Car unlocked!'
+                const failureText =
+                  opt === 'Lock'
+                    ? 'Failed to lock car!!!'
+                    : opt === 'WalkawayLock'
+                      ? 'WalkawayLock failed!!!'
+                      : 'Failed to unlock car!!!'
                 doAsyncUpdate({
-                  command: opt === 'Lock' ? 'lock' : 'unlock',
+                  command,
                   bl: bl,
                   actions: updatingActions,
                   actionKey: 'lock',
-                  updatingText: opt === 'Lock' ? 'Locking car ...' : 'Unlocking car ...',
-                  successText: opt === 'Lock' ? 'Car locked!' : 'Car unlocked!',
-                  failureText: `Failed to ${opt === 'Lock' ? 'lock' : 'unlock'} car!!!`,
+                  updatingText,
+                  successText,
+                  failureText,
                   successCallback: (data) => {
                     updateStatus({
                       ...bl.getCachedStatus(),
                       status: {
                         ...data,
-                        locked: opt === 'Lock' ? true : false,
+                        locked: opt === 'Lock' || opt === 'WalkawayLock' ? true : false,
                       },
                     } as Status)
                   },

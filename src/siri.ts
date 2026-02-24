@@ -46,11 +46,13 @@ export async function processSiriRequest(config: Config, bl: Bluelink, shortcutP
     }
 
     if (found) {
+      if (config.debugLogging) logger.log(`Siri matched command: [${commandDetection.words.join(', ')}]`)
       const response = await commandDetection.function(bl, commandDetection.data)
       if (config.debugLogging) logger.log(`Siri response: ${response}`)
       return response
     }
   }
+  if (config.debugLogging) logger.log(`Siri no match for: ${shortcutParameterAsString}`)
   return `You asked me ${shortcutParameter} and i dont support that command`
 }
 
@@ -209,6 +211,12 @@ async function lock(bl: Bluelink): Promise<string> {
   )
 }
 
+async function walkawayLock(bl: Bluelink): Promise<string> {
+  const status = bl.getCachedStatus()
+  const carName = status.car.nickName || `your ${status.car.modelName}`
+  return await blRequest(bl, 'walkawayLock', `I've issued a request to walkaway lock ${carName}.`)
+}
+
 async function unlock(bl: Bluelink): Promise<string> {
   const status = bl.getCachedStatus()
   return await blRequest(
@@ -263,7 +271,6 @@ async function blRequest(bl: Bluelink, type: string, message: string, payload?: 
   }
   return message
 }
-
 interface commandDetection {
   words: string[]
   function: (bl: Bluelink, data?: any) => Promise<string>
@@ -300,6 +307,10 @@ const commandMap: commandDetection[] = [
   {
     words: ['unlock'],
     function: unlock,
+  },
+  {
+    words: ['walkaway', 'lock'],
+    function: walkawayLock,
   },
   {
     words: ['lock'],

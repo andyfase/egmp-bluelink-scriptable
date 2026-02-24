@@ -46,6 +46,7 @@ export interface BluelinkStatus {
   remainingChargeTimeMins: number
   range: number
   locked: boolean
+  doorOpen: boolean
   climate: boolean
   soc: number
   twelveSoc: number
@@ -300,6 +301,18 @@ export class Bluelink {
       range: this.cache ? this.cache.status.range : 0,
       soc: this.cache ? this.cache.status.soc : 0,
       locked: status.doorLock,
+      doorOpen: (() => {
+        const d = status?.doorOpen
+        if (!d) return this.cache ? this.cache.status.doorOpen : false
+        return (
+          d.frontLeft !== 0 ||
+          d.frontRight !== 0 ||
+          d.backLeft !== 0 ||
+          d.backRight !== 0 ||
+          !!status.trunkOpen ||
+          !!status.hoodOpen
+        )
+      })(),
       climate: status.airCtrlOn,
       twelveSoc: status.battery && status.battery.batSoc ? status.battery.batSoc : 0,
       odometer: odometer ? odometer : this.cache ? this.cache.status.odometer : 0,
@@ -361,6 +374,52 @@ export class Bluelink {
     }
   }
 
+  /**
+   * Waits 10 seconds, then polls vehicle status every 10 seconds. When doors are closed and unlocked,
+   * sends a lock command. If a 30 second timeout is reached before that condition is met, sends lock anyway.
+   * Walkaway Lock.
+   */
+  public async walkawayLock(): Promise<{ isSuccess: boolean; data: BluelinkStatus }> {
+    const id = this.cache.car.id
+    const pollIntervalMs = 10_000
+    const timeoutMs = 60_000 // 60 seconds
+    const start = Date.now()
+    this.logger.log(`[Walkaway Lock] Starting: poll every ${pollIntervalMs / 1000}s, timeout ${timeoutMs / 1000}s`)
+    await this.sleep(pollIntervalMs)
+    for (;;) {
+      const elapsed = Math.round((Date.now() - start) / 1000)
+      let status: BluelinkStatus
+      try {
+        const res = await this.getStatus(true, true)
+        status = res.status
+      } catch (err) {
+        this.logger.log(`[Walkaway Lock] getStatus failed at ${elapsed}s: ${err}`)
+        throw err
+      }
+      this.logger.log(
+        `[Walkaway Lock] Poll at ${elapsed}s: locked=${status.locked}, doorOpen=${status.doorOpen}, climate=${status.climate}, range=${status.range}, soc=${status.soc}`,
+      )
+      if (status.locked) {
+        this.logger.log(`[Walkaway Lock] Already locked, done (success)`)
+        return { isSuccess: true, data: status }
+      }
+      const timedOut = Date.now() - start >= timeoutMs
+      if (!status.doorOpen || timedOut) {
+        const reason = timedOut ? 'timeout' : 'doors closed'
+        this.logger.log(`[Walkaway Lock] Sending lock (${reason})`)
+        const result = await this.lock(id)
+        if (result.isSuccess) {
+          this.logger.log(`[Walkaway Lock] Lock command succeeded`)
+        } else {
+          this.logger.log(`[Walkaway Lock] Lock command failed: isSuccess=false, data=${JSON.stringify(result.data)}`)
+        }
+        return result
+      }
+      this.logger.log(`[Walkaway Lock] Doors still open, waiting ${pollIntervalMs / 1000}s`)
+      await this.sleep(pollIntervalMs)
+    }
+  }
+
   public async processRequest(
     type: string,
     input: any,
@@ -378,6 +437,9 @@ export class Bluelink {
         break
       case 'lock':
         promise = this.lock(this.cache.car.id)
+        break
+      case 'walkawayLock':
+        promise = this.walkawayLock()
         break
       case 'unlock':
         promise = this.unlock(this.cache.car.id)

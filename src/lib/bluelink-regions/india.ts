@@ -408,6 +408,7 @@ export class BluelinkIndia extends Bluelink {
             ? this.cache.status.range
             : 0,
       locked: status.doorLock,
+      doorOpen: this.cache?.status?.doorOpen ?? false,
       climate: status.airCtrlOn,
       soc: status.evStatus.batteryStatus,
       twelveSoc: 0, //see if this is reported and fix later
