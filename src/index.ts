@@ -19,7 +19,7 @@ import { confirm, quickOptions } from './lib/scriptable-utils'
   if (!configExists() && (config.runsWithSiri || config.runsInWidget)) return
   if (!configExists()) {
     await loadConfigScreen()
-    return
+    if (!configExists()) return
   }
 
   const logger = getAppLogger()
