@@ -625,6 +625,11 @@ export class BluelinkEurope extends Bluelink {
       return undefined
     }
 
+    // Hyundai uses the IDP endpoint for token refresh with client_id/client_secret
+    if (this.apiConfig.authClientSecret) {
+      return await this.hyundaiRefreshTokens()
+    }
+
     if (this.config.debugLogging) this.logger.log('Refreshing tokens')
     const resp = await this.request({
       url: `${this.apiDomain}/api/v1/user/oauth2/token`,
@@ -632,7 +637,7 @@ export class BluelinkEurope extends Bluelink {
         `client_id=${this.apiConfig.clientId}`,
         'grant_type=refresh_token',
         `refresh_token=${this.cache.token.refreshToken}`,
-        `redirect_uri=${this.apiDomain}:${this.apiConfig.apiPort}/api/v1/user/oauth2/redirect`,
+        `redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`,
       ].join('&'),
       noAuth: true,
       validResponseFunction: this.requestResponseValid,
@@ -646,13 +651,46 @@ export class BluelinkEurope extends Bluelink {
       return {
         authCookie: '',
         accessToken: `Bearer ${resp.json.access_token}`,
-        refreshToken: this.cache.token.refreshToken, // we never recieve a new refresh token
-        expiry: Math.floor(Date.now() / 1000) + Number(resp.json.expires_in), // we only get a expireIn not a actual date
+        refreshToken: resp.json.refresh_token || this.cache.token.refreshToken,
+        expiry: Math.floor(Date.now() / 1000) + Number(resp.json.expires_in),
         authId: await this.getDeviceId(),
       }
     }
 
     const error = `Refresh Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    return undefined
+  }
+
+  protected async hyundaiRefreshTokens(): Promise<BluelinkTokens | undefined> {
+    if (this.config.debugLogging) this.logger.log('Refreshing Hyundai tokens via IDP endpoint')
+
+    const resp = await this.request({
+      url: `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/token`,
+      data: [
+        'grant_type=refresh_token',
+        `refresh_token=${this.cache.token.refreshToken}`,
+        `client_id=${this.apiConfig.clientId}`,
+        `client_secret=${this.apiConfig.authClientSecret}`,
+      ].join('&'),
+      noAuth: true,
+      disableAdditionalHeaders: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    })
+
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      return {
+        accessToken: `Bearer ${resp.json.access_token}`,
+        refreshToken: resp.json.refresh_token || this.cache.token.refreshToken,
+        expiry: Math.floor(Date.now() / 1000) + Number(resp.json.expires_in),
+        authId: this.cache.token.authId,
+      }
+    }
+
+    const error = `Hyundai Refresh Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     return undefined
   }
