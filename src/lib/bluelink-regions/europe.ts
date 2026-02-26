@@ -79,7 +79,13 @@ export function getEuropeAuthUrls(manufacturer: string): { startUrl: string; cal
     return {
       startUrl:
         `${apiDomain}/api/v1/user/oauth2/authorize?` +
-        ['response_type=code', `client_id=${cfg.clientId}`, `redirect_uri=${apiDomain}/api/v1/user/oauth2/redirect`, 'lang=en', 'state=ccsp'].join('&'),
+        [
+          'response_type=code',
+          `client_id=${cfg.clientId}`,
+          `redirect_uri=${apiDomain}/api/v1/user/oauth2/redirect`,
+          'lang=en',
+          'state=ccsp',
+        ].join('&'),
       callbackUrl: `${apiDomain}/api/v1/user/oauth2/redirect`,
     }
   }

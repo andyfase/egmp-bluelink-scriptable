@@ -1,5 +1,10 @@
 import { Bluelink } from 'lib/bluelink-regions/base'
-import { openLoginWebview, getEuropeAuthUrls, storeWebviewAuthResult, clearStoredWebviewAuthResult } from 'lib/bluelink-regions/europe'
+import {
+  openLoginWebview,
+  getEuropeAuthUrls,
+  storeWebviewAuthResult,
+  clearStoredWebviewAuthResult,
+} from 'lib/bluelink-regions/europe'
 import { form, confirm, quickOptions, destructiveConfirm } from './lib/scriptable-utils'
 
 const KEYCHAIN_BLUELINK_CONFIG_KEY = 'egmp-bluelink-config'
