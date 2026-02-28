@@ -45,7 +45,7 @@ function redactStringPatterns(input: string): string {
 
   output = output.replace(/\b(Bearer)\s+[A-Za-z0-9\-._~+/]+=*/gi, `$1 ${REDACTED}`)
 
-  const keyPattern = [
+  const sensitiveKeys = [
     'authorization',
     'authentication',
     'cookie',
@@ -63,9 +63,25 @@ function redactStringPatterns(input: string): string {
     'secret',
     'session',
     'code',
-  ].join('|')
+  ]
 
-  output = output.replace(new RegExp(`(${keyPattern})\\s*[:=]\\s*["']?([^&\\s"',}]+)["']?`, 'gi'), `$1=${REDACTED}`)
+  for (const key of sensitiveKeys) {
+    const escapedKey = key.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+
+    // JSON key/value: "key":"value"
+    output = output.replace(new RegExp(`("${escapedKey}"\\s*:\\s*")([^"]*)(")`, 'gi'), `$1${REDACTED}$3`)
+    // Escaped JSON key/value: \"key\":\"value\"
+    output = output.replace(
+      new RegExp(`(\\\\"${escapedKey}\\\\"\\s*:\\s*\\\\")([^\\\\"]*)(\\\\")`, 'gi'),
+      `$1${REDACTED}$3`,
+    )
+    // Query or inline pairs: key=value or key:value
+    output = output.replace(
+      new RegExp(`(\\b${escapedKey}\\b\\s*[:=]\\s*["']?)([^&\\s"',}]+)(["']?)`, 'gi'),
+      `$1${REDACTED}$3`,
+    )
+  }
+
   return output
 }
 

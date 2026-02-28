@@ -30,7 +30,7 @@ Yes, or likely so. This app uses the same Hyundai and Kia APIs that back the off
 
 ### Are my Bluelink credentials safe to enter into this app?
 
-Yes, all configuration (including your Bluelink username, password and pin) are stored locally within the IOS keychain. Debug logs are sanitized before being written to disk, so sensitive values (tokens/passwords/pin/cookies) are redacted at write time.
+Yes, all configuration (including your Bluelink username, password and pin) are stored locally within the IOS keychain. The only time these credentials are exposed is if you enable Debug Logging in which case the credentials could be recorded to the logs files generated - which are only available to yourself within your own iCloud Files directory.
 
 ### Which Countries / Manufacturer's are supported?
 
@@ -56,14 +56,10 @@ Make sure you are running [v1.2.0](https://github.com/andyfase/egmp-bluelink-scr
 
 Once you have confirmed your on a appropiate version, go into the app settings screen and enable the "Debug logs" setting. Once enabled every API request and response sent from the app is then logged to a file. 
 
-Now perform the series of actions you need logs for (i.e simulate the bug you are seeing). Once done, triple-tap the setting icon and choose "Share Debug Logs", a share screen will open allowing you to select your email app of choice to send the logs. The logs are sanitized when written and also redacted again during sharing.
+Now perform the series of actions you need logs for (i.e simulate the bug you are seeing). Once done, triple-tap the setting icon and choose "Share Debug Logs", a share screen will open allowing you to select your email app of choice to send the logs. The logs are automatically redacted of any personal information i.e. username, password, pin etc.
 
 ### How do I get the full list of all debug logs?
 
 If you wish to look at the logs outside of the app, they are stored within the Scriptable directory ojn iCloud drive. The in-use file is called `egmp-bluelink.log`. Log files are automatically renamed when they get to 100kb in size, hence you will see older log files named `egmp-bluelink.log.20250318150755-0700` or similar. The timestamp is the date the file was renamed.
 
-All log files are stored within the same Scriptable directory as the scripts themselves. Sensitive values are redacted, but you should still review logs before sharing.
-
-### What is "Allow insecure requests" in settings?
-
-This setting is disabled by default and should remain disabled for normal use. Enabling it weakens TLS verification and may expose authentication/session tokens to interception on untrusted networks. Only use it for temporary compatibility troubleshooting.
+All log files are stored within the same Scriptable directory as the scripts themselves. Note as detailed above these log files do contain your credentials. If you are asked, or provide them either directly to myself through email or via a Github issue please ensure you open the log files and redact any of your credentials (login and password)

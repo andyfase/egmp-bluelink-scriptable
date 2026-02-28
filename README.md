@@ -41,9 +41,3 @@ npm i
 npm run build ./src/index.ts egmp-bluelink
 ```
 
-### Running checks
-
-```
-npm run lint
-npm test
-```
