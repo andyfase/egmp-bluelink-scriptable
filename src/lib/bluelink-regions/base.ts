@@ -2,12 +2,21 @@ import { Config } from '../../config'
 import { defaultImage } from '../../resources/defaultImage'
 import { Logger } from '../logger'
 import { Buffer } from 'buffer'
+import { HttpCookie, IHttpClient, HttpResponse } from '../http/IHttpClient'
+import { ScriptableHttpClient } from '../http/ScriptableHttpClient'
 const KEYCHAIN_CACHE_KEY = 'egmp-bluelink-cache'
 export const DEFAULT_STATUS_CHECK_INTERVAL = 3600 * 1000
 export const MAX_COMPLETION_POLLS = 20
-const BLUELINK_LOG_FILE = `${Script.name().replaceAll(' ', '')}-api.log`
 const DEFAULT_API_HOST = 'mybluelink.ca'
 const DEFAULT_API_DOMAIN = `https://${DEFAULT_API_HOST}/tods/api/`
+
+function getScriptName(defaultName = 'egmp-bluelink'): string {
+  try {
+    return Script.name().replaceAll(' ', '')
+  } catch (_error) {
+    return defaultName
+  }
+}
 
 export interface BluelinkTokens {
   accessToken: string
@@ -134,7 +143,7 @@ const carImageMap: Record<string, string> = {
 }
 
 export function getBluelinkLogger() {
-  return new Logger(BLUELINK_LOG_FILE, 100)
+  return new Logger(`${getScriptName()}-api.log`, 100)
 }
 
 export class Bluelink {
@@ -154,15 +163,17 @@ export class Bluelink {
   protected authIdHeader: string | undefined
   protected debugLastRequest: DebugLastRequest | undefined
   protected logger: any
+  protected httpClient: IHttpClient
   protected loginFailure: boolean
   protected loginRequiredWebview: boolean
   protected carOptions: CarOption[]
   protected distanceUnit: string
   protected lastCommandSent: number | undefined
 
-  constructor(config: Config, vin?: string) {
+  constructor(config: Config, vin?: string, httpClient: IHttpClient = new ScriptableHttpClient()) {
     this.config = config
     this.vin = vin
+    this.httpClient = httpClient
     this.apiDomain = DEFAULT_API_DOMAIN
     this.apiHost = DEFAULT_API_HOST
     this.statusCheckInterval = DEFAULT_STATUS_CHECK_INTERVAL
@@ -177,6 +188,10 @@ export class Bluelink {
     this.authIdHeader = undefined
     this.distanceUnit = 'km'
     this.logger = getBluelinkLogger()
+  }
+
+  public setHttpClient(httpClient: IHttpClient) {
+    this.httpClient = httpClient
   }
 
   protected async superInit(config: Config, refreshAuth: boolean, statusCheckInterval?: number) {
@@ -438,7 +453,7 @@ export class Bluelink {
   }
 
   protected getCacheKey(write = false): string {
-    const currentScript = Script.name().replaceAll(' ', '')
+    const currentScript = getScriptName()
     const newCacheKey = `egmp-scriptable-bl-cache-${currentScript}`
     if (this.config.multiCar || write || Keychain.contains(newCacheKey)) return newCacheKey
     return KEYCHAIN_CACHE_KEY
@@ -495,15 +510,26 @@ export class Bluelink {
     return Boolean(this.cache.token.expiry - 30 > Math.floor(Date.now() / 1000))
   }
 
-  protected nextRequestCookies(req: Request): string {
-    let cookies = ''
-    if (req.response.cookies) {
-      for (const cookie of req.response.cookies) {
-        cookies = cookies + `${cookie.name}=${cookie.value}; `
-      }
-      cookies = cookies.slice(0, -2)
+  protected nextRequestCookies(cookies: HttpCookie[] = []): string {
+    let nextCookies = ''
+    for (const cookie of cookies) {
+      nextCookies = nextCookies + `${cookie.name}=${cookie.value}; `
     }
-    return cookies
+    if (nextCookies.length > 2) {
+      nextCookies = nextCookies.slice(0, -2)
+    }
+    return nextCookies
+  }
+
+  protected toResponseRecord(response: HttpResponse): Record<string, any> {
+    if (response.rawResponse) {
+      return response.rawResponse
+    }
+    return {
+      statusCode: response.status,
+      headers: response.headers,
+      cookies: response.cookies || [],
+    }
   }
 
   protected async request(props: RequestProps): Promise<{ resp: { [key: string]: any }; json: any; cookies: string }> {
@@ -515,9 +541,8 @@ export class Bluelink {
       throw Error('No tokens available for request')
     }
 
-    const req = new Request(props.url)
-    req.method = props.method ? props.method : props.data ? 'POST' : 'GET'
-    req.headers = {
+    const method = props.method ? props.method : props.data ? 'POST' : 'GET'
+    const headers = {
       Accept: 'application/json, text/plain, */*',
       'Accept-Encoding': 'gzip, deflate, br, zstd',
       'Accept-Language': 'en-US,en;q=0.9',
@@ -546,33 +571,34 @@ export class Bluelink {
         ...props.headers,
       }),
     }
-    if (props.data) {
-      req.body = props.data
-    }
-    if (props.noRedirect) {
-      // @ts-ignore - returning null is allowed
-      req.onRedirect = (_request) => {
-        return null
-      }
-    }
-    req.allowInsecureRequest = true
     this.debugLastRequest = {
       url: props.url,
-      method: req.method,
-      headers: req.headers,
+      method: method,
+      headers: headers,
       ...(props.data && {
-        data: req.body,
+        data: props.data,
       }),
     }
     try {
       if (this.config.debugLogging) this.logger.log(`Sending request ${JSON.stringify(this.debugLastRequest)}`)
-      const json = !props.notJSON ? await req.loadJSON() : await req.loadString()
+
+      const response = await this.httpClient.request({
+        url: props.url,
+        method: method,
+        headers: headers,
+        body: props.data,
+        allowInsecureRequest: Boolean(this.config.allowInsecureRequest),
+        noRedirect: Boolean(props.noRedirect),
+      })
+
+      const responseRecord = this.toResponseRecord(response)
+      const json = !props.notJSON ? JSON.parse(response.body) : response.body
       if (this.config.debugLogging)
         this.logger.log(
-          `response ${JSON.stringify(req.response)} data: ${!props.notJSON ? JSON.stringify(json) : 'not JSON'}`,
+          `response ${JSON.stringify(responseRecord)} data: ${!props.notJSON ? JSON.stringify(json) : 'not JSON'}`,
         )
 
-      const checkResponse = props.validResponseFunction(req.response, json)
+      const checkResponse = props.validResponseFunction(responseRecord, json)
       if (!props.noRetry && checkResponse.retry && !props.noAuth) {
         // re-auth and call ourselves
         if (this.cache) await this.refreshLogin(true) // only refresh login if we have a cache - i.e not first login
@@ -581,7 +607,7 @@ export class Bluelink {
           noRetry: true,
         })
       }
-      return { resp: req.response, json: json, cookies: this.nextRequestCookies(req) }
+      return { resp: responseRecord, json: json, cookies: this.nextRequestCookies(response.cookies || []) }
     } catch (error) {
       const errorString = `Failed to send request to ${props.url}, request ${JSON.stringify(this.debugLastRequest)} - error ${error}`
       if (this.config.debugLogging) this.logger.log(error)

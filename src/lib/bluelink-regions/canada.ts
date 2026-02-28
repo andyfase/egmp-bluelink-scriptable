@@ -100,15 +100,24 @@ export class BluelinkCanada extends Bluelink {
   }
 
   protected async getSessionCookie(): Promise<string> {
-    const req = new Request(`https://${this.apiHost}/login`)
-    req.headers = this.getAdditionalHeaders()
-    req.method = 'GET'
-    await req.load()
-    if (req.response.cookies) {
-      for (const cookie of req.response.cookies) {
+    const resp = await this.httpClient.request({
+      url: `https://${this.apiHost}/login`,
+      method: 'GET',
+      headers: this.getAdditionalHeaders(),
+      allowInsecureRequest: Boolean(this.config.allowInsecureRequest),
+    })
+    if (resp.cookies) {
+      for (const cookie of resp.cookies) {
         if (cookie.name.toLowerCase() === '__cf_bm') {
           return `__cf_bm=${cookie.value}`
         }
+      }
+    }
+    const setCookieHeader = Object.entries(resp.headers).find(([key]) => key.toLowerCase() === 'set-cookie')?.[1]
+    if (setCookieHeader) {
+      const value = setCookieHeader.match(/(?:^|,\s*)__cf_bm=([^;]+)/i)?.[1]
+      if (value) {
+        return `__cf_bm=${value}`
       }
     }
     return ''

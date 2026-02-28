@@ -1,5 +1,25 @@
 const SCRIPTABLE_DIR = '/var/mobile/Library/Mobile Documents/iCloud~dk~simonbs~Scriptable/Documents'
 const DEFAULT_MAX_SIZE = 100
+const REDACTED = '***REDACTED***'
+const SENSITIVE_KEYS = new Set([
+  'authorization',
+  'authentication',
+  'cookie',
+  'set-cookie',
+  'refreshtoken',
+  'refresh_token',
+  'accesstoken',
+  'id_token',
+  'access_token',
+  'token',
+  'password',
+  'username',
+  'pin',
+  'clientsecret',
+  'secret',
+  'session',
+  'code',
+])
 
 const loggingDateStringOptions = {
   year: 'numeric',
@@ -10,6 +30,89 @@ const loggingDateStringOptions = {
   second: '2-digit',
   fractionalSecondDigits: 3,
 } as Intl.DateTimeFormatOptions
+
+function normalizeKey(input: string): string {
+  return input.toLowerCase().replaceAll('-', '').replaceAll('_', '')
+}
+
+function shouldRedactKey(key: string): boolean {
+  const normalized = normalizeKey(key)
+  return Array.from(SENSITIVE_KEYS).some((sensitiveKey) => normalizeKey(sensitiveKey) === normalized)
+}
+
+function redactStringPatterns(input: string): string {
+  let output = input
+
+  output = output.replace(/\b(Bearer)\s+[A-Za-z0-9\-._~+/]+=*/gi, `$1 ${REDACTED}`)
+
+  const keyPattern = [
+    'authorization',
+    'authentication',
+    'cookie',
+    'set-cookie',
+    'refreshToken',
+    'refresh_token',
+    'accessToken',
+    'id_token',
+    'access_token',
+    'token',
+    'password',
+    'username',
+    'pin',
+    'clientSecret',
+    'secret',
+    'session',
+    'code',
+  ].join('|')
+
+  output = output.replace(new RegExp(`(${keyPattern})\\s*[:=]\\s*["']?([^&\\s"',}]+)["']?`, 'gi'), `$1=${REDACTED}`)
+  return output
+}
+
+function sanitizeObject(input: unknown): unknown {
+  if (Array.isArray(input)) {
+    return input.map((item) => sanitizeObject(item))
+  }
+
+  if (!input || typeof input !== 'object') {
+    return input
+  }
+
+  const out: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (shouldRedactKey(key)) {
+      out[key] = REDACTED
+      continue
+    }
+    if (typeof value === 'string') {
+      out[key] = redactStringPatterns(value)
+      continue
+    }
+    out[key] = sanitizeObject(value)
+  }
+  return out
+}
+
+export function sanitizeForLog(input: unknown): string {
+  if (typeof input === 'string') {
+    try {
+      const parsed = JSON.parse(input)
+      return JSON.stringify(sanitizeObject(parsed))
+    } catch (_error) {
+      return redactStringPatterns(input)
+    }
+  }
+
+  if (input instanceof Error) {
+    return redactStringPatterns(input.stack || input.message)
+  }
+
+  try {
+    return JSON.stringify(sanitizeObject(input))
+  } catch (_error) {
+    return redactStringPatterns(String(input))
+  }
+}
 
 export class Logger {
   private filepath: string
@@ -48,10 +151,10 @@ export class Logger {
     return ''
   }
 
-  public log(input: string) {
+  public log(input: unknown) {
     this.rotateFileIfNeeded()
     let currentData = this.readFile()
-    currentData = currentData + '\n' + this.formatLogEntry(input)
+    currentData = currentData + '\n' + this.formatLogEntry(sanitizeForLog(input))
     this.writeFile(currentData)
   }
 

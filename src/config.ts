@@ -66,6 +66,7 @@ export interface Config {
   mfaPreference: 'sms' | 'email'
   carColor: string
   debugLogging: boolean
+  allowInsecureRequest: boolean
   multiCar: boolean
   promptForUpdate: boolean
   vin: string | undefined
@@ -99,6 +100,7 @@ export interface FlattenedConfig {
   allowWidgetRemoteRefresh: boolean
   carColor: string
   debugLogging: boolean
+  allowInsecureRequest: boolean
   multiCar: boolean
   promptForUpdate: boolean
   vin: string | undefined
@@ -138,6 +140,7 @@ const DEFAULT_CONFIG = {
   climateTempWarm: DEFAULT_TEMPS.C.warm,
   climateSeatLevel: 'Off',
   debugLogging: false,
+  allowInsecureRequest: false,
   multiCar: false,
   promptForUpdate: true,
   allowWidgetRemoteRefresh: false,
@@ -240,6 +243,7 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
       climateTempCold,
       climateSeatLevel,
       debugLogging,
+      allowInsecureRequest,
       multiCar,
       promptForUpdate,
       allowWidgetRemoteRefresh,
@@ -268,6 +272,7 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
           allowWidgetRemoteRefresh: allowWidgetRemoteRefresh,
           carColor: carColor ? carColor.toLocaleLowerCase() : 'white',
           debugLogging: debugLogging,
+          allowInsecureRequest: allowInsecureRequest,
           multiCar: multiCar,
           promptForUpdate: promptForUpdate,
           manufacturer: manufacturer?.toLowerCase(),
@@ -295,6 +300,15 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
           confirmButtonTitle: 'I understand',
           includeCancel: false,
         })
+      }
+      if (state.allowInsecureRequest && !previousState.allowInsecureRequest) {
+        confirm(
+          'WARNING: Insecure requests weaken TLS checks and can expose login/session tokens. Use only if necessary.',
+          {
+            confirmButtonTitle: 'I understand the risk',
+            includeCancel: false,
+          },
+        )
       }
       if (
         state.region === 'europe' &&
@@ -410,6 +424,11 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
       debugLogging: {
         type: 'checkbox',
         label: 'Enable debug logging',
+        isRequired: false,
+      },
+      allowInsecureRequest: {
+        type: 'checkbox',
+        label: 'WARNING: Allow insecure requests (not recommended)',
         isRequired: false,
       },
       promptForUpdate: {
