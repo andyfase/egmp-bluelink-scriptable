@@ -29,6 +29,7 @@ interface APIConfig {
   authBasic: string
   authHost: string
   authClientID?: string
+  authClientSecret?: string
   authParam: string
   clientId: string
   pushType: string
@@ -42,10 +43,11 @@ const API_CONFIG: Record<string, APIConfig> = {
     authCfb: 'RFtoRq/vDXJmRndoZaZQyfOot7OrIqGVFj96iY2WL3yyH5Z/pUvlUhqmCxD2t+D65SQ=',
     authBasic:
       'Basic NmQ0NzdjMzgtM2NhNC00Y2YzLTk1NTctMmExOTI5YTk0NjU0OktVeTQ5WHhQekxwTHVvSzB4aEJDNzdXNlZYaG10UVI5aVFobUlGampvWTRJcHhzVg==',
-    authHost: 'eu-account.hyundai.com',
+    authHost: 'idpconnect-eu.hyundai.com',
     clientId: '6d477c38-3ca4-4cf3-9557-2a1929a94654',
     authParam: 'euhyundaiidm',
     authClientID: '64621b96-0f0d-11ec-82a8-0242ac130003',
+    authClientSecret: 'KUy49XxPzLpLuoK0xhBC77W6VXhmtQR9iQhmIFjjoY4IpxsV',
     pushType: 'GCM',
   },
   kia: {
@@ -64,6 +66,98 @@ const API_CONFIG: Record<string, APIConfig> = {
 }
 
 const MOCK_API = false
+
+const WEBVIEW_AUTH_KEYCHAIN_KEY = 'egmp-bluelink-webview-auth'
+const WEBVIEW_AUTH_MAX_AGE_MS = 5 * 60 * 1000
+
+export function getEuropeAuthUrls(manufacturer: string): { startUrl: string; callbackUrl: string } | null {
+  const cfg = API_CONFIG[manufacturer]
+  if (!cfg) return null
+
+  if (manufacturer === 'hyundai') {
+    const apiDomain = `https://${cfg.apiDomain}:${cfg.apiPort}`
+    return {
+      startUrl:
+        `${apiDomain}/api/v1/user/oauth2/authorize?` +
+        [
+          'response_type=code',
+          `client_id=${cfg.clientId}`,
+          `redirect_uri=${apiDomain}/api/v1/user/oauth2/redirect`,
+          'lang=en',
+          'state=ccsp',
+        ].join('&'),
+      callbackUrl: `${apiDomain}/api/v1/user/oauth2/redirect`,
+    }
+  }
+
+  if (manufacturer === 'kia') {
+    return {
+      startUrl:
+        `https://${cfg.authHost}/auth/api/v2/user/oauth2/authorize?` +
+        [
+          'client_id=01b36c86-79e8-486c-8009-15f2ad88d670',
+          'redirect_uri=https://oneapp.kia.com/redirect',
+          'response_type=code',
+          'scope=account.token.transfer%20account.id.generate%20account.puid.userinfos%20account.userinfo%20read%20account.userinfos%20puid%20email%20name%20mobileNum%20birthdate%20lang%20country%20signUpDate%20gender%20nationInfo%20certProfile%20offline',
+          'response_type=code',
+          'state=hmgoneapp',
+          'ui_locales=en-GB',
+        ].join('&'),
+      callbackUrl: 'https://oneapp.kia.com/redirect',
+    }
+  }
+
+  return null
+}
+
+export function openLoginWebview(startUrl: string, callbackUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const webview = new WebView()
+    webview.shouldAllowRequest = (request: { url: string }) => {
+      if (!request.url.startsWith(callbackUrl)) return true
+      resolve(request.url)
+      webview.loadHTML(
+        `<!DOCTYPE html><html><body style="background-color:#1c1c1e;">
+        <center>
+        <h1 style="color: white; font-family: Arial, Helvetica; font-size: xxx-large;">Login Successful</h1>
+        <p style="color: white; font-family: Arial, Helvetica; font-size: xx-large;">This screen should auto-close, if not please close window.</p>
+        </center>
+        </body></html>`,
+      )
+      return false
+    }
+    webview.loadURL(startUrl)
+    webview
+      .present(false)
+      .then(() => {
+        reject(new Error('Could not complete login. Please try again.'))
+      })
+      .catch(reject)
+  })
+}
+
+export function storeWebviewAuthResult(redirectUrl: string) {
+  Keychain.set(WEBVIEW_AUTH_KEYCHAIN_KEY, JSON.stringify({ redirectUrl, timestamp: Date.now() }))
+}
+
+export function getStoredWebviewAuthResult(): string | null {
+  if (!Keychain.contains(WEBVIEW_AUTH_KEYCHAIN_KEY)) return null
+  try {
+    const data = JSON.parse(Keychain.get(WEBVIEW_AUTH_KEYCHAIN_KEY))
+    if (Date.now() - data.timestamp > WEBVIEW_AUTH_MAX_AGE_MS) {
+      clearStoredWebviewAuthResult()
+      return null
+    }
+    return data.redirectUrl
+  } catch {
+    clearStoredWebviewAuthResult()
+    return null
+  }
+}
+
+export function clearStoredWebviewAuthResult() {
+  if (Keychain.contains(WEBVIEW_AUTH_KEYCHAIN_KEY)) Keychain.remove(WEBVIEW_AUTH_KEYCHAIN_KEY)
+}
 
 export class BluelinkEurope extends Bluelink {
   private lang = 'en' // hard-code to en as the language doesnt appear to matter from an API perspective.
@@ -135,139 +229,58 @@ export class BluelinkEurope extends Bluelink {
   }
 
   protected async login(): Promise<BluelinkTokens | undefined> {
-    // reset session - get initial cookies
-    const respReset = await this.request({
-      url: `${this.apiDomain}/api/v1/user/oauth2/authorize?response_type=code&state=test&client_id=${this.apiConfig.clientId}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect&lang=${this.lang}`,
-      noAuth: true,
-      notJSON: true,
-      validResponseFunction: this.requestResponseValid,
-    })
+    if (this.config.manufacturer !== 'hyundai') {
+      // reset session - get initial cookies (not needed for Hyundai webview login)
+      const respReset = await this.request({
+        url: `${this.apiDomain}/api/v1/user/oauth2/authorize?response_type=code&state=test&client_id=${this.apiConfig.clientId}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect&lang=${this.lang}`,
+        noAuth: true,
+        notJSON: true,
+        validResponseFunction: this.requestResponseValid,
+      })
 
-    if (!this.requestResponseValid(respReset.resp, respReset.json).valid) {
-      const error = `Failed to reset session ${JSON.stringify(respReset.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
+      if (!this.requestResponseValid(respReset.resp, respReset.json).valid) {
+        const error = `Failed to reset session ${JSON.stringify(respReset.resp)}`
+        if (this.config.debugLogging) this.logger.log(error)
+        throw Error(error)
+      }
     }
 
     return this.config.manufacturer === 'kia' ? await this.KiaLogin() : await this.HyundaiLogin()
   }
 
   protected async HyundaiLogin(): Promise<BluelinkTokens | undefined> {
-    // user ID and Service ID
-    const respIntegration = await this.request({
-      url: `${this.apiDomain}/api/v1/user/integrationinfo`,
-      noAuth: true,
-      validResponseFunction: this.requestResponseValid,
-    })
+    const storedRedirect = getStoredWebviewAuthResult()
+    let redirectUrl: string
 
-    if (!this.requestResponseValid(respIntegration.resp, respIntegration.json).valid) {
-      const error = `Failed to reset session ${JSON.stringify(respIntegration.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
-    const userId = respIntegration.json.userId
-    const serviceId = respIntegration.json.serviceId
-    if (!userId || !serviceId) {
-      const error = `Failed to get userId or serviceId ${JSON.stringify(respIntegration.resp.json)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
+    if (storedRedirect) {
+      clearStoredWebviewAuthResult()
+      redirectUrl = storedRedirect
+    } else {
+      const ccapiAuthUrl =
+        `${this.apiDomain}/api/v1/user/oauth2/authorize?` +
+        [
+          'response_type=code',
+          `client_id=${this.apiConfig.clientId}`,
+          `redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`,
+          `lang=${this.lang}`,
+          'state=ccsp',
+        ].join('&')
 
-    // start login - this could auto redirect and auto login based on previous state
-    // or could send back form to process actual login - so need to handle both
-    const respLoginForm = await this.request({
-      url: `https://${this.apiConfig.authHost}/auth/realms/${this.apiConfig.authParam}/protocol/openid-connect/auth?client_id=${this.apiConfig.authClientID}&scope=openid%20profile%20email%20phone&response_type=code&hkid_session_reset=true&redirect_uri=${this.apiDomain}/api/v1/user/integration/redirect/login&ui_locales=${this.lang}&state=${serviceId}:${userId}`,
-      noAuth: true,
-      notJSON: true,
-      validResponseFunction: this.requestResponseValid,
-    })
-
-    if (!this.requestResponseValid(respLoginForm.resp, respLoginForm.json).valid) {
-      const error = `Failed to get login form ${JSON.stringify(respLoginForm.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
+      const ccapiRedirectUrl = `${this.apiDomain}/api/v1/user/oauth2/redirect`
+      redirectUrl = await openLoginWebview(ccapiAuthUrl, ccapiRedirectUrl)
     }
 
-    if (!respLoginForm.resp.url.startsWith(this.apiDomain)) {
-      // we have not been redirected - so need to login
-      // Form HTML looks like
-      // <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="https://eu-account.hyundai.com/auth/realms/euhyundaiidm/login-actions/authenticate?session_code=<session_code>&amp;execution=<execution_id>&amp;client_id=<client_id>&amp;tab_id=<tab_id>" method="post">
-      // extract entire action URL - confirm its the right host - then extract session code and execution ID
-      const loginURL = respLoginForm.json.match(/action="([^"]+)"/)
-      if (!loginURL || loginURL.length < 2 || !loginURL[1].startsWith(`https://${this.apiConfig.authHost}`)) {
-        const error = `Failed to extract login URL ${JSON.stringify(respLoginForm.resp)}`
-        if (this.config.debugLogging) this.logger.log(error)
-        throw Error(error)
-      }
-
-      const params = Url.parse(loginURL[1].replaceAll('&amp;', '&'), true).query
-      const sessionCode = params.session_code
-      const executionId = params.execution
-      const tabId = params.tab_id
-      if (!sessionCode || !executionId || !tabId) {
-        const error = `Failed to extract session code or execution ID ${JSON.stringify(params)}`
-        if (this.config.debugLogging) this.logger.log(error)
-        throw Error(error)
-      }
-
-      // now actually login
-      const loginData = `username=${encodeURIComponent(this.config.auth.username)}&password=${encodeURIComponent(this.config.auth.password)}&credentialId=&rememberMe=on`
-      const respLogin = await this.request({
-        url: `https://${this.apiConfig.authHost}/auth/realms/${this.apiConfig.authParam}/login-actions/authenticate?session_code=${sessionCode}&execution=${executionId}&client_id=${this.apiConfig.authClientID}&tab_id=${tabId}`,
-        noAuth: true,
-        notJSON: true,
-        validResponseFunction: this.requestResponseValid,
-        method: 'POST',
-        data: loginData,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      })
-
-      if (!this.requestResponseValid(respLogin.resp, respLogin.json).valid) {
-        const error = `Failed to login ${JSON.stringify(respLogin.resp)}`
-        if (this.config.debugLogging) this.logger.log(error)
-        throw Error(error)
-      }
-
-      // at this point we should have been rediected to the API domain after completing login - if not its a error - likely password issues
-      if (!respLogin.resp.url.startsWith(this.apiDomain)) {
-        const error = `Login did not redirect - login error: ${JSON.stringify(respLogin.resp)} data: ${respLogin.json}`
-        if (this.config.debugLogging) this.logger.log(error)
-        return undefined
-      }
-    } // end of optional login form
-
-    // silent login - which returns Auth Code needed for final call to get tokens
-    const respSilent = await this.request({
-      url: `${this.apiDomain}/api/v1/user/silentsignin`,
-      noAuth: true,
-      data: JSON.stringify({ intUserId: '' }),
-      validResponseFunction: this.requestResponseValid,
-    })
-
-    if (!this.requestResponseValid(respSilent.resp, respSilent.json).valid) {
-      const error = `Failed to perform silent login ${JSON.stringify(respSilent.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
-
-    const redirectUrl = respSilent.json.redirectUrl
-    if (!redirectUrl) {
-      const error = `Failed to get redirectUrl ${JSON.stringify(respSilent.resp.json)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
-    }
-    const params = Url.parse(redirectUrl, true).query
-    const authCode = params.code
+    const authParams = Url.parse(redirectUrl, true).query
+    const authCode = authParams.code
     if (!authCode) {
-      const error = `Failed to extract auth code ${JSON.stringify(respSilent.resp)}`
+      const error = `Failed to extract auth code from redirect ${redirectUrl}`
       if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
+      return undefined
     }
 
-    // final login to get tokens
+    // Exchange code for tokens at CCAPI token endpoint
     const tokenData = `client_id=${this.apiConfig.clientId}&grant_type=authorization_code&code=${authCode}&redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`
+
     const respTokens = await this.request({
       url: `${this.apiDomain}/api/v1/user/oauth2/token`,
       noAuth: true,
@@ -281,52 +294,23 @@ export class BluelinkEurope extends Bluelink {
     })
 
     if (!this.requestResponseValid(respTokens.resp, respTokens.json).valid) {
-      const error = `Failed to login ${JSON.stringify(respTokens.resp)}`
+      const error = `Failed to exchange code for tokens ${JSON.stringify(respTokens.resp)}`
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
 
+    this.loginRequiredWebview = true
+
     return {
       accessToken: `Bearer ${respTokens.json.access_token}`,
       refreshToken: respTokens.json.refresh_token,
-      expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expires_in), // we only get a expireIn not a actual date
+      expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expires_in),
       authId: await this.getDeviceId(),
     }
   }
 
   protected loginWithWebview(start_url: string, callback_url: string) {
-    // @ts-ignore
-    return new Promise((resolve, reject) => {
-      const webview = new WebView()
-      webview.shouldAllowRequest = (request) => {
-        if (!request.url.startsWith(callback_url)) return true
-        // we have been redirected to the callback URL - return URL and update webview to a success page
-        resolve(request.url)
-        webview.loadHTML(
-          `
-          <!DOCTYPE html>
-          <html>
-          <body style="background-color:#1c1c1e;">
-
-          <center>
-          <h1 style="color: white; font-family: Arial, Helvetica; font-size: xxx-large;">Login Successful</h1>
-          <p style="color: white; font-family: Arial, Helvetica; font-size: xx-large;">This screen should auto-close, if not please close window.</p>
-          </center>
-
-          </body>
-          </html>
-          `,
-        )
-        return false
-      }
-      webview.loadURL(start_url)
-      webview
-        .present(false)
-        .then(() => {
-          reject(new Error('Could not complete login. Please try again.'))
-        })
-        .catch(reject)
-    })
+    return openLoginWebview(start_url, callback_url)
   }
 
   protected async KiaDeviceRegistration(tokens: BluelinkTokens): Promise<boolean | undefined> {
@@ -397,20 +381,27 @@ export class BluelinkEurope extends Bluelink {
   }
 
   protected async KiaLogin(): Promise<BluelinkTokens | undefined> {
-    const authUrl =
-      `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?` +
-      [
-        `client_id=01b36c86-79e8-486c-8009-15f2ad88d670`,
-        `redirect_uri=https://oneapp.kia.com/redirect`,
-        'response_type=code',
-        'scope=account.token.transfer%20account.id.generate%20account.puid.userinfos%20account.userinfo%20read%20account.userinfos%20puid%20email%20name%20mobileNum%20birthdate%20lang%20country%20signUpDate%20gender%20nationInfo%20certProfile%20offline',
-        'response_type=code',
-        'state=hmgoneapp',
-        'ui_locales=en-GB',
-      ].join('&')
+    const storedRedirect = getStoredWebviewAuthResult()
+    let callback_url: string
 
-    // open webview for user to login - which handles detecting login, settings webview to authURL and finally detecting the redirectURL and returning
-    const callback_url = (await this.loginWithWebview(authUrl, 'https://oneapp.kia.com/redirect')) as string
+    if (storedRedirect) {
+      clearStoredWebviewAuthResult()
+      callback_url = storedRedirect
+    } else {
+      const authUrl =
+        `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/authorize?` +
+        [
+          `client_id=01b36c86-79e8-486c-8009-15f2ad88d670`,
+          `redirect_uri=https://oneapp.kia.com/redirect`,
+          'response_type=code',
+          'scope=account.token.transfer%20account.id.generate%20account.puid.userinfos%20account.userinfo%20read%20account.userinfos%20puid%20email%20name%20mobileNum%20birthdate%20lang%20country%20signUpDate%20gender%20nationInfo%20certProfile%20offline',
+          'response_type=code',
+          'state=hmgoneapp',
+          'ui_locales=en-GB',
+        ].join('&')
+
+      callback_url = await openLoginWebview(authUrl, 'https://oneapp.kia.com/redirect')
+    }
 
     // extract code from callback URL
     const codeParams = Url.parse(callback_url, true).query
@@ -634,6 +625,11 @@ export class BluelinkEurope extends Bluelink {
       return undefined
     }
 
+    // Hyundai uses the IDP endpoint for token refresh with client_id/client_secret
+    if (this.apiConfig.authClientSecret) {
+      return await this.hyundaiRefreshTokens()
+    }
+
     if (this.config.debugLogging) this.logger.log('Refreshing tokens')
     const resp = await this.request({
       url: `${this.apiDomain}/api/v1/user/oauth2/token`,
@@ -641,7 +637,7 @@ export class BluelinkEurope extends Bluelink {
         `client_id=${this.apiConfig.clientId}`,
         'grant_type=refresh_token',
         `refresh_token=${this.cache.token.refreshToken}`,
-        `redirect_uri=${this.apiDomain}:${this.apiConfig.apiPort}/api/v1/user/oauth2/redirect`,
+        `redirect_uri=${this.apiDomain}/api/v1/user/oauth2/redirect`,
       ].join('&'),
       noAuth: true,
       validResponseFunction: this.requestResponseValid,
@@ -655,13 +651,46 @@ export class BluelinkEurope extends Bluelink {
       return {
         authCookie: '',
         accessToken: `Bearer ${resp.json.access_token}`,
-        refreshToken: this.cache.token.refreshToken, // we never recieve a new refresh token
-        expiry: Math.floor(Date.now() / 1000) + Number(resp.json.expires_in), // we only get a expireIn not a actual date
+        refreshToken: resp.json.refresh_token || this.cache.token.refreshToken,
+        expiry: Math.floor(Date.now() / 1000) + Number(resp.json.expires_in),
         authId: await this.getDeviceId(),
       }
     }
 
     const error = `Refresh Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
+    if (this.config.debugLogging) this.logger.log(error)
+    return undefined
+  }
+
+  protected async hyundaiRefreshTokens(): Promise<BluelinkTokens | undefined> {
+    if (this.config.debugLogging) this.logger.log('Refreshing Hyundai tokens via IDP endpoint')
+
+    const resp = await this.request({
+      url: `https://${this.apiConfig.authHost}/auth/api/v2/user/oauth2/token`,
+      data: [
+        'grant_type=refresh_token',
+        `refresh_token=${this.cache.token.refreshToken}`,
+        `client_id=${this.apiConfig.clientId}`,
+        `client_secret=${this.apiConfig.authClientSecret}`,
+      ].join('&'),
+      noAuth: true,
+      disableAdditionalHeaders: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    })
+
+    if (this.requestResponseValid(resp.resp, resp.json).valid) {
+      return {
+        accessToken: `Bearer ${resp.json.access_token}`,
+        refreshToken: resp.json.refresh_token || this.cache.token.refreshToken,
+        expiry: Math.floor(Date.now() / 1000) + Number(resp.json.expires_in),
+        authId: this.cache.token.authId,
+      }
+    }
+
+    const error = `Hyundai Refresh Failed: ${JSON.stringify(resp.json)} request ${JSON.stringify(this.debugLastRequest)}`
     if (this.config.debugLogging) this.logger.log(error)
     return undefined
   }
