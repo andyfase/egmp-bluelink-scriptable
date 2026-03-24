@@ -11,7 +11,7 @@ import {
 } from './base'
 import { Config } from '../../config'
 import Url from 'url'
-import { isNotEmptyObject } from '../util'
+import { isNotEmptyObject, openLoginWebview } from '../util'
 
 import { returnMockedCarStatus, returnMockedCar } from './mock'
 
@@ -108,32 +108,6 @@ export function getEuropeAuthUrls(manufacturer: string): { startUrl: string; cal
   }
 
   return null
-}
-
-export function openLoginWebview(startUrl: string, callbackUrl: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const webview = new WebView()
-    webview.shouldAllowRequest = (request: { url: string }) => {
-      if (!request.url.startsWith(callbackUrl)) return true
-      resolve(request.url)
-      webview.loadHTML(
-        `<!DOCTYPE html><html><body style="background-color:#1c1c1e;">
-        <center>
-        <h1 style="color: white; font-family: Arial, Helvetica; font-size: xxx-large;">Login Successful</h1>
-        <p style="color: white; font-family: Arial, Helvetica; font-size: xx-large;">This screen should auto-close, if not please close window.</p>
-        </center>
-        </body></html>`,
-      )
-      return false
-    }
-    webview.loadURL(startUrl)
-    webview
-      .present(false)
-      .then(() => {
-        reject(new Error('Could not complete login. Please try again.'))
-      })
-      .catch(reject)
-  })
 }
 
 export function storeWebviewAuthResult(redirectUrl: string) {
@@ -307,10 +281,6 @@ export class BluelinkEurope extends Bluelink {
       expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expires_in),
       authId: await this.getDeviceId(),
     }
-  }
-
-  protected loginWithWebview(start_url: string, callback_url: string) {
-    return openLoginWebview(start_url, callback_url)
   }
 
   protected async KiaDeviceRegistration(tokens: BluelinkTokens): Promise<boolean | undefined> {
