@@ -26,8 +26,8 @@ jobs:
 
       - name: Build
         run: |
-          npm run build ./src/index.ts egmp-bluelink
-          npm run build ./src/reset.ts egmp-reset
+          bash -lc 'source ./build.sh; build ./src/index.ts egmp-bluelink'
+          bash -lc 'source ./build.sh; build ./src/reset.ts egmp-reset'
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
