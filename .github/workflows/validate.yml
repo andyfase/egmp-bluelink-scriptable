@@ -32,4 +32,4 @@ jobs:
         run: npx eslint "*.ts" "src/**/*.ts"
 
       - name: Build
-        run: npm run build ./src/index.ts egmp-bluelink
+        run: bash -lc 'source ./build.sh; build ./src/index.ts egmp-bluelink'
