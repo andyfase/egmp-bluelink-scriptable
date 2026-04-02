@@ -49,7 +49,7 @@ function lightbox_close() {
 <td>
 
 <p>
-<a href="/pages/install.html" class="btn btn-primary fs-5 mb-4 mb-md-0 mr-2">Instructions d'installation</a>
+<a href="{{ site.baseurl }}/{{ page.lang }}/pages/install.html" class="btn btn-primary fs-5 mb-4 mb-md-0 mr-2">Instructions d'installation</a>
 </p>
 <p>
 <a href="https://github.com/andyfase/egmp-bluelink-scriptable" class="btn fs-5 mb-4 mb-md-0">Voir sur GitHub&#160;&#160;</a>
