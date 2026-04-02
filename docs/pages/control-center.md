@@ -2,6 +2,7 @@
 title: Control Center
 layout: home
 nav_order: 6
+lang: en
 ---
 
 # Control Center Support
