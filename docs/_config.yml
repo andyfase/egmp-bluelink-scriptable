@@ -40,7 +40,7 @@ plugins:
 # Polyglot i18n settings
 languages: ["en", "fr"]
 default_lang: "en"
-exclude_from_localization: ["assets", "CNAME"]
+exclude_from_localization: ["images", "app-assets", "CNAME"]
 parallel_localization: false
 
 # Exclude from processing.
