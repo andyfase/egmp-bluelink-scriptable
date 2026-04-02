@@ -35,6 +35,7 @@ plugins:
   - jekyll-feed
   - jekyll-default-layout
   - jekyll-polyglot
+  - jekyll-relative-links
 
 # Polyglot i18n settings
 languages: ["en", "fr"]
