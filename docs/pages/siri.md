@@ -2,6 +2,7 @@
 title: Siri / Shortcuts
 layout: home
 nav_order: 5
+lang: en
 ---
 
 # Siri Shortcuts Support

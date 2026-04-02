@@ -2,6 +2,7 @@
 title: Installation
 layout: home
 nav_order: 4
+lang: en
 ---
 
 # Install Guide

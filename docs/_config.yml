@@ -30,12 +30,17 @@ url: https://bluelink.andyfase.com  # the base hostname and protocol for your si
 #baseurl: "/docs"      # place folder name if the site is served in a subfolder
 
 # Build settings
-remote_theme: just-the-docs/just-the-docs
-# remote_theme: pages-themes/cayman@v0.2.0
+theme: just-the-docs
 plugins:
   - jekyll-feed
   - jekyll-default-layout
-  # - jekyll-remote-theme
+  - jekyll-polyglot
+
+# Polyglot i18n settings
+languages: ["en", "fr"]
+default_lang: "en"
+exclude_from_localization: ["assets", "CNAME"]
+parallel_localization: false
 
 # Exclude from processing.
 # The following items will not be processed, by default.

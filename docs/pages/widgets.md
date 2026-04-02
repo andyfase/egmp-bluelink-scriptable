@@ -2,6 +2,7 @@
 title: Widgets
 layout: home
 nav_order: 2
+lang: en
 ---
 
 # Widget Support

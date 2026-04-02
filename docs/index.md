@@ -2,6 +2,7 @@
 title: Home
 nav_order: 1
 layout: home
+lang: en
 ---
 
 # Hyundai / Kia E-GMP scriptable app for IOS
