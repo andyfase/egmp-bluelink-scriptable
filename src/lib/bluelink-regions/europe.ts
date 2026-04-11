@@ -725,12 +725,25 @@ export class BluelinkEurope extends Bluelink {
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.resMsg.vehicles.length > 0) {
       let vehicle = resp.json.resMsg.vehicles[0]
       if (vin) {
+        let matchedVehicle = undefined
         for (const v of resp.json.resMsg.vehicles) {
           if (v.vin === vin) {
-            vehicle = v
+            matchedVehicle = v
             break
           }
         }
+        if (!matchedVehicle) {
+          const cachedVehicle = this.getCachedCarForVin(vin)
+          if (cachedVehicle) {
+            if (this.config.debugLogging)
+              this.logger.log(`Configured VIN ${vin} not found in vehicle list, using cached car`)
+            return cachedVehicle
+          }
+          const error = `Configured VIN ${vin} not found in vehicle list`
+          if (this.config.debugLogging) this.logger.log(error)
+          throw Error(error)
+        }
+        vehicle = matchedVehicle
       }
 
       this.europeccs2 = vehicle.ccuCCS2ProtocolSupport

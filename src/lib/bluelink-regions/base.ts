@@ -345,12 +345,19 @@ export class Bluelink {
       // getCar first then save then get remote status
       // widget remote refresh does not await for entire process to complete, and odometer in US is only on getCar calls, which need to complete and save to cache before sending remote status command
       // the remote status command will update the API servers in backgound - hence next normal status check will get the updated status data
+      const previousCar = this.cache.car
       const car = await this.getCar()
       if (car) this.cache.car = car
       this.saveCache()
       this.setLastCommandSent()
-      this.cache.status = await this.getCarStatus(this.cache.car.id, true, location)
-      this.saveCache()
+      try {
+        this.cache.status = await this.getCarStatus(this.cache.car.id, true, location)
+        this.saveCache()
+      } catch (error) {
+        this.cache.car = previousCar
+        this.saveCache()
+        throw error
+      }
     } else if (noCache || this.cache.status.lastStatusCheck + this.statusCheckInterval < Date.now()) {
       this.cache.status = await this.getCarStatus(this.cache.car.id, false, location)
       this.saveCache()
@@ -444,6 +451,16 @@ export class Bluelink {
     return KEYCHAIN_CACHE_KEY
   }
 
+  protected cacheMatchesConfiguredVin(cache: Cache | undefined): boolean {
+    if (!cache || !this.config.vin) return true
+    return cache.car.vin === this.config.vin
+  }
+
+  protected getCachedCarForVin(vin: string): BluelinkCar | undefined {
+    if (this.cache && this.cache.car.vin === vin) return this.cache.car
+    return undefined
+  }
+
   public getConfig() {
     return this.config
   }
@@ -465,6 +482,15 @@ export class Bluelink {
     let cache: Cache | undefined = undefined
     if (Keychain.contains(this.getCacheKey())) {
       cache = JSON.parse(Keychain.get(this.getCacheKey()))
+      if (!this.cacheMatchesConfiguredVin(cache)) {
+        const cachedVin = cache?.car?.vin || 'unknown'
+        if (this.config.debugLogging) {
+          this.logger.log(
+            `Ignoring cached vehicle ${cachedVin} for configured VIN ${this.config.vin} and rebuilding cache`,
+          )
+        }
+        cache = undefined
+      }
     }
     if (!cache) {
       // initial use - load car and status

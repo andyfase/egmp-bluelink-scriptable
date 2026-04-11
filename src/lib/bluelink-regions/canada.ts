@@ -191,12 +191,25 @@ export class BluelinkCanada extends Bluelink {
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.result.vehicles.length > 0) {
       let vehicle = resp.json.result.vehicles[0]
       if (vin) {
+        let matchedVehicle = undefined
         for (const v of resp.json.result.vehicles) {
           if (v.vin === vin) {
-            vehicle = v
+            matchedVehicle = v
             break
           }
         }
+        if (!matchedVehicle) {
+          const cachedVehicle = this.getCachedCarForVin(vin)
+          if (cachedVehicle) {
+            if (this.config.debugLogging)
+              this.logger.log(`Configured VIN ${vin} not found in vehicle list, using cached car`)
+            return cachedVehicle
+          }
+          const error = `Configured VIN ${vin} not found in vehicle list`
+          if (this.config.debugLogging) this.logger.log(error)
+          throw Error(error)
+        }
+        vehicle = matchedVehicle
       }
       // should set car just in case its not already set
       await this.setCar(vehicle.vehicleId)

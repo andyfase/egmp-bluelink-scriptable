@@ -156,12 +156,25 @@ export class BluelinkUSA extends Bluelink {
     if (this.requestResponseValid(resp.resp, resp.json).valid && resp.json.enrolledVehicleDetails.length > 0) {
       let vehicle = resp.json.enrolledVehicleDetails[0].vehicleDetails
       if (vin) {
+        let matchedVehicle = undefined
         for (const v of resp.json.enrolledVehicleDetails) {
           if (v.vehicleDetails.vin === vin) {
-            vehicle = v.vehicleDetails
+            matchedVehicle = v.vehicleDetails
             break
           }
         }
+        if (!matchedVehicle) {
+          const cachedVehicle = this.getCachedCarForVin(vin)
+          if (cachedVehicle) {
+            if (this.config.debugLogging)
+              this.logger.log(`Configured VIN ${vin} not found in vehicle list, using cached car`)
+            return cachedVehicle
+          }
+          const error = `Configured VIN ${vin} not found in vehicle list`
+          if (this.config.debugLogging) this.logger.log(error)
+          throw Error(error)
+        }
+        vehicle = matchedVehicle
       }
 
       this.carVin = vehicle.vin
