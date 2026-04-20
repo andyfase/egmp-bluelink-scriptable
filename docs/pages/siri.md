@@ -1,18 +1,21 @@
 ---
-title: Siri / Shortcuts
+title: Siri
 layout: home
-nav_order: 5
+nav_order: 4
+lang: fr
+translation_key: siri
+permalink: /fr/pages/siri
 ---
 
-# Siri Shortcuts Support
+# Raccourcis Siri
 {: .fs-9 }
 
-The app supports direct Siri interaction via the "Shortcuts" IOS app. A collection of Shortcut download link are provided below. These can be used both while talking to Siri, or through interaction through the [IOS control center](./control-center.md).
+L'application supporte les interactions avec Siri grâce à l'app "Raccourcis" de IOS. Plusieurs liens de téléchargement de raccourcis sont disponibles ci-dessous. Ils peuvent être utilisés autant pour demander à Siri ou via le centre de controle [IOS control center](./control-center.md).
 {: .fs-5 .fw-300 }
 
-## Common Commmands Shortcuts
+## Commandes courantes
 
-These shortcuts can be used via Siri or through [Control Center](./control-center.md).
+Les raccourcis peuvent être utilisés via Siri ou le de centre de contôle.[Control Center](./control-center.md).
 
 ### Lock the Car - "Hey Siri, Lock the car"
 [Install "Lock Car" Shortcut](https://www.icloud.com/shortcuts/5b569f78ef00452b9d7fe4455635d36d)
