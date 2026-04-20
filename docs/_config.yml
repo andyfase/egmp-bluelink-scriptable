@@ -21,8 +21,8 @@
 title: Bluelink Scriptable
 email: andrewfase@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
-  A scriptable app for IOS that allows you to control your Hyundai / Kia E-GMP car using the Bluelink API.
-  Consider it a companion app to the official Bluelink app, with a fresher UI, more responsive and extended feature such as Widget and Siri support
+  Une application Scriptable pour iOS qui vous permet de contrôler votre voiture Hyundai / Kia E‑GMP via l'API Bluelink.
+Considérez-la comme une application compagnon de l'application officielle Bluelink, avec une interface plus moderne, plus réactive et des fonctionnalités étendues telles que le widget et la prise en charge de Siri.
 github_username:  andyfase
 
 domain: bluelink.andyfase.com       # if you want to force HTTPS, specify the domain without the http at the start, e.g. example.com
