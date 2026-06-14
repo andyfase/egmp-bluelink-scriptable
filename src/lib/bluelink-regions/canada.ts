@@ -178,7 +178,7 @@ export class BluelinkCanada extends Bluelink {
     const sendOtpResp = await this.request({
       url: this.apiDomain + 'mfa/sendotp',
       data: JSON.stringify({
-        otpMethod: notifyBySms ? 'S' : 'E',
+        otpMethod: notifyBySms ? 'M' : 'E',
         mfaApiCode: '0107',
         userAccount: otpRequest.email,
         userPhone: notifyBySms ? otpRequest.phone : '',
