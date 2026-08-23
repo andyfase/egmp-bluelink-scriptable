@@ -32,6 +32,13 @@ interface APIConfig {
   authParam: string
   clientId: string
   pushType: string
+  cciApiDomain: string
+  cciClientId: string
+  cciRedirectUri: string
+  cciPackageId: string
+  cciClientName: string
+  cciClientOsVersion: string
+  cciNotificationProvider: string
 }
 
 const API_CONFIG: Record<string, APIConfig> = {
@@ -47,6 +54,13 @@ const API_CONFIG: Record<string, APIConfig> = {
     authParam: 'euhyundaiidm',
     authClientSecret: 'KUy49XxPzLpLuoK0xhBC77W6VXhmtQR9iQhmIFjjoY4IpxsV',
     pushType: 'GCM',
+    cciApiDomain: 'cci-api-eu.hyundai.com',
+    cciClientId: '4f4953b5-02e1-4dbc-8599-87e983ee1be5',
+    cciRedirectUri: 'https://oneapp.hyundai.com/redirect',
+    cciPackageId: 'com.hyundai.oneapp.eu',
+    cciClientName: 'hyundai',
+    cciClientOsVersion: '18.7',
+    cciNotificationProvider: 'APNS',
   },
   kia: {
     apiDomain: 'prd.eu-ccapi.kia.com',
@@ -59,10 +73,19 @@ const API_CONFIG: Record<string, APIConfig> = {
     authParam: 'eukiaidm',
     authClientSecret: 'secret',
     pushType: 'APNS',
+    cciApiDomain: 'cci-api-eu.kia.com',
+    cciClientId: '01b36c86-79e8-486c-8009-15f2ad88d670',
+    cciRedirectUri: 'https://oneapp.kia.com/redirect',
+    cciPackageId: 'com.kia.oneapp.eu',
+    cciClientName: 'kia',
+    cciClientOsVersion: '27',
+    cciNotificationProvider: 'IOS_APPSTORE',
   },
 }
 
 const MOCK_API = false
+
+const isDeviceIdError = (data: any): boolean => String(data?.resCode) === '4002'
 
 export class BluelinkEurope extends Bluelink {
   private apiConfig: APIConfig
@@ -109,7 +132,7 @@ export class BluelinkEurope extends Bluelink {
     resp: Record<string, any>,
     data: Record<string, any>,
   ): { valid: boolean; retry: boolean } {
-    if (this.isDeviceIdError(data)) {
+    if (isDeviceIdError(data)) {
       return { valid: false, retry: true }
     }
     if (
@@ -121,12 +144,8 @@ export class BluelinkEurope extends Bluelink {
     return { valid: false, retry: true }
   }
 
-  private isDeviceIdError(data: any): boolean {
-    return String(data?.resCode) === '4002'
-  }
-
   protected async recoverRequestForRetry(resp: Record<string, any>, data: any): Promise<void> {
-    if (!this.isDeviceIdError(data)) {
+    if (!isDeviceIdError(data)) {
       return await super.recoverRequestForRetry(resp, data)
     }
 
@@ -182,20 +201,106 @@ export class BluelinkEurope extends Bluelink {
     }
   }
 
-  private getEuropeRedirectUri(): string {
-    const redirectPath = this.config.manufacturer === 'hyundai' ? 'token' : 'redirect'
-    return `${this.apiDomain}/api/v1/user/oauth2/${redirectPath}`
-  }
-
   private getBrandLabel(): string {
     return this.config.manufacturer === 'kia' ? 'Kia' : 'Hyundai'
   }
 
-  private async idpLoginWithPasswordExact(): Promise<BluelinkTokens | undefined> {
+  private getCookieValue(cookies: string, name: string): string | undefined {
+    for (const cookie of cookies.split(';')) {
+      const [key, value] = cookie.trim().split('=', 2)
+      if (key === name && value) return value
+    }
+    return undefined
+  }
+
+  private getCciHeaders(
+    deviceId: string,
+    tokens: Record<string, string> = {},
+    contentType?: string,
+  ): Record<string, string> {
+    const headers: Record<string, string> = {
+      'client-id': this.apiConfig.cciPackageId,
+      'client-name': this.apiConfig.cciClientName,
+      'client-version': '1.3.3',
+      'client-os-code': 'ios',
+      'client-os-version': this.apiConfig.cciClientOsVersion,
+      'client-device-id': deviceId,
+      'client-device-model': 'iPhone',
+      'client-notification-provider-type': this.apiConfig.cciNotificationProvider,
+      locale: 'EN',
+      timezone: this.getTimeZoneFull(),
+      Accept: 'application/json',
+      'Accept-Language': 'en',
+      'User-Agent': 'okhttp/3.14.9',
+    }
+    if (tokens.nonCcsToken) headers.Authentication = tokens.nonCcsToken
+    if (tokens.cciAccessToken) headers.authorization = `Bearer ${tokens.cciAccessToken.replace(/^Bearer\s+/i, '')}`
+    if (tokens.exchangeableAccessToken) {
+      headers['exchangeable-token'] = tokens.exchangeableAccessToken
+      headers['non-ccs-token'] = tokens.nonCcsToken || ''
+    }
+    if (contentType) headers['Content-Type'] = contentType
+    else headers['Content-Length'] = '0'
+    return headers
+  }
+
+  private getCcsExpiry(expiresTime: unknown): number {
+    const expiry = Number(expiresTime)
+    if (Number.isFinite(expiry) && expiry > 0) {
+      return expiry > 100000000000 ? Math.floor(expiry / 1000) : Math.floor(expiry)
+    }
+    return Math.floor(Date.now() / 1000) + 3600
+  }
+
+  private getCciTokens(data: Record<string, any>, existing: Record<string, string> = {}): Record<string, string> {
+    return {
+      cciAccessToken: data.accessToken || existing.cciAccessToken || '',
+      exchangeableAccessToken: data.exchangeableAccessToken || existing.exchangeableAccessToken || '',
+      exchangeableRefreshToken: data.exchangeableRefreshToken || existing.exchangeableRefreshToken || '',
+      nonCcsToken: data.nonCcsToken || existing.nonCcsToken || '',
+      nonCcsRefreshToken: data.nonCcsRefreshToken || existing.nonCcsRefreshToken || '',
+      idToken: data.idToken || existing.idToken || '',
+    }
+  }
+
+  private async exchangeCciTokenForCcs(
+    deviceId: string,
+    refreshToken: string,
+    additionalTokens: Record<string, string>,
+  ): Promise<BluelinkTokens> {
+    const resp = await this.request({
+      url: `https://${this.apiConfig.cciApiDomain}/domain/api/v1/auth/token-exchange?serviceType=CCS`,
+      method: 'POST',
+      noAuth: true,
+      disableAdditionalHeaders: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: this.getCciHeaders(deviceId, additionalTokens),
+    })
+    const accessToken = resp.json.accessToken || resp.json.ccsAccessToken
+    if (!this.requestResponseValid(resp.resp, resp.json).valid || !accessToken) {
+      const error = `CCI CCS token exchange failed: HTTP ${resp.resp.statusCode} — ${JSON.stringify(resp.json)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      throw Error(error)
+    }
+
+    return {
+      accessToken: `Bearer ${accessToken.replace(/^Bearer\s+/i, '')}`,
+      refreshToken,
+      expiry: this.getCcsExpiry(resp.json.expiresTime),
+      authId: deviceId,
+      additionalTokens,
+    }
+  }
+
+  private async cciLoginWithPassword(): Promise<BluelinkTokens | undefined> {
     const host = this.apiConfig.authHost
-    const clientId = this.apiConfig.clientId
-    const clientSecret = this.apiConfig.authClientSecret || ''
-    const redirectUri = this.getEuropeRedirectUri()
+    const deviceId = await this.getDeviceId()
+    if (!deviceId) {
+      throw Error(`Failed to register ${this.getBrandLabel()} device for CCI login`)
+    }
+
+    const clientId = this.apiConfig.cciClientId
+    const redirectUri = this.apiConfig.cciRedirectUri
     const mobileUa = `${'Mozilla/5.0 (Linux; Android 4.1.1; Galaxy Nexus Build/JRO03C) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19'}_CCS_APP_AOS`
 
     const respAuthorize = await this.request({
@@ -221,10 +326,18 @@ export class BluelinkEurope extends Bluelink {
       },
     })
 
-    if (!this.requestResponseValid(respAuthorize.resp, {}).valid) {
+    const authorizeResponse = String(respAuthorize.json || '')
+    if (
+      !this.requestResponseValid(respAuthorize.resp, {}).valid ||
+      respAuthorize.resp.url?.includes('/error?status=400') ||
+      authorizeResponse.toLowerCase().includes('abusing request')
+    ) {
+      const detail = authorizeResponse.toLowerCase().includes('abusing request')
+        ? ' The IDPConnect authorization request was blocked by the server.'
+        : ''
       const error = `Failed to initialize ${this.getBrandLabel()} login ${JSON.stringify(respAuthorize.resp)}`
-      if (this.config.debugLogging) this.logger.log(error)
-      throw Error(error)
+      if (this.config.debugLogging) this.logger.log(error + detail)
+      throw Error(error + detail)
     }
 
     const respCerts = await this.request({
@@ -329,42 +442,28 @@ export class BluelinkEurope extends Bluelink {
     }
 
     const respTokens = await this.request({
-      url: `https://${host}/auth/api/v2/user/oauth2/token`,
+      url: `https://${this.apiConfig.cciApiDomain}/domain/api/v1/auth/token?code=${encodeURIComponent(authCode)}`,
       method: 'POST',
-      data: [
-        'grant_type=authorization_code',
-        `code=${encodeURIComponent(authCode)}`,
-        `redirect_uri=${encodeURIComponent(redirectUri)}`,
-        `client_id=${encodeURIComponent(clientId)}`,
-        `client_secret=${encodeURIComponent(clientSecret)}`,
-      ].join('&'),
       noAuth: true,
       disableAdditionalHeaders: true,
       validResponseFunction: this.requestResponseValid,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: this.getCciHeaders(deviceId),
     })
 
-    if (!this.requestResponseValid(respTokens.resp, respTokens.json).valid || respTokens.resp.statusCode !== 200) {
-      const error = `API error: token exchange failed: HTTP ${respTokens.resp.statusCode} — ${JSON.stringify(respTokens.resp)}`
+    if (!this.requestResponseValid(respTokens.resp, respTokens.json).valid || !respTokens.json.refreshToken) {
+      const error = `CCI token exchange failed: HTTP ${respTokens.resp.statusCode} — ${JSON.stringify(respTokens.json)}`
       if (this.config.debugLogging) this.logger.log(error)
       throw Error(error)
     }
 
-    return {
-      accessToken: `${respTokens.json.token_type} ${respTokens.json.access_token}`,
-      refreshToken: respTokens.json.refresh_token,
-      expiry: Math.floor(Date.now() / 1000) + Number(respTokens.json.expires_in || 86400),
-      authId: await this.getDeviceId(),
-    }
+    return await this.exchangeCciTokenForCcs(deviceId, respTokens.json.refreshToken, this.getCciTokens(respTokens.json))
   }
 
   private async loginWithPassword(): Promise<BluelinkTokens | undefined> {
     if (/^[A-Z0-9]{48}$/.test(this.config.auth.password)) {
       return await this.idpRefreshTokensExact(this.config.auth.password)
     }
-    return await this.idpLoginWithPasswordExact()
+    return await this.cciLoginWithPassword()
   }
 
   protected async login(): Promise<BluelinkTokens | undefined> {
@@ -407,12 +506,55 @@ export class BluelinkEurope extends Bluelink {
     }
   }
 
+  private async refreshCciTokens(): Promise<BluelinkTokens | undefined> {
+    const cachedTokens = this.cache.token.additionalTokens
+    const deviceId = this.cache.token.authId
+    const refreshToken = this.cache.token.refreshToken
+    if (!cachedTokens || !deviceId || !refreshToken) return undefined
+
+    const resp = await this.request({
+      url: `https://${this.apiConfig.cciApiDomain}/domain/api/v2/auth/token-refresh`,
+      method: 'POST',
+      data: JSON.stringify({
+        accessToken: cachedTokens.cciAccessToken || '',
+        refreshToken,
+        exchangeableAccessToken: cachedTokens.exchangeableAccessToken || '',
+        exchangeableRefreshToken: cachedTokens.exchangeableRefreshToken || '',
+        nonCcsToken: cachedTokens.nonCcsToken || '',
+        nonCcsRefreshToken: cachedTokens.nonCcsRefreshToken || '',
+        idToken: cachedTokens.idToken || '',
+      }),
+      noAuth: true,
+      disableAdditionalHeaders: true,
+      validResponseFunction: this.requestResponseValid,
+      headers: this.getCciHeaders(deviceId, cachedTokens, 'application/json'),
+    })
+    if (!this.requestResponseValid(resp.resp, resp.json).valid) {
+      const error = `CCI token refresh failed: HTTP ${resp.resp.statusCode} — ${JSON.stringify(resp.json)}`
+      if (this.config.debugLogging) this.logger.log(error)
+      return undefined
+    }
+
+    const additionalTokens = this.getCciTokens(resp.json, cachedTokens)
+    const refreshedCookie = this.getCookieValue(resp.cookies, 't')
+    if (refreshedCookie) additionalTokens.exchangeableAccessToken = refreshedCookie
+    return await this.exchangeCciTokenForCcs(deviceId, resp.json.refreshToken || refreshToken, additionalTokens)
+  }
+
   protected async refreshTokens(): Promise<BluelinkTokens | undefined> {
     if (!this.cache || !this.cache.token.refreshToken) {
       if (this.config.debugLogging) this.logger.log('No refresh token - cannot refresh')
       return undefined
     }
 
+    if (this.cache.token.additionalTokens?.cciAccessToken) {
+      try {
+        return await this.refreshCciTokens()
+      } catch (error) {
+        if (this.config.debugLogging) this.logger.log(`CCI token refresh failed: ${error}`)
+        return undefined
+      }
+    }
     return await this.idpRefreshTokensExact(this.cache.token.refreshToken)
   }
 
