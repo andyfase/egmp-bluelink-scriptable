@@ -107,8 +107,11 @@ export class BluelinkEurope extends Bluelink {
 
   private requestResponseValid(
     resp: Record<string, any>,
-    _data: Record<string, any>,
+    data: Record<string, any>,
   ): { valid: boolean; retry: boolean } {
+    if (this.isDeviceIdError(data)) {
+      return { valid: false, retry: true }
+    }
     if (
       Object.hasOwn(resp, 'statusCode') &&
       (resp.statusCode === 200 || resp.statusCode === 204 || resp.statusCode === 302)
@@ -116,6 +119,29 @@ export class BluelinkEurope extends Bluelink {
       return { valid: true, retry: false }
     }
     return { valid: false, retry: true }
+  }
+
+  private isDeviceIdError(data: any): boolean {
+    return String(data?.resCode) === '4002'
+  }
+
+  protected async recoverRequestForRetry(resp: Record<string, any>, data: any): Promise<void> {
+    if (!this.isDeviceIdError(data)) {
+      return await super.recoverRequestForRetry(resp, data)
+    }
+
+    const authId = await this.getDeviceId()
+    if (!authId) {
+      throw Error('Failed to refresh invalid device ID')
+    }
+
+    if (this.tokens) this.tokens.authId = authId
+    if (this.cache) {
+      this.cache.token.authId = authId
+      this.saveCache()
+    }
+    this.controlToken = undefined
+    if (this.config.debugLogging) this.logger.log('Refreshed invalid European device ID')
   }
 
   private async getReusableDeviceId(): Promise<string | undefined> {

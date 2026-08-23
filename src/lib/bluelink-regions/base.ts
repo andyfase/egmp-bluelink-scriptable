@@ -226,6 +226,11 @@ export class Bluelink {
     }
   }
 
+  // Regions can replace the credentials used to retry a rejected request.
+  protected async recoverRequestForRetry(_resp: Record<string, any>, _data: any): Promise<void> {
+    if (this.cache) await this.refreshLogin(true)
+  }
+
   protected getStamp(appId: string, cfbB64: string): string {
     const rawData = `${appId}:${Math.floor(Date.now() / 1000)}`
     const rawDataBytes = Buffer.from(rawData, 'utf-8')
@@ -600,8 +605,7 @@ export class Bluelink {
 
       const checkResponse = props.validResponseFunction(req.response, json)
       if (!props.noRetry && checkResponse.retry && !props.noAuth) {
-        // re-auth and call ourselves
-        if (this.cache) await this.refreshLogin(true) // only refresh login if we have a cache - i.e not first login
+        await this.recoverRequestForRetry(req.response, json)
         return await this.request({
           ...props,
           noRetry: true,
