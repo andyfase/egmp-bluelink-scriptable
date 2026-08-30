@@ -2,6 +2,7 @@
 title: App Features
 layout: home
 nav_order: 3
+lang: en
 ---
 
 # Bluelink Scriptable feature set

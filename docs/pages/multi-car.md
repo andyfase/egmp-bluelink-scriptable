@@ -2,6 +2,7 @@
 title: Multi Car
 layout: home
 nav_order: 7
+lang: en
 ---
 
 # Multiple Car Support

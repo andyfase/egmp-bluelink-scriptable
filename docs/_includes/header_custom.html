@@ -1,0 +1,16 @@
+<div class="language-switcher">
+  <label for="lang-select">Language:</label>
+  <select id="lang-select" onchange="if(this.value)window.location.href=this.value">
+    {% for lang in site.languages %}
+      {% assign target_url = page.url %}
+      {% if lang == site.default_lang %}
+        {% assign lang_url = target_url %}
+      {% else %}
+        {% capture lang_url %}/{{ lang }}{{ target_url }}{% endcapture %}
+      {% endif %}
+      <option value="{{ lang_url | relative_url }}" {% if lang == site.active_lang %}selected{% endif %}>
+        {%- if lang == "en" -%}🇬🇧 English{%- elsif lang == "fr" -%}🇫🇷 Français{%- else -%}{{ lang }}{%- endif -%}
+      </option>
+    {% endfor %}
+  </select>
+</div>

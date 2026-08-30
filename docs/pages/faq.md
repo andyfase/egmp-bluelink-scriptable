@@ -2,6 +2,7 @@
 title: Help
 layout: home
 nav_order: 8
+lang: en
 ---
 
 # Help / FAQ
