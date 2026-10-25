@@ -109,7 +109,7 @@ export interface FlattenedConfig {
 }
 
 // const SUPPORTED_REGIONS = ['canada']
-const SUPPORTED_REGIONS = ['canada', 'usa', 'europe', 'india', 'australia']
+const SUPPORTED_REGIONS = ['canada', 'usa', 'europe', 'india', 'australia', 'singapore']
 const SUPPORTED_MANUFACTURERS = ['Hyundai', 'Kia', 'Genesis']
 const CAR_COLORS = ['White', 'Black', 'Grey', 'Matte-Grey', 'Metallic-Grey', 'Silver', 'Red', 'Orange', 'Blue', 'Green']
 const DEFAULT_TEMPS = {
@@ -142,7 +142,7 @@ const DEFAULT_CONFIG = {
   promptForUpdate: true,
   allowWidgetRemoteRefresh: false,
   carColor: 'white',
-  manufacturer: 'hyundai',
+  manufacturer: 'Hyundai',
   hideDefaultClimates: false,
   customClimates: [],
   chargeLimits: [
@@ -270,7 +270,7 @@ export async function loadConfigScreen(bl: Bluelink | undefined = undefined) {
           debugLogging: debugLogging,
           multiCar: multiCar,
           promptForUpdate: promptForUpdate,
-          manufacturer: manufacturer?.toLowerCase(),
+          manufacturer: manufacturer, // stored as displayed (e.g. "Hyundai"); normalized in initRegionalBluelink
           vin: vin ? vin.toUpperCase().trim() : undefined,
           hideDefaultClimates: hideDefaultClimates,
         },
